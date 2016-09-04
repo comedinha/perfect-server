@@ -614,6 +614,7 @@ MagicEffectNames magicEffectNames[] = {
 	{"lightning",		CONST_ME_LIGHTNING },
 	{"ragiazbonecapsule",		CONST_ME_RAGIAZ_BONE_CAPSULE},
 	{"criticalhit",		CONST_ME_CRITICAL_HIT},
+	{"fishjump",		CONST_ME_FISH_JUMP},
 };
 
 ShootTypeNames shootTypeNames[] = {

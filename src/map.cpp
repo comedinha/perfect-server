@@ -843,8 +843,10 @@ int_fast32_t AStarNodes::getTileWalkCost(const Creature& creature, const Tile* t
 
 	if (const MagicField* field = tile->getFieldItem()) {
 		CombatType_t combatType = field->getCombatType();
-		if (!creature.isImmune(combatType) && !creature.hasCondition(Combat::DamageToConditionType(combatType))) {
-			cost += MAP_NORMALWALKCOST * 18;
+		if (!creature.isImmune(combatType)) {
+			if (combatType == COMBAT_NONE || !creature.passMagicField(combatType)) {
+				cost += MAP_NORMALWALKCOST * 18;
+			}
 		}
 	}
 	return cost;

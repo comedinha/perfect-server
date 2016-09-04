@@ -124,6 +124,7 @@ bool MoveEvents::registerEvent(Event* event, const pugi::xml_node& node)
 			it.wieldInfo = moveEvent->getWieldInfo();
 			it.minReqLevel = moveEvent->getReqLevel();
 			it.minReqMagicLevel = moveEvent->getReqMagLv();
+			it.minReqSkillLevel = moveEvent->getReqSkillLv();
 			it.vocationString = moveEvent->getVocationString();
 		}
 	} else if ((attr = node.attribute("fromid"))) {
@@ -137,6 +138,7 @@ bool MoveEvents::registerEvent(Event* event, const pugi::xml_node& node)
 			it.wieldInfo = moveEvent->getWieldInfo();
 			it.minReqLevel = moveEvent->getReqLevel();
 			it.minReqMagicLevel = moveEvent->getReqMagLv();
+			it.minReqSkillLevel = moveEvent->getReqSkillLv();
 			it.vocationString = moveEvent->getVocationString();
 
 			while (++id <= endId) {
@@ -146,6 +148,7 @@ bool MoveEvents::registerEvent(Event* event, const pugi::xml_node& node)
 				tit.wieldInfo = moveEvent->getWieldInfo();
 				tit.minReqLevel = moveEvent->getReqLevel();
 				tit.minReqMagicLevel = moveEvent->getReqMagLv();
+				tit.minReqSkillLevel = moveEvent->getReqSkillLv();
 				tit.vocationString = moveEvent->getVocationString();
 			}
 		} else {
@@ -506,6 +509,14 @@ bool MoveEvent::configureEvent(const pugi::xml_node& node)
 			}
 		}
 
+		pugi::xml_attribute skillLevelAttribute = node.attribute("skill");
+		if (skillLevelAttribute) {
+			reqSkillLevel = pugi::cast<uint32_t>(skillLevelAttribute.value());
+			if (reqSkillLevel > 0) {
+				wieldInfo |= WIELDINFO_SKILL;
+			}
+		}
+
 		pugi::xml_attribute premiumAttribute = node.attribute("premium");
 		if (premiumAttribute) {
 			premium = premiumAttribute.as_bool();
@@ -838,7 +849,7 @@ bool MoveEvent::executeStep(Creature* creature, Item* item, const Position& pos,
 	LuaScriptInterface::setCreatureMetatable(L, -1, creature);
 	LuaScriptInterface::pushThing(L, item);
 	LuaScriptInterface::pushPosition(L, pos);
-	LuaScriptInterface::pushPosition(L, fromPos);
+	LuaScriptInterface::pushPosition(L, creature->getLastPosition());
 
 	return scriptInterface->callFunction(4);
 }

@@ -196,6 +196,9 @@ void Creature::onThink(uint32_t interval)
 	}
 
 	if (isUpdatingPath) {
+		if (getMonster() && isAttacked()) {
+			updateMapCache();
+		}
 		isUpdatingPath = false;
 		goToFollowCreature();
 	}
@@ -468,12 +471,12 @@ void Creature::onCreatureDisappear(const Creature* creature, bool isLogout)
 {
 	if (attackedCreature == creature) {
 		setAttackedCreature(nullptr);
-		onAttackedCreatureDisappear(isLogout);
+		onAttackedCreatureDisappear(isLogout, creature);
 	}
 
 	if (followCreature == creature) {
 		setFollowCreature(nullptr);
-		onFollowCreatureDisappear(isLogout);
+		onFollowCreatureDisappear(isLogout, creature);
 	}
 }
 
@@ -872,7 +875,7 @@ BlockType_t Creature::blockHit(Creature* attacker, CombatType_t combatType, int3
 		if (checkArmor) {
 			int32_t armor = getArmor();
 			if (armor > 3) {
-				damage -= uniform_random(armor / 2, (armor % 2) == 0 ? armor - 1 : armor - 2);
+				damage -= uniform_random(armor / 2, armor - (armor % 2 + 1));
 			} else if (armor > 0) {
 				--damage;
 			}
@@ -1398,6 +1401,19 @@ bool Creature::isImmune(ConditionType_t type) const
 bool Creature::isSuppress(ConditionType_t type) const
 {
 	return hasBitSet(static_cast<uint32_t>(type), getConditionSuppressions());
+}
+
+bool Creature::passMagicField(CombatType_t type) const
+{
+	return hasBitSet(static_cast<uint32_t>(type), getPassMagicField());
+}
+
+bool Creature::isAttacked() const
+{
+	if (lastHitCreatureId != 0) {
+		return true;
+	}
+	return false;
 }
 
 int64_t Creature::getStepDuration(Direction dir) const

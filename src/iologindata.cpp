@@ -119,6 +119,36 @@ bool IOLoginData::loginserverAuthentication(const std::string& name, const std::
 	return true;
 }
 
+std::string IOLoginData::generateFlashSessionKey(const std::string& token)
+{
+	if (token.empty()) {
+		return 0;
+	}
+	
+	std::string accountName;
+	std::string password;
+	std::string castSession = "cast5vCm7RrJaGDxjW4cXbk1OTI8ML";
+
+	if (token == castSession) {
+		accountName = "cast";
+		password = "";
+	} else {
+		Database* db = Database::getInstance();
+
+		std::ostringstream query;
+		query << "SELECT `name`, `password` FROM `accounts` WHERE `authToken` = " << db->escapeString(token);
+		DBResult_ptr result = db->storeQuery(query.str());
+		if (!result) {
+			return "0 \n 0"; // Dirty fix for debug on flash client multi-client
+		}
+
+		accountName = result->getString("name");
+		password = result->getString("password");
+	}
+
+	return accountName + "\n" + password;
+}
+
 uint32_t IOLoginData::gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName)
 {
 	Database* db = Database::getInstance();
@@ -130,8 +160,10 @@ uint32_t IOLoginData::gameworldAuthentication(const std::string& accountName, co
 		return 0;
 	}
 
-	if (transformToSHA1(password) != result->getString("password")) {
-		return 0;
+	if (password != result->getString("password")) {
+		if (transformToSHA1(password) != result->getString("password")) {
+			return 0;
+		}
 	}
 
 	uint32_t accountId = result->getNumber<uint32_t>("id");
@@ -332,6 +364,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 	player->defaultOutfit.lookFeet = result->getNumber<uint16_t>("lookfeet");
 	player->defaultOutfit.lookAddons = result->getNumber<uint16_t>("lookaddons");
 	player->currentOutfit = player->defaultOutfit;
+
 
 	if (g_game.getWorldType() != WORLD_TYPE_PVP_ENFORCED) {
 		const time_t skullSeconds = result->getNumber<time_t>("skulltime") - time(nullptr);
@@ -897,7 +930,7 @@ bool IOLoginData::savePlayer(Player* player)
 	if (!rewardList.empty()) {
 		DBInsert rewardQuery("INSERT INTO `player_rewards` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
 		itemList.clear();
-	
+
 		int running = 0;
 		for (const auto& rewardId : rewardList) {
 			Reward* reward = player->getReward(rewardId, false);

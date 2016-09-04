@@ -35,6 +35,7 @@
 
 extern Game g_game;
 extern ConfigManager g_config;
+extern Monsters g_monsters;
 extern MoveEvents* g_moveEvents;
 
 StaticTile real_nullptr_tile(0xFFFF, 0xFFFF, 0xFF);
@@ -538,18 +539,24 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			MagicField* field = getFieldItem();
 			if (field && !field->isBlocking()) {
 				CombatType_t combatType = field->getCombatType();
-
-				//There is 3 options for a monster to enter a magic field
-				//1) Monster is immune
 				if (!monster->isImmune(combatType)) {
-					//1) Monster is "strong" enough to handle the damage
-					//2) Monster is already afflicated by this type of condition
+					if (combatType == COMBAT_NONE) {
+						return RETURNVALUE_NOTPOSSIBLE;
+					}
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, flags)) {
-						if (!(monster->canPushItems() || monster->hasCondition(Combat::DamageToConditionType(combatType)))) {
+						MonsterType* mType = g_monsters.getMonsterType(monster->getName());
+						int32_t elementMod = 0;
+						auto it = mType->elementMap.find(combatType);
+						if (it != mType->elementMap.end()) {
+							elementMod = it->second;
+						}
+						if (!(elementMod >= 50 || monster->passMagicField(combatType) || monster->isAttacked())) {
 							return RETURNVALUE_NOTPOSSIBLE;
 						}
 					} else {
-						return RETURNVALUE_NOTPOSSIBLE;
+						if (!(monster->isAttacked())) {
+							return RETURNVALUE_NOTPOSSIBLE;
+						}
 					}
 				}
 			}

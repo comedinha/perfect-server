@@ -42,7 +42,8 @@ extern Chat* g_chat;
 
 ProtocolSpectator::ProtocolSpectator(Connection_ptr connection):
 	ProtocolGameBase(connection),
-	client(nullptr)
+	client(nullptr),
+	spectatorName("spectator")
 {
 
 }
@@ -100,8 +101,8 @@ void ProtocolSpectator::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	if (version < g_config.getNumber(ConfigManager::VERSION_MIN) || version > g_config.getNumber(ConfigManager::VERSION_MAX)) {
-		disconnectSpectator(g_config.getString(ConfigManager::VERSION_STR));
+	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
+		disconnectSpectator("Only clients with protocol " CLIENT_VERSION_STR " allowed!");
 		return;
 	}
 
@@ -241,13 +242,13 @@ void ProtocolSpectator::syncOpenContainers()
 void ProtocolSpectator::login(const std::string& liveCastName, const std::string& password)
 {
 	//dispatcher thread
-	auto foundPlayer = g_game.getPlayerByName(liveCastName);
-	if (!foundPlayer || foundPlayer->isRemoved()) {
+	auto _player = g_game.getPlayerByName(liveCastName);
+	if (!_player || _player->isRemoved()) {
 		disconnectSpectator("Live cast no longer exists. Please relogin to refresh the list.");
 		return;
 	}
 
-	const auto liveCasterProtocol = ProtocolGame::getLiveCast(foundPlayer);
+	const auto liveCasterProtocol = ProtocolGame::getLiveCast(_player);
 	if (!liveCasterProtocol) {
 		disconnectSpectator("Live cast no longer exists. Please relogin to refresh the list.");
 		return;
@@ -260,7 +261,12 @@ void ProtocolSpectator::login(const std::string& liveCastName, const std::string
 			return;
 		}
 
-		player = foundPlayer;
+		if (liveCasterProtocol->isIpBan(getIP())) {
+			disconnectSpectator("You have been banned from this cast.");
+			return;
+		}
+
+		player = _player;
 		player->incrementReferenceCounter();
 		eventConnect = 0;
 		client = liveCasterProtocol;
@@ -281,6 +287,7 @@ void ProtocolSpectator::logout()
 {
 	acceptPackets = false;
 	if (client && player) {
+		player->sendChannelEvent(CHANNEL_CAST, spectatorName, CHANNELEVENT_LEAVE);
 		client->removeSpectator(std::static_pointer_cast<ProtocolSpectator>(shared_from_this()));
 		player->decrementReferenceCounter();
 		player = nullptr;
@@ -345,7 +352,15 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 	}
 
 	if (client) {
-		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, text)));
+		if (client->isSpectatorMuted(spectatorId)) {
+			return;
+		}
+
+		if (parseCoomand(text)) {
+			return;
+		}
+
+		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, TALKTYPE_CHANNEL_Y, CHANNEL_CAST, true)));
 	}
 }
 
@@ -353,6 +368,7 @@ void ProtocolSpectator::release()
 {
 	//dispatcher
 	if (client && player) {
+		player->sendChannelEvent(CHANNEL_CAST, spectatorName, CHANNELEVENT_LEAVE);
 		client->removeSpectator(std::static_pointer_cast<ProtocolSpectator>(shared_from_this()));
 		player->decrementReferenceCounter();
 		player = nullptr;
@@ -375,4 +391,39 @@ void ProtocolSpectator::onLiveCastStop()
 		player = nullptr;
 	}
 	disconnect();
+}
+
+bool ProtocolSpectator::parseCoomand(const std::string& text)
+{
+	if (text[0] == '/') {
+
+		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
+		if (t.size() > 0) {
+			toLowerCaseString(t[0]);
+
+			std::string command = t[0];
+
+			if (command == "name") {
+				if (t.size() == 2) {
+
+					std::string newName = t[1];
+
+					if (newName == "") {
+						return true;
+					}
+
+					if (newName.length() > 30) {
+						return true;
+					}
+
+					client->broadcastSpectatorMessage("", spectatorName + " new name: " + newName, SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+					spectatorName = newName;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	return false;
 }

@@ -427,7 +427,7 @@ void Player::getShieldAndWeapon(const Item*& shield, const Item*& weapon) const
 				break;
 
 			case WEAPON_SHIELD: {
-				if (!shield || (shield && item->getDefense() > shield->getDefense())) {
+				if (!shield || item->getDefense() > shield->getDefense()) {
 					shield = item;
 				}
 				break;
@@ -825,7 +825,14 @@ bool Player::canWalkthrough(const Creature* creature) const
 	}
 
 	const Player* player = creature->getPlayer();
+	const Tile* creatureTile = creature->getTile();
 	if (!player) {
+		if((g_game.getWorldType() == WORLD_TYPE_NO_PVP && (creatureTile && !creatureTile->hasFlag(TILESTATE_PVPZONE))) && creature->getType() == CREATURETYPE_MONSTER) {
+			const Creature* master = creature->getMaster();
+			if (master && master->getPlayer()) {
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -861,7 +868,14 @@ bool Player::canWalkthroughEx(const Creature* creature) const
 	}
 
 	const Player* player = creature->getPlayer();
+	const Tile* creatureTile = creature->getTile();
 	if (!player) {
+		if((g_game.getWorldType() == WORLD_TYPE_NO_PVP && (creatureTile && !creatureTile->hasFlag(TILESTATE_PVPZONE))) && creature->getType() == CREATURETYPE_MONSTER) {
+			const Creature* master = creature->getMaster();
+			if (master && master->getPlayer()) {
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -1235,18 +1249,18 @@ void Player::onCreatureAppear(Creature* creature, bool isLogin)
 	}
 }
 
-void Player::onAttackedCreatureDisappear(bool isLogout)
+void Player::onAttackedCreatureDisappear(bool isLogout, const Creature* creature)
 {
-	sendCancelTarget();
+	sendCancelTarget(creature ? creature->getID() : 0);
 
 	if (!isLogout) {
 		sendTextMessage(MESSAGE_STATUS_SMALL, "Target lost.");
 	}
 }
 
-void Player::onFollowCreatureDisappear(bool isLogout)
+void Player::onFollowCreatureDisappear(bool isLogout, const Creature* creature)
 {
-	sendCancelTarget();
+	sendCancelTarget(creature ? creature->getID() : 0);
 
 	if (!isLogout) {
 		sendTextMessage(MESSAGE_STATUS_SMALL, "Target lost.");
@@ -1258,7 +1272,7 @@ void Player::onChangeZone(ZoneType_t zone)
 	if (zone == ZONE_PROTECTION) {
 		if (attackedCreature && !hasFlag(PlayerFlag_IgnoreProtectionZone)) {
 			setAttackedCreature(nullptr);
-			onAttackedCreatureDisappear(false);
+			onAttackedCreatureDisappear(false, attackedCreature);
 		}
 
 		if (!group->access && isMounted()) {
@@ -1282,13 +1296,13 @@ void Player::onAttackedCreatureChangeZone(ZoneType_t zone)
 	if (zone == ZONE_PROTECTION) {
 		if (!hasFlag(PlayerFlag_IgnoreProtectionZone)) {
 			setAttackedCreature(nullptr);
-			onAttackedCreatureDisappear(false);
+			onAttackedCreatureDisappear(false, attackedCreature);
 		}
 	} else if (zone == ZONE_NOPVP) {
 		if (attackedCreature->getPlayer()) {
 			if (!hasFlag(PlayerFlag_IgnoreProtectionZone)) {
 				setAttackedCreature(nullptr);
-				onAttackedCreatureDisappear(false);
+				onAttackedCreatureDisappear(false, attackedCreature);
 			}
 		}
 	} else if (zone == ZONE_NORMAL) {
@@ -1296,7 +1310,7 @@ void Player::onAttackedCreatureChangeZone(ZoneType_t zone)
 		if (g_game.getWorldType() == WORLD_TYPE_NO_PVP) {
 			if (attackedCreature->getPlayer()) {
 				setAttackedCreature(nullptr);
-				onAttackedCreatureDisappear(false);
+				onAttackedCreatureDisappear(false, attackedCreature);
 			}
 		}
 	}
@@ -2004,7 +2018,7 @@ BlockType_t Player::blockHit(Creature* attacker, CombatType_t combatType, int32_
 			if (it.abilities) {
 				const int16_t& absorbPercent = it.abilities->absorbPercent[combatTypeToIndex(combatType)];
 				if (absorbPercent != 0) {
-					damage -= std::ceil(damage * (absorbPercent / 100.));
+					damage -= std::round(damage * (absorbPercent / 100.));
 
 					uint16_t charges = item->getCharges();
 					if (charges != 0) {
@@ -2015,7 +2029,7 @@ BlockType_t Player::blockHit(Creature* attacker, CombatType_t combatType, int32_
 				if (field) {
 					const int16_t& fieldAbsorbPercent = it.abilities->fieldAbsorbPercent[combatTypeToIndex(combatType)];
 					if (fieldAbsorbPercent != 0) {
-						damage -= std::ceil(damage * (fieldAbsorbPercent / 100.));
+						damage -= std::round(damage * (fieldAbsorbPercent / 100.));
 
 						uint16_t charges = item->getCharges();
 						if (charges != 0) {
@@ -2064,26 +2078,27 @@ void Player::death(Creature* lastHitCreature)
 
 	if (skillLoss) {
 		uint8_t unfairFightReduction = 100;
+
 		bool lastHitPlayer = Player::lastHitIsPlayer(lastHitCreature);
 
-			if (lastHitPlayer) {
-				uint32_t sumLevels = 0;
-				uint32_t inFightTicks = g_config.getNumber(ConfigManager::PZ_LOCKED);
-				for (const auto& it : damageMap) {
-					CountBlock_t cb = it.second;
-					if ((OTSYS_TIME() - cb.ticks) <= inFightTicks) {
-						Player* damageDealer = g_game.getPlayerByID(it.first);
-						if (damageDealer) {
-							sumLevels += damageDealer->getLevel();
-						}
+		if (lastHitPlayer) {
+			uint32_t sumLevels = 0;
+			uint32_t inFightTicks = g_config.getNumber(ConfigManager::PZ_LOCKED);
+			for (const auto& it : damageMap) {
+				CountBlock_t cb = it.second;
+				if ((OTSYS_TIME() - cb.ticks) <= inFightTicks) {
+					Player* damageDealer = g_game.getPlayerByID(it.first);
+					if (damageDealer) {
+						sumLevels += damageDealer->getLevel();
 					}
 				}
-
-				if (sumLevels > level) {
-					double reduce = level / static_cast<double>(sumLevels);
-					unfairFightReduction = std::max<uint8_t>(20, std::floor((reduce * 100) + 0.5));
-				}
 			}
+
+			if (sumLevels > level) {
+				double reduce = level / static_cast<double>(sumLevels);
+				unfairFightReduction = std::max<uint8_t>(20, std::floor((reduce * 100) + 0.5));
+			}
+		}
 
 		//Magic level loss
 		uint64_t sumMana = 0;
@@ -3062,7 +3077,7 @@ bool Player::removeItemOfType(uint16_t itemId, uint32_t amount, int32_t subType,
 	return false;
 }
 
-std::map<uint32_t, uint32_t>& Player::getAllItemTypeCount(std::map<uint32_t, uint32_t> &countMap) const
+std::map<uint32_t, uint32_t>& Player::getAllItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const
 {
 	for (int32_t i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; i++) {
 		Item* item = inventory[i];
@@ -3328,7 +3343,7 @@ bool Player::setFollowCreature(Creature* creature)
 		setAttackedCreature(nullptr);
 
 		sendCancelMessage(RETURNVALUE_THEREISNOWAY);
-		sendCancelTarget();
+		sendCancelTarget(0);
 		stopWalk();
 		return false;
 	}
@@ -3338,7 +3353,7 @@ bool Player::setFollowCreature(Creature* creature)
 bool Player::setAttackedCreature(Creature* creature)
 {
 	if (!Creature::setAttackedCreature(creature)) {
-		sendCancelTarget();
+		sendCancelTarget(0);
 		return false;
 	}
 
@@ -3620,7 +3635,7 @@ void Player::onAttackedCreature(Creature* target)
 	if (target && target->getZone() == ZONE_PVP) {
 		return;
 	}
-	
+
 	if (target == this) {
 		addInFightTicks();
 		return;
@@ -4040,6 +4055,10 @@ void Player::addUnjustifiedDead(const Player* attacked)
 		} else if (getSkull() != SKULL_RED && g_config.getNumber(ConfigManager::KILLS_TO_RED) != 0 && skullTicks > (g_config.getNumber(ConfigManager::KILLS_TO_RED) - 1) * static_cast<int64_t>(g_config.getNumber(ConfigManager::FRAG_TIME))) {
 			setSkull(SKULL_RED);
 		}
+	}
+	
+	if (client) {
+		client->sendSkullTime();
 	}
 }
 

@@ -127,7 +127,7 @@ class Monster final : public Creature
 			this->spawn = spawn;
 		}
 
-		void onAttackedCreatureDisappear(bool isLogout) final;
+		virtual void onAttackedCreatureDisappear(bool isLogout) final;
 
 		void onCreatureAppear(Creature* creature, bool isLogin) final;
 		void onRemoveCreature(Creature* creature, bool isLogout) final;
@@ -266,6 +266,9 @@ class Monster final : public Creature
 		}
 		uint32_t getConditionImmunities() const final {
 			return mType->conditionImmunities;
+		}
+		uint32_t getPassMagicField() const final {
+			return mType->passMagicField;
 		}
 		void getPathSearchParams(const Creature* creature, FindPathParams& fpp) const final;
 		bool useCacheMap() const final {

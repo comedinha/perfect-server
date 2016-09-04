@@ -169,14 +169,31 @@ class ProtocolGame final : public ProtocolGameBase
 		*   and then get broadcast to the rest of the spectators
 		*  \param text string containing the text message
 		*/
-		void broadcastSpectatorMessage(const std::string& text) {
+		void broadcastSpectatorMessage(const std::string& name, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true) {
 			if (player) {
-				sendChannelMessage("Spectator", text, TALKTYPE_CHANNEL_Y, CHANNEL_CAST);
+				sendChannelMessage(name, text, type, channel, broadcast);
+			}
+		}
+
+		void broadcastSpecTextMessage(const TextMessage& message, bool broadcast = true) {
+			if (player) {
+				sendTextMessage(message, broadcast);
 			}
 		}
 
 		static uint8_t getMaxLiveCastCount() {
 			return std::numeric_limits<int8_t>::max();
+		}
+
+		const bool isSpectatorMuted(uint32_t spectatorId) {
+			return std::find(muteList.begin(), muteList.end(), spectatorId) != muteList.end();
+		}
+
+		std::shared_ptr<ProtocolSpectator> getSpectatorByName(const std::string& name);
+
+		bool isIpBan(uint32_t ip) {
+			auto it = banMap.find(ip);
+			return it != banMap.end();
 		}
 
 	private:
@@ -260,10 +277,10 @@ class ProtocolGame final : public ProtocolGameBase
 		void parseChannelExclude(NetworkMessage& msg);
 		void parseOpenChannel(NetworkMessage& msg);
 		void parseOpenPrivateChannel(NetworkMessage& msg);
-		void parseCloseChannel(NetworkMessage& msg);
+		virtual void parseCloseChannel(NetworkMessage& msg);
 
 		//Send functions
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel);
+		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true);
 		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
 		void sendClosePrivate(uint16_t channelId);
 		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
@@ -283,15 +300,16 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendQuestLine(const Quest* quest);
 
 		void sendChangeSpeed(const Creature* creature, uint32_t speed);
+		void sendCancelTarget(uint32_t creatureId, OperatingSystem_t operatingSystem);
 		void sendCancelTarget();
 		void sendCreatureVisible(const Creature* creature, bool visible);
 		void sendCreatureOutfit(const Creature* creature, const Outfit_t& outfit);
-		void sendTextMessage(const TextMessage& message);
 		void sendReLoginWindow(uint8_t unfairFightReduction);
 
 		void sendTutorial(uint8_t tutorialId);
 		void sendAddMarker(const Position& pos, uint8_t markType, const std::string& desc);
 
+		void sendTextMessage(const TextMessage& message, bool broadcast = true);
 		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough);
 		void sendCreatureShield(const Creature* creature);
 		void sendCreatureSkull(const Creature* creature);
@@ -380,15 +398,23 @@ class ProtocolGame final : public ProtocolGameBase
 		static LiveCastsMap liveCasts; ///< Stores all available casts.
 		
 		std::atomic<bool> isCaster{ false }; ///< Determines if this \ref ProtocolGame object is casting
+		// just to name spectators with a number
+		uint32_t spectatorsCount;
 
 		/// list of spectators \warning This variable should only be accessed after locking \ref liveCastLock
 		CastSpectatorVec spectators;
 
 		/// Live cast name that is also used as login
 		std::string liveCastName;
-				
+
 		/// Password used to access the live cast
 		std::string liveCastPassword;
+		bool checkCommand(const std::string& text);
+
+		std::vector<uint32_t> muteList;
+
+		std::unordered_map<uint32_t, std::string> banMap;
+
 		void sendInventory();
 };
 

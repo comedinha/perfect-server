@@ -478,7 +478,11 @@ class Player final : public Creature, public Cylinder
 			if (hasFlag(PlayerFlag_CannotPickupItem)) {
 				return 0;
 			} else if (hasFlag(PlayerFlag_HasInfiniteCapacity)) {
-				return std::numeric_limits<uint32_t>::max();
+				if (operatingSystem == CLIENTOS_FLASH) {
+					return 5000000;
+				} else {
+					return std::numeric_limits<uint32_t>::max();
+				}
 			} else {
 				return std::max<int32_t>(0, capacity - inventoryWeight);
 			}
@@ -741,9 +745,9 @@ class Player final : public Creature, public Cylinder
 			}
 		}
 
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel) {
+		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true) {
 			if (client) {
-				client->sendChannelMessage(author, text, type, channel);
+				client->sendChannelMessage(author, text, type, channel, broadcast);
 			}
 		}
 		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent) {
@@ -887,8 +891,8 @@ class Player final : public Creature, public Cylinder
 		void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
 		                            const Tile* oldTile, const Position& oldPos, bool teleport) final;
 
-		void onAttackedCreatureDisappear(bool isLogout) final;
-		void onFollowCreatureDisappear(bool isLogout) final;
+		virtual void onAttackedCreatureDisappear(bool isLogout, const Creature* creature) final;
+		virtual void onFollowCreatureDisappear(bool isLogout, const Creature* creature) final;
 
 		//container
 		void onAddContainerItem(const Item* item);
@@ -909,9 +913,9 @@ class Player final : public Creature, public Cylinder
 			}
 		}
 		void sendCancelMessage(ReturnValue message) const;
-		void sendCancelTarget() const {
+		void sendCancelTarget(uint32_t creatureId) const {
 			if (client) {
-				client->sendCancelTarget();
+				client->sendCancelTarget(creatureId, getOperatingSystem());
 			}
 		}
 		void sendCancelWalk() const {
@@ -968,14 +972,14 @@ class Player final : public Creature, public Cylinder
 				client->sendSkills();
 			}
 		}
-		void sendTextMessage(MessageClasses mclass, const std::string& message) const {
+		void sendTextMessage(MessageClasses mclass, const std::string& message, bool broadcast = true) const {
 			if (client) {
-				client->sendTextMessage(TextMessage(mclass, message));
+				client->sendTextMessage(TextMessage(mclass, message), broadcast);
 			}
 		}
-		void sendTextMessage(const TextMessage& message) const {
+		void sendTextMessage(const TextMessage& message, bool broadcast = true) const {
 			if (client) {
-				client->sendTextMessage(message);
+				client->sendTextMessage(message, broadcast);
 			}
 		}
 		void sendReLoginWindow(uint8_t unfairFightReduction) const {
@@ -1229,10 +1233,11 @@ class Player final : public Creature, public Cylinder
 		size_t getFirstIndex() const final;
 		size_t getLastIndex() const final;
 		uint32_t getItemTypeCount(uint16_t itemId, int32_t subType = -1) const final;
-		std::map<uint32_t, uint32_t>& getAllItemTypeCount(std::map<uint32_t, uint32_t> &countMap) const final;
+		std::map<uint32_t, uint32_t>& getAllItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const final;
+		Thing* getThing(size_t index) const final;
+
 		Item* getItemByClientId(uint16_t clientId) const;
 		std::map<uint16_t, uint16_t> getInventoryClientIds() const;
-		Thing*getThing(size_t index) const final;
 
 		void internalAddThing(Thing* thing) final;
 		void internalAddThing(uint32_t index, Thing* thing) final;

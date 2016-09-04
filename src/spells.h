@@ -49,6 +49,7 @@ class Spells final : public BaseEvents
 
 		InstantSpell* getInstantSpell(const std::string& words);
 		InstantSpell* getInstantSpellByName(const std::string& name);
+		std::list<uint16_t> getSpellsByVocation(uint16_t vocationId);
 
 		uint32_t getInstantSpellCount(const Player* player) const;
 		InstantSpell* getInstantSpellByIndex(const Player* player, uint32_t index);
@@ -127,6 +128,9 @@ class Spell : public BaseSpell
 		bool configureSpell(const pugi::xml_node& node);
 		const std::string& getName() const {
 			return name;
+		}
+		const uint8_t getID() const {
+			return spellId;
 		}
 
 		void postCastSpell(Player* player, bool finishedSpell = true, bool payCost = true) const;

@@ -142,6 +142,7 @@ class MonsterType
 		uint32_t changeTargetSpeed;
 		uint32_t conditionImmunities;
 		uint32_t damageImmunities;
+		uint32_t passMagicField;
 		uint32_t baseSpeed;
 
 		int32_t creatureAppearEvent;

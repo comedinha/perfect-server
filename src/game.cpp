@@ -38,6 +38,10 @@
 #include "scheduler.h"
 #include "events.h"
 #include "databasetasks.h"
+#include "creatureevent.h"
+#include "movement.h"
+#include "weapons.h"
+#include "modules.h"
 
 extern ConfigManager g_config;
 extern Actions* g_actions;
@@ -47,6 +51,11 @@ extern Spells* g_spells;
 extern Vocations g_vocations;
 extern GlobalEvents* g_globalEvents;
 extern Events* g_events;
+extern CreatureEvents* g_creatureEvents;
+extern Monsters g_monsters;
+extern MoveEvents* g_moveEvents;
+extern Weapons* g_weapons;
+extern Modules* g_modules;
 
 Game::Game() :
 	wildcardTree(false),
@@ -170,7 +179,7 @@ void Game::setGameState(GameState_t newState)
 			/* kick all players without the CanAlwaysLogin flag */
 			auto it = players.begin();
 			while (it != players.end()) {
-				if (!it->second->hasFlag(PlayerFlag_CanAlwaysLogin)) {
+				if (!it->second->hasFlag(PlayerFlag_CanAlwaysLogin) && it->second->getAccountType() == 1) {
 					it->second->kickPlayer(true);
 					it = players.begin();
 				} else {
@@ -733,6 +742,12 @@ void Game::playerMoveCreature(Player* player, Creature* movingCreature, const Po
 	const Position& toPos = toTile->getPosition();
 	if ((Position::getDistanceX(movingCreaturePos, toPos) > movingCreature->getThrowRange()) || (Position::getDistanceY(movingCreaturePos, toPos) > movingCreature->getThrowRange()) || (Position::getDistanceZ(movingCreaturePos, toPos) * 4 > movingCreature->getThrowRange())) {
 		player->sendCancelMessage(RETURNVALUE_DESTINATIONOUTOFREACH);
+		return;
+	}
+
+	const Item* movingCreatureGround = movingCreature->getTile()->getGround();
+	if (!movingCreatureGround || !movingCreatureGround->hasWalkStack()) {
+		player->sendCancelMessage(RETURNVALUE_NOTPOSSIBLE);
 		return;
 	}
 
@@ -2408,7 +2423,7 @@ void Game::playerUpdateHouseWindow(uint32_t playerId, uint8_t listId, uint32_t w
 	uint32_t internalListId;
 
 	House* house = player->getEditHouse(internalWindowTextId, internalListId);
-	if (house && house->canEditAccessList(internalListId, player) && internalWindowTextId == windowTextId && listId == 0) {
+	if ((house && house->canEditAccessList(internalListId, player) && internalWindowTextId == windowTextId && listId == 0) || (player->getOperatingSystem() == CLIENTOS_FLASH && house && house->canEditAccessList(internalListId, player) && listId == 255)) {
 		house->setAccessList(internalListId, text);
 	}
 
@@ -3009,21 +3024,21 @@ void Game::playerSetAttackedCreature(uint32_t playerId, uint32_t creatureId)
 
 	if (player->getAttackedCreature() && creatureId == 0) {
 		player->setAttackedCreature(nullptr);
-		player->sendCancelTarget();
+		player->sendCancelTarget(0);
 		return;
 	}
 
 	Creature* attackCreature = getCreatureByID(creatureId);
 	if (!attackCreature) {
 		player->setAttackedCreature(nullptr);
-		player->sendCancelTarget();
+		player->sendCancelTarget(0);
 		return;
 	}
 
 	ReturnValue ret = Combat::canTargetCreature(player, attackCreature);
 	if (ret != RETURNVALUE_NOERROR) {
 		player->sendCancelMessage(ret);
-		player->sendCancelTarget();
+		player->sendCancelTarget(0);
 		player->setAttackedCreature(nullptr);
 		return;
 	}
@@ -3167,6 +3182,11 @@ void Game::playerChangeOutfit(uint32_t playerId, Outfit_t outfit)
 		return;
 	}
 
+	const Outfit* playerOutfit = Outfits::getInstance()->getOutfitByLookType(player->getSex(), outfit.lookType);
+	if (!playerOutfit) {
+		outfit.lookMount = 0;
+	}
+
 	if (outfit.lookMount != 0) {
 		Mount* mount = mounts.getMountByClientID(outfit.lookMount);
 		if (!mount) {
@@ -3263,7 +3283,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 	if (channelId == CHANNEL_CAST) {
-		player->sendChannelMessage(player->getName(), text, TALKTYPE_CHANNEL_R1, channelId);
+		player->sendChannelMessage(player->getName(), text, TALKTYPE_CHANNEL_O, channelId);
 	}
 
 	switch (type) {
@@ -3332,7 +3352,7 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 	result = g_spells->playerSaySpell(player, words);
 	if (result == TALKACTION_BREAK) {
 		if (!g_config.getBoolean(ConfigManager::EMOTE_SPELLS)) {
-			return internalCreatureSay(player, TALKTYPE_SAY, words, false);
+			return internalCreatureSay(player, TALKTYPE_SPELL, words, false);
 		} else {
 			return internalCreatureSay(player, TALKTYPE_MONSTER_SAY, words, false);
 		}
@@ -4749,8 +4769,8 @@ void Game::playerInviteToParty(uint32_t playerId, uint32_t invitedId)
 		return;
 	}
 
-	std::ostringstream ss;
 	if (invitedPlayer->getParty()) {
+		std::ostringstream ss;
 		ss << invitedPlayer->getName() << " is already in a party.";
 		player->sendTextMessage(MESSAGE_INFO_DESCR, ss.str());
 		return;
@@ -5585,6 +5605,59 @@ void Game::removeUniqueItem(uint16_t uniqueId)
 	auto it = uniqueItems.find(uniqueId);
 	if (it != uniqueItems.end()) {
 		uniqueItems.erase(it);
+	}
+}
+
+bool Game::reload(ReloadTypes_t reloadType)
+{
+	if (reloadType == RELOAD_TYPE_ACTIONS) {
+		return g_actions->reload();
+	} else if (reloadType == RELOAD_TYPE_CONFIG) {
+		return g_config.reload();
+	} else if (reloadType == RELOAD_TYPE_CREATURESCRIPTS) {
+		return g_creatureEvents->reload();
+	} else if (reloadType == RELOAD_TYPE_MONSTERS) {
+		return g_monsters.reload();
+	} else if (reloadType == RELOAD_TYPE_MOVEMENTS) {
+		return g_moveEvents->reload();
+	} else if (reloadType == RELOAD_TYPE_NPCS) {
+		Npcs::reload();
+		return true;
+	} else if (reloadType == RELOAD_TYPE_RAIDS) {
+		return raids.reload() && raids.startup();
+	} else if (reloadType == RELOAD_TYPE_SPELLS) {
+		if (!g_spells->reload()) {
+			std::cout << "[Error - Game::reload] Failed to reload spells." << std::endl;
+			std::terminate();
+		} else if (!g_monsters.reload()) {
+			std::cout << "[Error - Game::reload] Failed to reload monsters." << std::endl;
+			std::terminate();
+		}
+		return true;
+	} else if (reloadType == RELOAD_TYPE_TALKCTIONS) {
+		return g_talkActions->reload();
+	} else if (reloadType == RELOAD_TYPE_ITEMS) {
+		return Item::items.reload();
+	} else if (reloadType == RELOAD_TYPE_WEAPONS) {
+		bool results = g_weapons->reload();
+		g_weapons->loadDefaults();
+		return results;
+	} else if (reloadType == RELOAD_TYPE_QUESTS) {
+		return quests.reload();
+	} else if (reloadType == RELOAD_TYPE_MOUNTS) {
+		return mounts.reload();
+	} else if (reloadType == RELOAD_TYPE_GLOBALEVENTS) {
+		return g_globalEvents->reload();
+	} else if (reloadType == RELOAD_TYPE_EVENTS) {
+		return g_events->load();
+	} else if (reloadType == RELOAD_TYPE_CHAT) {
+		return g_chat->load();
+	} else if (reloadType == RELOAD_TYPE_COMMANDS) {
+		return commands.reload();
+	} else if (reloadType == RELOAD_TYPE_MODULES) {
+		return g_modules->reload();
+	} else {
+		return false;
 	}
 }
 

@@ -72,6 +72,7 @@ void MonsterType::reset()
 	skull = SKULL_NONE;
 
 	conditionImmunities = 0;
+	passMagicField = 0;
 	damageImmunities = 0;
 	race = RACE_BLOOD;
 	isSummonable = false;
@@ -1096,6 +1097,26 @@ bool Monsters::loadMonster(const std::string& file, const std::string& monsterNa
 				}
 			} else {
 				std::cout << "[Warning - Monsters::loadMonster] Unknown immunity. " << file << std::endl;
+			}
+		}
+	}
+
+	if ((node = monsterNode.child("magicfield"))) {
+		for (auto immunityNode : node.children()) {
+			if ((attr = immunityNode.attribute("energy"))) {
+				if (attr.as_bool()) {
+					mType->passMagicField |= COMBAT_ENERGYDAMAGE;
+				}
+			} else if ((attr = immunityNode.attribute("fire"))) {
+				if (attr.as_bool()) {
+					mType->passMagicField |= COMBAT_FIREDAMAGE;
+				}
+			} else if ((attr = immunityNode.attribute("poison")) || (attr = immunityNode.attribute("earth"))) {
+				if (attr.as_bool()) {
+					mType->passMagicField |= COMBAT_EARTHDAMAGE;
+				}
+			} else {
+				std::cout << "[Warning - Monsters::loadMonster] Unknown magic field. " << file << std::endl;
 			}
 		}
 	}

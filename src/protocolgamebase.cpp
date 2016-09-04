@@ -24,10 +24,12 @@
 #include "game.h"
 #include "iologindata.h"
 #include "tile.h"
+#include "spells.h"
 #include "outputmessage.h"
 
 extern ConfigManager g_config;
 extern Game g_game;
+extern Spells* g_spells;
 
 void ProtocolGameBase::onConnect()
 {
@@ -54,7 +56,7 @@ void ProtocolGameBase::onConnect()
 	output->skipBytes(-12);
 	output->add<uint32_t>(adlerChecksum(output->getOutputBuffer() + sizeof(uint32_t), 8));
 
-	send(std::move(output));
+	send(output);
 }
 
 void ProtocolGameBase::AddOutfit(NetworkMessage& msg, const Outfit_t& outfit)
@@ -195,13 +197,21 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 
 	msg.add<uint16_t>(player->getLevel());
 	msg.addByte(player->getPlayerInfo(PLAYERINFO_LEVELPERCENT));
-	// msg.addDouble(0, 3); // experience bonus
 
-	msg.add<uint16_t>(100);
-	msg.add<uint16_t>(0);
-	msg.add<uint16_t>(0);
-	msg.add<uint16_t>(0);
-	msg.add<uint16_t>(100);
+	//Exp boosters
+	msg.add<uint16_t>(g_game.getExperienceStage(player->getLevel()) * 100); //Normal Rate
+	msg.add<uint16_t>(0x00); //XP Voucher
+	msg.add<uint16_t>(0x00); //Low Level (50-)
+	msg.add<uint16_t>(0x00); //XP Booster
+	if (player->getStaminaMinutes() > 2400) { //Stamina multi
+		msg.add<uint16_t>(150);
+	} else if (player->getStaminaMinutes() > 0 && player->getStaminaMinutes() <= 840) {
+		msg.add<uint16_t>(50);
+	} else if (player->getStaminaMinutes() == 0) {
+		msg.add<uint16_t>(0x00);
+	} else {
+		msg.add<uint16_t>(100);
+	}
 
 	msg.add<uint16_t>(std::min<int32_t>(player->getMana(), std::numeric_limits<uint16_t>::max()));
 	msg.add<uint16_t>(std::min<int32_t>(player->getPlayerInfo(PLAYERINFO_MAXMANA), std::numeric_limits<uint16_t>::max()));
@@ -220,8 +230,10 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 	msg.add<uint16_t>(condition ? condition->getTicks() / 1000 : 0x00);
 
 	msg.add<uint16_t>(player->getOfflineTrainingTime() / 60 / 1000);
-	msg.add<uint16_t>(0);
-	msg.addByte(0);
+
+	//New EXP boosters
+	msg.add<uint16_t>(0x00);
+	msg.addByte(0x00);
 }
 
 void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
@@ -571,11 +583,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	msg.addDouble(Creature::speedC, 3);
 
 	// can report bugs?
-	if (player->getAccountType() >= ACCOUNT_TYPE_TUTOR) {
-		msg.addByte(0x01);
-	} else {
-		msg.addByte(0x00);
-	}
+	msg.addByte(0x01);
 
 	msg.addByte(0x00); // can change pvp framing option
 	msg.addByte(0x00); // expert mode button enabled
@@ -648,6 +656,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 
 	sendBasicData();
 	sendInventoryClientIds();
+	sendSkullTime();
 	player->sendIcons();
 }
 
@@ -658,6 +667,31 @@ void ProtocolGameBase::sendStats()
 	writeToOutputBuffer(msg);
 }
 
+void ProtocolGameBase::sendSkullTime() {
+	int skullTime = (double) player->getSkullTicks();
+	if (skullTime <= 0) {
+		skullTime = 0;
+	}
+
+	int fragTime = (double) g_config.getNumber(ConfigManager::FRAG_TIME);
+	int kills = std::ceil(((double) skullTime / fragTime));
+
+	short killsToRed = g_config.getNumber(ConfigManager::KILLS_TO_RED);
+	short percentage = std::min<uint16_t>(((100 / killsToRed) * kills), 100);
+	short killsLeft = killsToRed - kills;
+
+	NetworkMessage msg;
+	msg.addByte(0xB7);
+	msg.addByte(percentage);
+	msg.addByte(killsLeft);
+	msg.addByte(percentage);
+	msg.addByte(killsLeft);
+	msg.addByte(percentage);
+	msg.addByte(killsLeft);
+	msg.addByte(skullTime < time(nullptr) + skullTime ? 0 : std::ceil(((double) skullTime - (double) time(nullptr)) / (double) 86400));
+	writeToOutputBuffer(msg);
+}
+
 void ProtocolGameBase::sendBasicData()
 {
 	NetworkMessage msg;
@@ -665,7 +699,15 @@ void ProtocolGameBase::sendBasicData()
 	msg.addByte(player->isPremium() ? 0x01 : 0x00);
 	msg.add<uint32_t>(std::numeric_limits<uint32_t>::max());
 	msg.addByte(player->getVocation()->getClientId());
-	msg.add<uint16_t>(0x00);
+
+	std::list<uint16_t> spells;
+	spells = g_spells->getSpellsByVocation(player->getVocationId());
+
+	msg.add<uint16_t>(spells.size());
+	for (uint8_t spellID : spells) {
+		msg.addByte(spellID);
+	}
+
 	writeToOutputBuffer(msg);
 }
 
@@ -768,10 +810,12 @@ void ProtocolGameBase::sendVIP(uint32_t guid, const std::string& name, const std
 
 void ProtocolGameBase::sendCancelWalk()
 {
-	NetworkMessage msg;
-	msg.addByte(0xB5);
-	msg.addByte(player->getDirection());
-	writeToOutputBuffer(msg);
+	if(player){
+		NetworkMessage msg;
+		msg.addByte(0xB5);
+		msg.addByte(player->getDirection());
+		writeToOutputBuffer(msg);
+	}
 }
 
 void ProtocolGameBase::sendPing()

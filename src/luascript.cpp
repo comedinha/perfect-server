@@ -362,29 +362,6 @@ int32_t LuaScriptInterface::getEvent(const std::string& eventName)
 	return runningEventId++;
 }
 
-int32_t LuaScriptInterface::getEvent()
-{
-	//check if function is on the stack
-	if (!isFunction(luaState, -1)) {
-		return -1;
-	}
-
-	//get our events table
-	lua_rawgeti(luaState, LUA_REGISTRYINDEX, eventTableRef);
-	if (!isTable(luaState, -1)) {
-		lua_pop(luaState, 1);
-		return -1;
-	}
-
-	//save in our events table
-	lua_pushvalue(luaState, -2);
-	lua_rawseti(luaState, -2, runningEventId);
-	lua_pop(luaState, 2);
-
-	cacheFiles[runningEventId] = loadingFile + ":callback";
-	return runningEventId++;
-}
-
 int32_t LuaScriptInterface::getMetaEvent(const std::string& globalName, const std::string& eventName)
 {
 	//get our events table
@@ -1501,9 +1478,11 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(ITEM_MAGICWALL)
 	registerEnum(ITEM_MAGICWALL_PERSISTENT)
 	registerEnum(ITEM_MAGICWALL_SAFE)
+	registerEnum(ITEM_MAGICWALL_NOPVP)
 	registerEnum(ITEM_WILDGROWTH)
 	registerEnum(ITEM_WILDGROWTH_PERSISTENT)
 	registerEnum(ITEM_WILDGROWTH_SAFE)
+	registerEnum(ITEM_WILDGROWTH_NOPVP)
 
 	registerEnum(PlayerFlag_CannotUseCombat)
 	registerEnum(PlayerFlag_CannotAttackPlayer)
@@ -1774,6 +1753,26 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(RETURNVALUE_NOPARTYMEMBERSINRANGE)
 	registerEnum(RETURNVALUE_YOUARENOTTHEOWNER)
 
+	registerEnum(RELOAD_TYPE_ACTIONS)
+ 	registerEnum(RELOAD_TYPE_CONFIG)
+ 	registerEnum(RELOAD_TYPE_CREATURESCRIPTS)
+ 	registerEnum(RELOAD_TYPE_MONSTERS)
+ 	registerEnum(RELOAD_TYPE_MOVEMENTS)
+ 	registerEnum(RELOAD_TYPE_NPCS)
+	registerEnum(RELOAD_TYPE_RAIDS)
+ 	registerEnum(RELOAD_TYPE_SPELLS)
+ 	registerEnum(RELOAD_TYPE_TALKCTIONS)
+ 	registerEnum(RELOAD_TYPE_ITEMS)
+ 	registerEnum(RELOAD_TYPE_WEAPONS)
+ 	registerEnum(RELOAD_TYPE_QUESTS)
+ 	registerEnum(RELOAD_TYPE_MOUNTS)
+ 	registerEnum(RELOAD_TYPE_GLOBALEVENTS)
+ 	registerEnum(RELOAD_TYPE_EVENTS)
+ 	registerEnum(RELOAD_TYPE_CHAT)
+ 	registerEnum(RELOAD_TYPE_GLOBAL)
+ 	registerEnum(RELOAD_TYPE_COMMANDS)
+	registerEnum(RELOAD_TYPE_MODULES)
+
 	// _G
 	registerGlobalVariable("INDEX_WHEREEVER", INDEX_WHEREEVER);
 	registerGlobalBoolean("VIRTUAL_PARENT", true);
@@ -1822,7 +1821,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::DEFAULT_PRIORITY)
 	registerEnumIn("configKeys", ConfigManager::MAP_AUTHOR)
 	registerEnumIn("configKeys", ConfigManager::STORE_IMAGES_URL)
-	registerEnumIn("configKeys", ConfigManager::VERSION_STR)
 
 	registerEnumIn("configKeys", ConfigManager::SQL_PORT)
 	registerEnumIn("configKeys", ConfigManager::MAX_PLAYERS)
@@ -1857,8 +1855,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
 	registerEnumIn("configKeys", ConfigManager::STORE_COIN_PACKET)
 	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
-	registerEnumIn("configKeys", ConfigManager::VERSION_MIN)
-	registerEnumIn("configKeys", ConfigManager::VERSION_MAX)
 
 	// os
 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);
@@ -1901,6 +1897,8 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("Game", "hasDistanceEffect", LuaScriptInterface::luaGameHasDistanceEffect);
 	registerMethod("Game", "hasEffect", LuaScriptInterface::luaGameHasEffect);
+
+	registerMethod("Game", "reload", LuaScriptInterface::luaGameReload);
 
 	// Variant
 	registerClass("Variant", "", LuaScriptInterface::luaVariantCreate);
@@ -2101,6 +2099,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Creature", "isRemoved", LuaScriptInterface::luaCreatureIsRemoved);
 	registerMethod("Creature", "isCreature", LuaScriptInterface::luaCreatureIsCreature);
 	registerMethod("Creature", "isInGhostMode", LuaScriptInterface::luaCreatureIsInGhostMode);
+	registerMethod("Creature", "isHealthHidden", LuaScriptInterface::luaCreatureIsHealthHidden);
 
 	registerMethod("Creature", "canSee", LuaScriptInterface::luaCreatureCanSee);
 	registerMethod("Creature", "canSeeCreature", LuaScriptInterface::luaCreatureCanSeeCreature);
@@ -2138,7 +2137,6 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Creature", "getMaxHealth", LuaScriptInterface::luaCreatureGetMaxHealth);
 	registerMethod("Creature", "setMaxHealth", LuaScriptInterface::luaCreatureSetMaxHealth);
 
-	registerMethod("Creature", "isHealthHidden", LuaScriptInterface::luaCreatureIsHealthHidden);
 	registerMethod("Creature", "setHiddenHealth", LuaScriptInterface::luaCreatureSetHiddenHealth);
 
 	registerMethod("Creature", "isMoveLocked", LuaScriptInterface::luaCreatureIsMoveLocked);
@@ -2566,7 +2564,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("MonsterType", "isSummonable", LuaScriptInterface::luaMonsterTypeIsSummonable);
 	registerMethod("MonsterType", "isIllusionable", LuaScriptInterface::luaMonsterTypeIsIllusionable);
 	registerMethod("MonsterType", "isHostile", LuaScriptInterface::luaMonsterTypeIsHostile);
-	registerMethod("MonsterType", "isPassive", LuaScriptInterface::luaMonsterTypeIsHostile);
+	registerMethod("MonsterType", "isPassive", LuaScriptInterface::luaMonsterTypeIsPassive);
 	registerMethod("MonsterType", "isPushable", LuaScriptInterface::luaMonsterTypeIsPushable);
 	registerMethod("MonsterType", "isHealthShown", LuaScriptInterface::luaMonsterTypeIsHealthShown);
 	registerMethod("MonsterType", "isRewardBoss", LuaScriptInterface::luaMonsterTypeIsRewardBoss);
@@ -4589,6 +4587,24 @@ int LuaScriptInterface::luaGameGetItemByClientId(lua_State* L)
 	const ItemType& itemType = Item::items.getItemIdByClientId(clientId);
 	pushUserdata<const ItemType>(L, &itemType);
 	setMetatable(L, -1, "ItemType");
+	return 1;
+}
+
+int LuaScriptInterface::luaGameReload(lua_State* L)
+{
+	// Game.reload(reloadType)
+	ReloadTypes_t reloadType = getNumber<ReloadTypes_t>(L, 1);
+	if (!reloadType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	if (reloadType == RELOAD_TYPE_GLOBAL) {
+		pushBoolean(L, g_luaEnvironment.loadFile("data/global.lua") == 0);
+	} else {
+		pushBoolean(L, g_game.reload(reloadType));
+	}
+	lua_gc(g_luaEnvironment.getLuaState(), LUA_GCCOLLECT, 0);
 	return 1;
 }
 
@@ -6897,6 +6913,18 @@ int LuaScriptInterface::luaCreatureIsInGhostMode(lua_State* L)
 	return 1;
 }
 
+int LuaScriptInterface::luaCreatureIsHealthHidden(lua_State* L)
+{
+	// creature:isHealthHidden()
+	const Creature* creature = getUserdata<const Creature>(L, 1);
+	if (creature) {
+		pushBoolean(L, creature->isHealthHidden());
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
 int LuaScriptInterface::luaCreatureCanSee(lua_State* L)
 {
 	// creature:canSee(position)
@@ -7279,18 +7307,6 @@ int LuaScriptInterface::luaCreatureSetMaxHealth(lua_State* L)
 		player->sendStats();
 	}
 	pushBoolean(L, true);
-	return 1;
-}
-
-int LuaScriptInterface::luaCreatureIsHealthHidden(lua_State* L)
-{
-	// creature:isHealthHidden()
-	const Creature* creature = getUserdata<const Creature>(L, 1);
-	if (creature) {
-		pushBoolean(L, creature->isHealthHidden());
-	} else {
-		lua_pushnil(L);
-	}
 	return 1;
 }
 

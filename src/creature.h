@@ -348,6 +348,8 @@ class Creature : virtual public Thing
 		virtual bool isImmune(ConditionType_t type) const;
 		virtual bool isImmune(CombatType_t type) const;
 		virtual bool isSuppress(ConditionType_t type) const;
+		virtual bool passMagicField(CombatType_t type) const;
+		virtual bool isAttacked() const;
 		virtual uint32_t getDamageImmunities() const {
 			return 0;
 		}
@@ -357,6 +359,10 @@ class Creature : virtual public Thing
 		virtual uint32_t getConditionSuppressions() const {
 			return 0;
 		}
+		virtual uint32_t getPassMagicField() const {
+			return 0;
+		}
+
 		virtual bool isAttackable() const {
 			return true;
 		}
@@ -421,8 +427,8 @@ class Creature : virtual public Thing
 		virtual void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
 		                            const Tile* oldTile, const Position& oldPos, bool teleport);
 
-		virtual void onAttackedCreatureDisappear(bool) {}
-		virtual void onFollowCreatureDisappear(bool) {}
+		virtual void onAttackedCreatureDisappear(bool, const Creature* creature) {}
+		virtual void onFollowCreatureDisappear(bool, const Creature* creature) {}
 
 		virtual void onCreatureSay(Creature*, SpeakClasses, const std::string&) {}
 
@@ -553,6 +559,7 @@ class Creature : virtual public Thing
 		bool forceUpdateFollowPath;
 		bool hiddenHealth;
 		bool moveLocked;
+		bool firstCreatureDamage;
 
 		//creature script events
 		bool hasEventRegistered(CreatureEventType_t event) const {

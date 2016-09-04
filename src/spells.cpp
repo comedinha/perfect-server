@@ -21,6 +21,7 @@
 
 #include "combat.h"
 #include "configmanager.h"
+#include "const.h"
 #include "game.h"
 #include "monster.h"
 #include "pugicast.h"
@@ -165,6 +166,18 @@ Spell* Spells::getSpellByName(const std::string& name)
 		spell = getInstantSpellByName(name);
 	}
 	return spell;
+}
+
+std::list<uint16_t> Spells::getSpellsByVocation(uint16_t vocationId)
+{
+	std::list<uint16_t> list;
+	for (const auto& it : instants) {
+		VocSpellMap map = it.second->getVocMap();
+		if (map.find(vocationId)->second) {
+			list.push_back(it.second->getID());
+		}
+	}
+	return list;
 }
 
 RuneSpell* Spells::getRuneSpell(uint32_t id)
@@ -629,9 +642,11 @@ bool Spell::playerSpellCheck(Player* player) const
 		return false;
 	}
 
-	if (aggressive && !player->hasFlag(PlayerFlag_IgnoreProtectionZone) && player->getZone() == ZONE_PROTECTION) {
-		player->sendCancelMessage(RETURNVALUE_ACTIONNOTPERMITTEDINPROTECTIONZONE);
-		return false;
+	if (player->getZone() == ZONE_PROTECTION){
+		if((aggressive && !player->hasFlag(PlayerFlag_IgnoreProtectionZone)) || player->getTile()->hasFlag(TILESTATE_NOLOGOUT)){
+			player->sendCancelMessage(RETURNVALUE_ACTIONNOTPERMITTEDINPROTECTIONZONE);
+			return false;
+		}
 	}
 
 	if (player->hasCondition(CONDITION_SPELLGROUPCOOLDOWN, group) || player->hasCondition(CONDITION_SPELLCOOLDOWN, spellId) || (secondaryGroup != SPELLGROUP_NONE && player->hasCondition(CONDITION_SPELLGROUPCOOLDOWN, secondaryGroup))) {

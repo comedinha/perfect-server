@@ -20,6 +20,7 @@
 #ifndef FS_PROTOCOLSPECTATOR_H_67DF1C70909A3D52458F250DF5CE2492
 #define FS_PROTOCOLSPECTATOR_H_67DF1C70909A3D52458F250DF5CE2492
 
+#include "protocolgame.h"
 #include "protocolgamebase.h"
 
 class ProtocolGame;
@@ -35,7 +36,25 @@ class ProtocolSpectator final : public ProtocolGameBase
 		}
 
 		ProtocolSpectator(Connection_ptr connection);
+
+		void setSpectatorName(std::string newName) {
+			spectatorName = newName;
+		}
+
+		const std::string getSpectatorName() {
+			return spectatorName;
+		}
+
+		void setSpectatorId(uint32_t id) {
+			spectatorId = id;
+		}
+
+		const uint32_t getSpectatorId() {
+			return spectatorId;
+		}
+
 		void onLiveCastStop();
+		void login(const std::string& liveCastName, const std::string& password); // Para funcionar o cast no flash
 	private:
 		ProtocolSpectator_ptr getThis() {
 			return std::static_pointer_cast<ProtocolSpectator>(shared_from_this());
@@ -43,7 +62,9 @@ class ProtocolSpectator final : public ProtocolGameBase
 		ProtocolGame_ptr client;
 		OperatingSystem_t operatingSystem;
 
-		void login(const std::string& liveCastName, const std::string& password);
+		std::string spectatorName; // Spectator Name
+		uint32_t spectatorId; // Spectator ID
+
 		void logout();
 
 		void disconnectSpectator(const std::string& message) const;
@@ -61,6 +82,8 @@ class ProtocolSpectator final : public ProtocolGameBase
 
 		void parseSpectatorSay(NetworkMessage& msg);
 		void addDummyCreature(NetworkMessage& msg, const uint32_t& creatureID, const Position& playerPos);
+
+		bool parseCoomand(const std::string& text);
 };
 
 #endif
