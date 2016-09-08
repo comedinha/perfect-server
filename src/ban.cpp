@@ -122,6 +122,6 @@ bool IOBan::isIpBanned(uint32_t clientip, BanInfo& banInfo)
 bool IOBan::isPlayerNamelocked(uint32_t playerId)
 {
 	std::ostringstream query;
-	query << "SELECT 1 FROM `player_namelocks` WHERE `player_id` = " << playerId;
+	query << "SELECT 1 FROM `player_namelocks` WHERE `player_id` = " << playerId << " AND `nameunlocked_at` = 0";
 	return Database::getInstance()->storeQuery(query.str()).get() != nullptr;
 }

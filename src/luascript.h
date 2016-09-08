@@ -477,6 +477,7 @@ class LuaScriptInterface
 		static int luaStopEvent(lua_State* L);
 
 		static int luaSaveServer(lua_State* L);
+		static int luaSaveHouses(lua_State* L);
 		static int luaCleanMap(lua_State* L);
 
 		static int luaIsInWar(lua_State* L);
@@ -832,6 +833,7 @@ class LuaScriptInterface
 		static int luaPlayerGetAccountId(lua_State* L);
 		static int luaPlayerGetLastLoginSaved(lua_State* L);
 		static int luaPlayerGetLastLogout(lua_State* L);
+		static int luaPlayerGetWorldId(lua_State* L);
 
 		static int luaPlayerGetAccountType(lua_State* L);
 		static int luaPlayerSetAccountType(lua_State* L);

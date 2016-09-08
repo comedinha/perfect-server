@@ -131,6 +131,8 @@ Player::Player(ProtocolGame_ptr p) :
 	accountType = ACCOUNT_TYPE_NORMAL;
 	premiumDays = 0;
 
+	worldId = 0;
+
 	idleTime = 0;
 
 	skullTicks = 0;
@@ -3964,7 +3966,11 @@ bool Player::getOutfitAddons(const Outfit& outfit, uint8_t& addons) const
 			continue;
 		}
 
-		addons = outfitEntry.addons;
+		if (!outfit.unlocked || isPremium()) {
+			addons = outfitEntry.addons;
+		} else {
+			addons = 0;
+		}
 		return true;
 	}
 

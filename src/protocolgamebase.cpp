@@ -203,7 +203,7 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 	msg.add<uint16_t>(0x00); //XP Voucher
 	msg.add<uint16_t>(0x00); //Low Level (50-)
 	msg.add<uint16_t>(0x00); //XP Booster
-	if (player->getStaminaMinutes() > 2400) { //Stamina multi
+	if (player->getStaminaMinutes() > 2400 && player->isPremium()) { //Stamina multi
 		msg.add<uint16_t>(150);
 	} else if (player->getStaminaMinutes() > 0 && player->getStaminaMinutes() <= 840) {
 		msg.add<uint16_t>(50);
@@ -697,7 +697,7 @@ void ProtocolGameBase::sendBasicData()
 	NetworkMessage msg;
 	msg.addByte(0x9F);
 	msg.addByte(player->isPremium() ? 0x01 : 0x00);
-	msg.add<uint32_t>(std::numeric_limits<uint32_t>::max());
+	msg.add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr) + (player->premiumDays * 24 * 60 * 60)));
 	msg.addByte(player->getVocation()->getClientId());
 
 	std::list<uint16_t> spells;

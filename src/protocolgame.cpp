@@ -94,8 +94,13 @@ void ProtocolGame::login(const std::string& name, uint32_t accountId, OperatingS
 			return;
 		}
 
-		if (g_config.getBoolean(ConfigManager::ONE_PLAYER_ON_ACCOUNT) && player->getAccountType() < ACCOUNT_TYPE_GAMEMASTER && g_game.getPlayerByAccount(player->getAccount())) {
+		if (g_config.getBoolean(ConfigManager::ONE_PLAYER_ON_ACCOUNT) && player->getAccountType() < ACCOUNT_TYPE_GAMEMASTER && !g_game.getPlayerByAccount(player->getAccount())) {
 			disconnectClient("You may only login with one character\nof your account at the same time.");
+			return;
+		}
+
+		if (player->getWorldId() != g_config.getNumber(ConfigManager::WORLD_ID)) {
+			disconnectClient("You world is incorrect, please try relogin.");
 			return;
 		}
 
@@ -303,7 +308,7 @@ void ProtocolGame::clearLiveCastInfo()
 	std::call_once(flag, []() {
 		assert(g_game.getGameState() == GAME_STATE_INIT);
 		std::ostringstream query;
-		query << "TRUNCATE TABLE `live_casts`;";
+		query << "DELETE FROM `live_casts` WHERE `world_id`=" << g_config.getNumber(ConfigManager::WORLD_ID) << ";";
 		g_databaseTasks.addTask(query.str());
 	});
 }
@@ -311,8 +316,8 @@ void ProtocolGame::clearLiveCastInfo()
 void ProtocolGame::registerLiveCast()
 {
 	std::ostringstream query;
-	query << "INSERT into `live_casts` (`player_id`, `cast_name`, `password`) VALUES (" << player->getGUID() << ", '"
-		<< getLiveCastName() << "', " << isPasswordProtected() << ");";
+	query << "INSERT into `live_casts` (`player_id`, `cast_name`, `password`, `world_id`) VALUES (" << player->getGUID() << ", '"
+		<< getLiveCastName() << "', " << isPasswordProtected() << ", " << IOLoginData::getWorldId(player->getGUID()) << ");";
 	g_databaseTasks.addTask(query.str());
 }
 
@@ -1312,7 +1317,7 @@ void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
 {
 	NetworkMessage msg;
 	msg.addByte(0x7B);
-	msg.add<uint64_t>(player->getMoney());
+	msg.add<uint64_t>(player->getMoney() + player->getBankBalance());
 
 	std::map<uint16_t, uint32_t> saleMap;
 

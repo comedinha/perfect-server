@@ -49,6 +49,7 @@ local reloadTypes = {
  	["chatchannels"] = { targetType = RELOAD_TYPE_CHAT, name = "chatchannels"},
  
  	["lib"] = { targetType = RELOAD_TYPE_GLOBAL, name = "lib/lib.lua"},
+	["global"] = { targetType = RELOAD_TYPE_GLOBAL, name = "global.lua"},
  
  	["command"] = { targetType = RELOAD_TYPE_COMMANDS, name = "commands"},
 	["commands"] = { targetType = RELOAD_TYPE_COMMANDS, name = "commands"},

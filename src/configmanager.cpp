@@ -63,8 +63,10 @@ bool ConfigManager::load()
 		string[MYSQL_USER] = getGlobalString(L, "mysqlUser", "forgottenserver");
 		string[MYSQL_PASS] = getGlobalString(L, "mysqlPass", "");
 		string[MYSQL_DB] = getGlobalString(L, "mysqlDatabase", "forgottenserver");
+		string[MYSQL_WORLD_DB] = getGlobalString(L, "mysqlWorldDatabase", "forgottenserver");
 		string[MYSQL_SOCK] = getGlobalString(L, "mysqlSock", "");
 
+		integer[WORLD_ID] = getGlobalNumber(L, "worldID", 1);
 		integer[SQL_PORT] = getGlobalNumber(L, "mysqlPort", 3306);
 		integer[GAME_PORT] = getGlobalNumber(L, "gameProtocolPort", 7172);
 		integer[LOGIN_PORT] = getGlobalNumber(L, "loginProtocolPort", 7171);
@@ -90,6 +92,7 @@ bool ConfigManager::load()
 	boolean[ALLOW_WALKTHROUGH] = getGlobalBoolean(L, "allowWalkthrough", true);
 	boolean[ENABLE_LIVE_CASTING] = getGlobalBoolean(L, "enableLiveCasting", true);
 	boolean[ALLOW_BLOCK_SPAWN] = getGlobalBoolean(L, "allowBlockSpawn", true);
+	boolean[IS_PREVIEWER] = getGlobalBoolean(L, "isPreviewer", false);
 
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");
@@ -128,7 +131,7 @@ bool ConfigManager::load()
 	integer[MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER] = getGlobalNumber(L, "maxMarketOffersAtATimePerPlayer", 100);
 	integer[MAX_PACKETS_PER_SECOND] = getGlobalNumber(L, "maxPacketsPerSecond", 25);
 	integer[STORE_COIN_PACKET] = getGlobalNumber(L, "coinPacketSize", 25);
-	integer[LIVE_CAST_PORT] = getGlobalNumber(L, "liveCastPort", 7173);
+	integer[LIVE_CAST_PORT] = getGlobalNumber(L, "liveCastPort", 8172);
 
 	loaded = true;
 	lua_close(L);

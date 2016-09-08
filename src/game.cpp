@@ -216,6 +216,21 @@ void Game::saveGameState()
 	}
 }
 
+void Game::saveGameStateHouses()
+{
+	if (gameState == GAME_STATE_NORMAL) {
+		setGameState(GAME_STATE_MAINTAIN);
+	}
+
+	std::cout << "Saving houses..." << std::endl;
+
+	Map::save();
+
+	if (gameState == GAME_STATE_MAINTAIN) {
+		setGameState(GAME_STATE_NORMAL);
+	}
+}
+
 bool Game::loadMainMap(const std::string& filename)
 {
 	Monster::despawnRange = g_config.getNumber(ConfigManager::DEFAULT_DESPAWNRANGE);
@@ -531,14 +546,18 @@ ReturnValue Game::getPlayerByNameWildcard(const std::string& s, Player*& player)
 	return RETURNVALUE_NOERROR;
 }
 
-Player* Game::getPlayerByAccount(uint32_t acc)
+bool Game::getPlayerByAccount(uint32_t acc)
 {
-	for (const auto& it : players) {
-		if (it.second->getAccount() == acc) {
-			return it.second;
+	Playerson playerson;
+	if (IOLoginData::getPlayers(playerson)) {
+		uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), playerson.id.size());
+		for (uint8_t i = 0; i < size; i++) {
+			if (IOLoginData::getPlayerAccountId(playerson.id[i]) == acc) {
+				return false;
+			}
 		}
 	}
-	return nullptr;
+	return true;
 }
 
 bool Game::internalPlaceCreature(Creature* creature, const Position& pos, bool extendedPos /*=false*/, bool forced /*= false*/)
@@ -4628,21 +4647,29 @@ void Game::loadMotdNum()
 {
 	Database* db = Database::getInstance();
 
-	DBResult_ptr result = db->storeQuery("SELECT `value` FROM `server_config` WHERE `config` = 'motd_num'");
+	std::ostringstream query;
+	query << "SELECT `value` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` WHERE `config` = 'motd_num'";
+	DBResult_ptr result = db->storeQuery(query.str());
 	if (result) {
 		motdNum = result->getNumber<uint32_t>("value");
 	} else {
-		db->executeQuery("INSERT INTO `server_config` (`config`, `value`) VALUES ('motd_num', '0')");
+		std::ostringstream insertmotdnum;
+		insertmotdnum << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` (`config`, `value`) VALUES ('motd_num', '0')";
+		db->executeQuery(insertmotdnum.str());
 	}
 
-	result = db->storeQuery("SELECT `value` FROM `server_config` WHERE `config` = 'motd_hash'");
+	std::ostringstream motdhash;
+	motdhash << "SELECT `value` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` WHERE `config` = 'motd_hash'";
+	result = db->storeQuery(motdhash.str());
 	if (result) {
 		motdHash = result->getString("value");
 		if (motdHash != transformToSHA1(g_config.getString(ConfigManager::MOTD))) {
 			++motdNum;
 		}
 	} else {
-		db->executeQuery("INSERT INTO `server_config` (`config`, `value`) VALUES ('motd_hash', '')");
+		std::ostringstream insertmotdhash;
+		insertmotdhash << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` (`config`, `value`) VALUES ('motd_hash', '')";
+		db->executeQuery(insertmotdhash.str());
 	}
 }
 
@@ -4651,11 +4678,11 @@ void Game::saveMotdNum() const
 	Database* db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "UPDATE `server_config` SET `value` = '" << motdNum << "' WHERE `config` = 'motd_num'";
+	query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` SET `value` = '" << motdNum << "' WHERE `config` = 'motd_num'";
 	db->executeQuery(query.str());
 
 	query.str(std::string());
-	query << "UPDATE `server_config` SET `value` = '" << transformToSHA1(g_config.getString(ConfigManager::MOTD)) << "' WHERE `config` = 'motd_hash'";
+	query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` SET `value` = '" << transformToSHA1(g_config.getString(ConfigManager::MOTD)) << "' WHERE `config` = 'motd_hash'";
 	db->executeQuery(query.str());
 }
 
@@ -4678,7 +4705,7 @@ void Game::updatePlayersRecord() const
 	Database* db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "UPDATE `server_config` SET `value` = '" << playersRecord << "' WHERE `config` = 'players_record'";
+	query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` SET `value` = '" << playersRecord << "' WHERE `config` = 'players_record'";
 	db->executeQuery(query.str());
 }
 
@@ -4686,11 +4713,15 @@ void Game::loadPlayersRecord()
 {
 	Database* db = Database::getInstance();
 
-	DBResult_ptr result = db->storeQuery("SELECT `value` FROM `server_config` WHERE `config` = 'players_record'");
+	std::ostringstream insertrecord;
+	insertrecord << "SELECT `value` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` WHERE `config` = 'players_record'";
+	DBResult_ptr result = db->storeQuery(insertrecord.str());
 	if (result) {
 		playersRecord = result->getNumber<uint32_t>("value");
 	} else {
-		db->executeQuery("INSERT INTO `server_config` (`config`, `value`) VALUES ('players_record', '0')");
+		std::ostringstream resetrecord;
+		resetrecord << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` (`config`, `value`) VALUES ('players_record', '0')";
+		db->executeQuery(resetrecord.str());
 	}
 }
 

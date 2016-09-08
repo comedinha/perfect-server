@@ -64,17 +64,25 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	//Add char list
 	output->addByte(0x64);
 
-	output->addByte(1); // number of worlds
-
-	output->addByte(0); // world id
-	output->addString(g_config.getString(ConfigManager::SERVER_NAME));
-	output->addString(g_config.getString(ConfigManager::IP));
-	if (isLiveCastLogin) {
-		output->add<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
-	} else {
-		output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
+	World world;
+	if (!IOLoginData::loadWorlds(world)) {
+		disconnectClient("Game Worlds not is working, please contact the server admin.", version);
+		return;
 	}
-	output->addByte(0);
+
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
+	output->addByte(size); // number of worlds
+	for (uint8_t i = 0; i < size; i++) {
+		output->addByte(world.id[i]); // world id
+		output->addString(world.name[i]);
+		output->addString(world.ip[i]);
+		if (isLiveCastLogin) {
+			output->add<uint16_t>(world.port[i] + 1000);
+		} else {
+			output->add<uint16_t>(world.port[i]);
+		}
+		output->addByte(world.previewer[i]);
+	}
 }
 
 void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t version)
@@ -83,21 +91,22 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 	auto output = OutputMessagePool::getOutputMessage();
 	addWorldInfo(output, "", password, version, true);
 
-	const auto& casts = ProtocolGame::getLiveCasts();
-	output->addByte(casts.size());
-	for (const auto& cast : casts) {
-		output->addByte(0);
-		output->addString(cast.first->getName());
-	}
-	
-	if (casts.size() == 0) {
+	Casts casts;
+	if (!IOLoginData::loadCasts(casts)) {
 		disconnectClient("No cast running right now.", version);
 		return;
 	}
-		
+
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), casts.name.size());
+	output->addByte(size);
+	for (uint8_t i = 0; i < size; i++) {
+		output->addByte(casts.worldid[i]);
+		output->addString(casts.name[i]);
+	}
+	
 	output->addByte(0);
-	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
-	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr)));
+	output->addByte(0);
+	output->add<uint32_t>(0);
 	send(std::move(output));
 
 	disconnect();
@@ -134,14 +143,14 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
 	output->addByte(size);
 	for (uint8_t i = 0; i < size; i++) {
-		output->addByte(0);
+		output->addByte(account.world[i]);
 		output->addString(account.characters[i]);
 	}
 
 	//Add premium days
 	output->addByte(0);//0 = normal (free/premium), 1 = frozen, 2 = suspended
 	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM) || account.premiumDays > 0);
-	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr) + (account.premiumDays * 86400)));
+	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr) + (account.premiumDays * 24 * 60 * 60)));
 
 	send(output);
 

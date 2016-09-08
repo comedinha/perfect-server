@@ -47,6 +47,7 @@ class ConfigManager
 			ALLOW_WALKTHROUGH,
 			ENABLE_LIVE_CASTING,
 			ALLOW_BLOCK_SPAWN,
+			IS_PREVIEWER,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};
@@ -67,6 +68,7 @@ class ConfigManager
 			MYSQL_USER,
 			MYSQL_PASS,
 			MYSQL_DB,
+			MYSQL_WORLD_DB,
 			MYSQL_SOCK,
 			DEFAULT_PRIORITY,
 			MAP_AUTHOR,
@@ -109,6 +111,7 @@ class ConfigManager
 			MAX_PACKETS_PER_SECOND,
 			STORE_COIN_PACKET,
 			LIVE_CAST_PORT,
+			WORLD_ID,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};

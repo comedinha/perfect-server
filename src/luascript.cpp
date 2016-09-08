@@ -1005,6 +1005,9 @@ void LuaScriptInterface::registerFunctions()
 	//saveServer()
 	lua_register(luaState, "saveServer", LuaScriptInterface::luaSaveServer);
 
+	//saveHouses()
+	lua_register(luaState, "saveHouses", LuaScriptInterface::luaSaveHouses);
+
 	//cleanMap()
 	lua_register(luaState, "cleanMap", LuaScriptInterface::luaCleanMap);
 
@@ -1802,6 +1805,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::ALLOW_WALKTHROUGH)
 	registerEnumIn("configKeys", ConfigManager::ENABLE_LIVE_CASTING)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
+	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
 
 	registerEnumIn("configKeys", ConfigManager::MAP_NAME)
 	registerEnumIn("configKeys", ConfigManager::HOUSE_RENT_PERIOD)
@@ -1817,6 +1821,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::MYSQL_USER)
 	registerEnumIn("configKeys", ConfigManager::MYSQL_PASS)
 	registerEnumIn("configKeys", ConfigManager::MYSQL_DB)
+	registerEnumIn("configKeys", ConfigManager::MYSQL_WORLD_DB)
 	registerEnumIn("configKeys", ConfigManager::MYSQL_SOCK)
 	registerEnumIn("configKeys", ConfigManager::DEFAULT_PRIORITY)
 	registerEnumIn("configKeys", ConfigManager::MAP_AUTHOR)
@@ -1855,6 +1860,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
 	registerEnumIn("configKeys", ConfigManager::STORE_COIN_PACKET)
 	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
+	registerEnumIn("configKeys", ConfigManager::WORLD_ID)
 
 	// os
 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);
@@ -2179,6 +2185,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "getAccountId", LuaScriptInterface::luaPlayerGetAccountId);
 	registerMethod("Player", "getLastLoginSaved", LuaScriptInterface::luaPlayerGetLastLoginSaved);
 	registerMethod("Player", "getLastLogout", LuaScriptInterface::luaPlayerGetLastLogout);
+	registerMethod("Player", "getWorldId", LuaScriptInterface::luaPlayerGetWorldId);
 
 	registerMethod("Player", "getAccountType", LuaScriptInterface::luaPlayerGetAccountType);
 	registerMethod("Player", "setAccountType", LuaScriptInterface::luaPlayerSetAccountType);
@@ -3782,6 +3789,13 @@ int LuaScriptInterface::luaGetCreatureCondition(lua_State* L)
 int LuaScriptInterface::luaSaveServer(lua_State* L)
 {
 	g_game.saveGameState();
+	pushBoolean(L, true);
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaSaveHouses(lua_State* L)
+{
+	g_game.saveGameStateHouses();
 	pushBoolean(L, true);
 	return 1;
 }
@@ -7790,6 +7804,19 @@ int LuaScriptInterface::luaPlayerGetLastLogout(lua_State* L)
 	if (player) {
 		lua_pushnumber(L, player->getLastLogout());
 	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerGetWorldId(lua_State* L)
+{
+	// player:getWorldId()
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		lua_pushnumber(L, player->getWorldId());
+	}
+	else {
 		lua_pushnil(L);
 	}
 	return 1;

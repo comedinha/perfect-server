@@ -18,4 +18,5 @@ function onSay(player, words, param)
 	else
 		player:sendTextMessage(MESSAGE_STATUS_SMALL, 'You\'re exhausted for: '..player:getExhaustion(1000)..' seconds.')
 	end
+	return false
 end
