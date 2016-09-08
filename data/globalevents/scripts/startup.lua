@@ -2,6 +2,7 @@ function onStartup()
 	math.randomseed(os.mtime())
 
 	db.asyncQuery("DELETE FROM `players_online` WHERE `world_id` = " .. configManager.getNumber(configKeys.WORLD_ID))
+	db.asyncQuery("DELETE FROM `live_casts` WHERE `world_id` = " .. configManager.getNumber(configKeys.WORLD_ID))
 	db.asyncQuery("DELETE FROM `guild_wars` WHERE `status` = 0")
 	db.asyncQuery("DELETE FROM `players` WHERE `deletion` != 0 AND `deletion` < " .. os.time())
 	db.asyncQuery("DELETE FROM `ip_bans` WHERE `expires_at` != 0 AND `expires_at` <= " .. os.time())
