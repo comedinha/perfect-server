@@ -1263,7 +1263,7 @@ class Player final : public Creature, public Cylinder
 		std::map<uint8_t, int64_t> moduleDelayMap;
 
 		std::map<uint32_t, Reward*> rewardMap;
-		RewardChest* rewardChest;
+		RewardChest* rewardChest = nullptr;
 
 		std::vector<OutfitEntry> outfits;
 		GuildWarList guildWarList;
