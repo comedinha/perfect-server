@@ -71,7 +71,16 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	}
 
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
-	output->addByte(size); // number of worlds
+	if (isLiveCastLogin) {
+		output->addByte(size + 1);
+		output->addByte(100);
+		output->addString("Cast Info");
+		output->addString("");
+		output->add<uint16_t>(0);
+		output->addByte(3);
+	} else {
+		output->addByte(size);
+	}
 	for (uint8_t i = 0; i < size; i++) {
 		output->addByte(world.id[i]); // world id
 		output->addString(world.name[i]);
@@ -97,11 +106,23 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 		return;
 	}
 
-	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), casts.name.size());
-	output->addByte(size);
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), casts.id.size());
+	output->addByte(size * 2);
+	std::ostringstream entry;
 	for (uint8_t i = 0; i < size; i++) {
 		output->addByte(casts.worldid[i]);
 		output->addString(casts.name[i]);
+		output->addByte(100);
+		entry << " ^";
+		if (casts.password[i] == 1) {
+			entry << " * Protected *";
+		}
+		if (casts.description[i] != "") {
+			entry << " - " << casts.description[i] << " -";
+		}
+		entry << " [" << casts.spectators[i] << " viewers]";
+		output->addString(entry.str());
+		entry.str(std::string());
 	}
 	
 	output->addByte(0);

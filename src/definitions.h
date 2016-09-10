@@ -20,13 +20,13 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-#define STATUS_SERVER_NAME "OTX Server"
-#define STATUS_SERVER_VERSION "3"
-#define MINOR_VERSION "7"
+#define STATUS_SERVER_NAME "Perfect Server"
+#define STATUS_SERVER_VERSION "0"
+#define MINOR_VERSION "2"
 #define REVISION_VERSION "DEV"
-#define SOFTWARE_CODENAME "SAILOR"
-#define STATUS_SERVER_DEVELOPERS "Mattyx14, Brewsterl and The Forgotten Server Developers"
-#define GIT_REPO "https://github.com/mattyx14/otxserver/tree/otxserv3/"
+#define SOFTWARE_CODENAME "COMEDIAN"
+#define STATUS_SERVER_DEVELOPERS "Mattyx14, Brewsterl, Malucooo, CaterOT Team and The Forgotten Server Developers"
+#define GIT_REPO "https://github.com/comedinha/perfect-server"
 
 #define CLIENT_VERSION_MIN 1097
 #define CLIENT_VERSION_MAX 1097

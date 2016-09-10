@@ -69,7 +69,7 @@ class Spells final : public BaseEvents
 		std::map<std::string, InstantSpell*> instants;
 
 		friend class CombatSpell;
-		LuaScriptInterface scriptInterface;
+		LuaScriptInterface scriptInterface { "Spell Interface" };
 };
 
 typedef bool (InstantSpellFunction)(const InstantSpell* spell, Creature* creature, const std::string& param);
@@ -282,8 +282,6 @@ class ConjureSpell final : public InstantSpell
 		std::string getScriptEventName() const final;
 
 		bool conjureItem(Creature* creature) const;
-		bool internalCastSpell(Creature* creature, const LuaVariant& var);
-		Position getCasterPosition(Creature* creature);
 
 		uint32_t conjureId;
 		uint32_t conjureCount;

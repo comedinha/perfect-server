@@ -175,12 +175,6 @@ class ProtocolGame final : public ProtocolGameBase
 			}
 		}
 
-		void broadcastSpecTextMessage(const TextMessage& message, bool broadcast = true) {
-			if (player) {
-				sendTextMessage(message, broadcast);
-			}
-		}
-
 		static uint8_t getMaxLiveCastCount() {
 			return std::numeric_limits<int8_t>::max();
 		}
@@ -280,7 +274,6 @@ class ProtocolGame final : public ProtocolGameBase
 		virtual void parseCloseChannel(NetworkMessage& msg);
 
 		//Send functions
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true);
 		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
 		void sendClosePrivate(uint16_t channelId);
 		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
@@ -302,7 +295,6 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendChangeSpeed(const Creature* creature, uint32_t speed);
 		void sendCancelTarget(uint32_t creatureId, OperatingSystem_t operatingSystem);
 		void sendCancelTarget();
-		void sendCreatureVisible(const Creature* creature, bool visible);
 		void sendCreatureOutfit(const Creature* creature, const Outfit_t& outfit);
 		void sendReLoginWindow(uint8_t unfairFightReduction);
 
@@ -368,14 +360,6 @@ class ProtocolGame final : public ProtocolGameBase
 		void MoveUpCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
 		void MoveDownCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
 
-		//container
-		void AddContainerItem(NetworkMessage& msg, uint8_t cid, const Item* item);
-		void UpdateContainerItem(NetworkMessage& msg, uint8_t cid, uint16_t slot, const Item* item);
-		void RemoveContainerItem(NetworkMessage& msg, uint8_t cid, uint16_t slot);
-
-		//inventory
-		void SetInventoryItem(NetworkMessage& msg, slots_t slot, const Item* item);
-
 		//shop
 		void AddShopItem(NetworkMessage& msg, const ShopInfo& item);
 
@@ -397,7 +381,7 @@ class ProtocolGame final : public ProtocolGameBase
 
 		static LiveCastsMap liveCasts; ///< Stores all available casts.
 		
-		std::atomic<bool> isCaster{ false }; ///< Determines if this \ref ProtocolGame object is casting
+		std::atomic<bool> isCaster { false }; ///< Determines if this \ref ProtocolGame object is casting
 		// just to name spectators with a number
 		uint32_t spectatorsCount;
 
@@ -409,7 +393,7 @@ class ProtocolGame final : public ProtocolGameBase
 
 		/// Password used to access the live cast
 		std::string liveCastPassword;
-		bool checkCommand(const std::string& text);
+		void checkCommand(const std::string& text);
 
 		std::vector<uint32_t> muteList;
 

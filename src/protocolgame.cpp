@@ -805,9 +805,7 @@ void ProtocolGame::parseSay(NetworkMessage& msg)
 	}
 
 	if (channelId == CHANNEL_CAST) {
-		if (checkCommand(text)) {
-			return;
-		}
+		checkCommand(text);
 	}
 	addGameTask(&Game::playerSay, player->getID(), channelId, type, receiver, text);
 }
@@ -1266,19 +1264,6 @@ void ProtocolGame::sendChannelsDialog()
 	}
 
 	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast)
-{
-	NetworkMessage msg;
-	msg.addByte(0xAA);
-	msg.add<uint32_t>(0x00);
-	msg.addString(author);
-	msg.add<uint16_t>(0x00);
-	msg.addByte(type);
-	msg.add<uint16_t>(channel);
-	msg.addString(text);
-	writeToOutputBuffer(msg, broadcast);
 }
 
 void ProtocolGame::sendIcons(uint16_t icons)
@@ -2515,10 +2500,9 @@ std::shared_ptr<ProtocolSpectator> ProtocolGame::getSpectatorByName(const std::s
 	return nullptr;
 }
 
-bool ProtocolGame::checkCommand(const std::string& text)
+void ProtocolGame::checkCommand(const std::string& text)
 {
 	if (text[0] == '/') {
-
 		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
 			toLowerCaseString(t[0]);
@@ -2532,7 +2516,7 @@ bool ProtocolGame::checkCommand(const std::string& text)
 
 					if (toMute == "") {
 						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
-						return true;
+						return;
 					}
 
 					ProtocolSpectator_ptr spectator = static_cast<ProtocolSpectator_ptr>(getSpectatorByName(toMute));
@@ -2556,6 +2540,7 @@ bool ProtocolGame::checkCommand(const std::string& text)
 				} else {
 					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
 				}
+				return;
 			} else if (command == "ban" || command == "unban") {
 				if (t.size() == 2) {
 
@@ -2564,7 +2549,7 @@ bool ProtocolGame::checkCommand(const std::string& text)
 
 					if (toBan == "") {
 						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
-						return true;
+						return;
 					}
 
 					bool ban = true;
@@ -2607,6 +2592,7 @@ bool ProtocolGame::checkCommand(const std::string& text)
 				} else {
 					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
 				}
+				return;
 			} else if (command == "spectators") {
 				std::stringstream ss;
 				if (getSpectatorCount() > 0) {
@@ -2619,27 +2605,26 @@ bool ProtocolGame::checkCommand(const std::string& text)
 							ss << ", ";
 						}
 					}
-					ss << "." << '\n';
+					ss << ".";
 				} else {
-					ss << "No spectators." << '\n';
+					ss << "No spectators.";
 				}
 
-				sendChannelMessage("", ss.str().c_str(), SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+				sendChannelMessage("", ss.str().c_str(), SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				return;
 			} else if (command == "password") {
 				if (t.size() == 2) {
 
 					std::string newPassword = t[1];
 					liveCastPassword = newPassword;
 
-					if (newPassword == "") {
-						newPassword = "{No Password}";
-					}
-
 					sendChannelMessage("", "Casting new password: " + newPassword, SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 				} else {
 					liveCastPassword = "";
 					sendChannelMessage("", "Casting new password: {No Password}", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 				}
+				updateLiveCastInfo();
+				return;
 			} else if (command == "kick") {
 				if (t.size() == 2) {
 					toLowerCaseString(t[1]);
@@ -2647,7 +2632,7 @@ bool ProtocolGame::checkCommand(const std::string& text)
 
 					if (toKick == "") {
 						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
-						return true;
+						return;
 					}
 
 					ProtocolSpectator_ptr spectator = static_cast<ProtocolSpectator_ptr>(getSpectatorByName(toKick));
@@ -2661,13 +2646,11 @@ bool ProtocolGame::checkCommand(const std::string& text)
 				} else {
 					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
 				}
+				return;
 			} else if (command == "help") {
 				sendChannelMessage("", "Avalible commands: /mute, /unmute, /ban, /unban, /spectators, /password, /kick and /help.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				return;
 			}
 		}
-
-		return true;
 	}
-
-	return false;
 }

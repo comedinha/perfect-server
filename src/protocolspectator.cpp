@@ -40,7 +40,7 @@ extern Game g_game;
 extern ConfigManager g_config;
 extern Chat* g_chat;
 
-ProtocolSpectator::ProtocolSpectator(Connection_ptr connection):
+ProtocolSpectator::ProtocolSpectator(Connection_ptr connection) :
 	ProtocolGameBase(connection),
 	client(nullptr),
 	spectatorName("spectator")
@@ -150,9 +150,9 @@ void ProtocolSpectator::addDummyCreature(NetworkMessage& msg, const uint32_t& cr
 {
 	// add dummy creature
 	CreatureType_t creatureType = CREATURETYPE_NPC;
-	if(creatureID <= 0x10000000) {
+	if (creatureID <= 0x10000000) {
 		creatureType = CREATURETYPE_PLAYER;
-	} else if(creatureID <= 0x40000000) {
+	} else if (creatureID <= 0x40000000) {
 		creatureType = CREATURETYPE_MONSTER;
 	}
 	msg.addByte(0x6A);
@@ -227,6 +227,23 @@ void ProtocolSpectator::syncChatChannels()
 		}
 	}
 	sendChannel(CHANNEL_CAST, LIVE_CAST_CHAT_NAME, nullptr, nullptr);
+	std::stringstream ss;
+	ss << "Spectators: ";
+	size_t scount = 0;
+	for (auto it : client->getLiveCastSpectators()) {
+		ss << static_cast<ProtocolSpectator_ptr>(it)->getSpectatorName();
+		scount++;
+		if (!(scount == client->getSpectatorCount())) {
+			ss << ", ";
+		}
+	}
+	if (scount > 0) {
+		ss << ".";
+	} else {
+		ss << "{Only you}";
+	}
+	sendChannelMessage("", ss.str().c_str(), TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+	sendChannelMessage("", "Avalible commands: /spectators, /nick or /help.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 }
 
 void ProtocolSpectator::syncOpenContainers()
@@ -353,6 +370,7 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 
 	if (client) {
 		if (client->isSpectatorMuted(spectatorId)) {
+			sendChannelMessage("", "You have been muted.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 			return;
 		}
 
@@ -403,22 +421,52 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 
 			std::string command = t[0];
 
-			if (command == "name") {
+			if (command == "spectators") {
+				std::stringstream ss;
+				ss << "Spectators: ";
+				size_t scount = 0;
+				for (auto it : client->getLiveCastSpectators()) {
+					ss << static_cast<ProtocolSpectator_ptr>(it)->getSpectatorName();
+					scount++;
+					if (!(scount == client->getSpectatorCount())) {
+						ss << ", ";
+					}
+				}
+				ss << ".";
+
+				sendChannelMessage("", ss.str().c_str(), TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+			} else if (command == "name" || command == "nick") {
 				if (t.size() == 2) {
 
 					std::string newName = t[1];
 
-					if (newName == "") {
+					bool allowChangeName = true;
+					for (auto it : client->getLiveCastSpectators()) {
+						if (newName == (it)->getSpectatorName()) {
+							allowChangeName = false;
+						}
+					}
+
+					if (!allowChangeName) {
+						sendChannelMessage("", "Other spectator is using this name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						return true;
+					}
+
+					if (newName.empty()) {
+						sendChannelMessage("", "You can not talk before choosing a nick with the /nick YOURNAME.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 						return true;
 					}
 
 					if (newName.length() > 30) {
+						sendChannelMessage("", "Name invalid, please try again.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 						return true;
 					}
 
 					client->broadcastSpectatorMessage("", spectatorName + " new name: " + newName, SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
 					spectatorName = newName;
 				}
+			} else if (command == "help") {
+				sendChannelMessage("", "Avalible commands: /spectators, /nick or /help.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 			}
 		}
 

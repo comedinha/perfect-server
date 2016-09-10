@@ -159,14 +159,14 @@ class ScriptEnvironment
 		LuaScriptInterface* interface;
 
 		//for npc scripts
-		Npc* curNpc;
+		Npc* curNpc = nullptr;
 
 		//temporary item list
 		static std::multimap<ScriptEnvironment*, Item*> tempItems;
 
 		//local item map
 		std::unordered_map<uint32_t, Item*> localMap;
-		uint32_t lastUID;
+		uint32_t lastUID = std::numeric_limits<uint16_t>::max();
 
 		//script file id
 		int32_t scriptId;
@@ -507,7 +507,6 @@ class LuaScriptInterface
 		static int luaDatabaseEscapeString(lua_State* L);
 		static int luaDatabaseEscapeBlob(lua_State* L);
 		static int luaDatabaseLastInsertId(lua_State* L);
-		static int luaDatabaseConnected(lua_State* L);
 		static int luaDatabaseTableExists(lua_State* L);
 
 		static int luaResultGetNumber(lua_State* L);
@@ -989,6 +988,7 @@ class LuaScriptInterface
 		static int32_t luaPlayerStartLiveCast(lua_State* L);
 		static int32_t luaPlayerStopLiveCast(lua_State* L);
 		static int32_t luaPlayerIsLiveCaster(lua_State* L);
+		static int32_t luaPlayerGetSpectators(lua_State* L);
 
 		// Monster
 		static int luaMonsterCreate(lua_State* L);

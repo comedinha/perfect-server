@@ -124,14 +124,18 @@ bool IOLoginData::loadCasts(Casts& casts)
 	Database* db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `cast_name`, `world_id` FROM `live_casts` ORDER BY `cast_name`";
+	query << "SELECT `player_id`, `cast_name`, `password`, `description`, `spectators`, `world_id` FROM `live_casts` ORDER BY `cast_name`";
 	DBResult_ptr result = db->storeQuery(query.str());
 	if (!result) {
 		return false;
 	}
 
 	do {
+		casts.id.push_back(result->getNumber<uint16_t>("player_id"));
 		casts.name.push_back(result->getString("cast_name"));
+		casts.password.push_back(result->getNumber<uint16_t>("password"));
+		casts.description.push_back(result->getString("description"));
+		casts.spectators.push_back(result->getNumber<uint16_t>("spectators"));
 		casts.worldid.push_back(result->getNumber<uint16_t>("world_id"));
 	} while (result->next());
 	return true;

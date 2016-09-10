@@ -91,13 +91,14 @@ class Raids
 		}
 
 	private:
-		LuaScriptInterface scriptInterface;
+		LuaScriptInterface scriptInterface { "Raid Interface" };
 
 		std::list<Raid*> raidList;
-		Raid* running;
-		uint64_t lastRaidEnd;
-		uint32_t checkRaidsEvent;
-		bool loaded, started;
+		Raid* running = nullptr;
+		uint64_t lastRaidEnd = 0;
+		uint32_t checkRaidsEvent = 0;
+		bool loaded = false;
+		bool started = false;
 };
 
 class Raid
@@ -204,8 +205,6 @@ class AreaSpawnEvent final : public RaidEvent
 	public:
 		bool configureRaidEvent(const pugi::xml_node& eventNode) final;
 
-		void addMonster(const std::string& monsterName, uint32_t minAmount, uint32_t maxAmount);
-
 		bool executeEvent() final;
 
 	private:
@@ -217,7 +216,6 @@ class ScriptEvent final : public RaidEvent, public Event
 {
 	public:
 		explicit ScriptEvent(LuaScriptInterface* interface);
-		explicit ScriptEvent(const ScriptEvent* copy);
 
 		bool configureRaidEvent(const pugi::xml_node& eventNode) final;
 		bool configureEvent(const pugi::xml_node&) final {

@@ -46,10 +46,14 @@ struct World {
 };
 
 struct Casts {
+	std::vector<uint16_t> id;
 	std::vector<std::string> name;
+	std::vector<uint16_t> password;
+	std::vector<std::string> description;
+	std::vector<uint16_t> spectators;
 	std::vector<uint16_t> worldid;
 
-	Casts() : worldid(0) {}
+	Casts() : id(0), password(0), spectators(0), worldid(0) {}
 };
 
 struct Playerson {

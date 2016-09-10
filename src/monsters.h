@@ -67,6 +67,7 @@ struct summonBlock_t {
 	std::string name;
 	uint32_t chance;
 	uint32_t speed;
+	uint32_t max;
 	bool force = false;
 };
 
@@ -200,7 +201,6 @@ class Monsters
 		bool reload();
 
 		MonsterType* getMonsterType(const std::string& name);
-		uint32_t getIdByName(const std::string& name);
 
 		static uint32_t getLootRandom();
 
