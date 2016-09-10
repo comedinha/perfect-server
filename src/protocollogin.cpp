@@ -73,11 +73,11 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
 	if (isLiveCastLogin) {
 		output->addByte(size + 1);
-		output->addByte(100);
+		output->addByte(-1);
 		output->addString("Cast Info");
 		output->addString("");
 		output->add<uint16_t>(0);
-		output->addByte(3);
+		output->addByte(-1);
 	} else {
 		output->addByte(size);
 	}
@@ -109,11 +109,13 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), casts.id.size());
 	output->addByte(size * 2);
 	std::ostringstream entry;
+	size_t scount = 0;
 	for (uint8_t i = 0; i < size; i++) {
+		scount++;
 		output->addByte(casts.worldid[i]);
 		output->addString(casts.name[i]);
-		output->addByte(100);
-		entry << " ^";
+		output->addByte(-1);
+		entry << scount <<":";
 		if (casts.password[i] == 1) {
 			entry << " * Protected *";
 		}

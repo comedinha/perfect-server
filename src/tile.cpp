@@ -41,7 +41,7 @@ extern MoveEvents* g_moveEvents;
 StaticTile real_nullptr_tile(0xFFFF, 0xFFFF, 0xFF);
 Tile& Tile::nullptr_tile = real_nullptr_tile;
 
-bool Tile::hasProperty(ITEMPROPERTY prop) const
+bool Tile::hasProperty(ITEMPROPERTY prop, Creature* caster) const
 {
 	if (ground && ground->hasProperty(prop)) {
 		return true;
@@ -51,6 +51,17 @@ bool Tile::hasProperty(ITEMPROPERTY prop) const
 		for (const Item* item : *items) {
 			if (item->hasProperty(prop)) {
 				return true;
+			} else if (g_game.isExpertPvpEnabled() && prop == CONST_PROP_BLOCKPROJECTILE && caster && !caster->isRemoved() && item->getID() == ITEM_MAGICWALL_NOPVP) {
+				if (Player* owner = g_game.getPlayerByID(item->getOwner())) {
+					Player* casterPlayer = caster->getPlayer();
+					if (!casterPlayer && caster->isSummon()) {
+						casterPlayer = caster->getMaster()->getPlayer();
+					}
+
+					if (!casterPlayer || (casterPlayer == owner || casterPlayer->hasPvpActivity(owner))) {
+						return true;
+					}
+				}
 			}
 		}
 	}
@@ -494,6 +505,10 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
+		if (!creature->canWalkThroughTileItems(const_cast<Tile*>(this))) {
+			return RETURNVALUE_NOTENOUGHROOM;
+		}
+
 		if (const Monster* monster = creature->getMonster()) {
 			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT)) {
 				return RETURNVALUE_NOTPOSSIBLE;
@@ -540,9 +555,6 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			if (field && !field->isBlocking()) {
 				CombatType_t combatType = field->getCombatType();
 				if (!monster->isImmune(combatType)) {
-					if (combatType == COMBAT_NONE) {
-						return RETURNVALUE_NOTPOSSIBLE;
-					}
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, flags)) {
 						MonsterType* mType = g_monsters.getMonsterType(monster->getName());
 						int32_t elementMod = 0;
@@ -569,6 +581,35 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, flags) && !player->isAccessPlayer()) {
 				for (const Creature* tileCreature : *creatures) {
 					if (!player->canWalkthrough(tileCreature)) {
+						if (!g_game.isExpertPvpEnabled()) {
+							return RETURNVALUE_NOTPOSSIBLE;
+						}
+
+						g_game.updateCreatureWalkthrough(tileCreature);
+
+						if (Player* tilePlayer = const_cast<Creature*>(tileCreature)->getPlayer()) {
+							if (player->hasPvpActivity(tilePlayer) || tilePlayer->getPvpMode() == PVP_MODE_RED_FIST) {
+								tilePlayer->addAttacked(player);
+								tilePlayer->addInFightTicks(true);
+								if (tilePlayer->getSkull() == SKULL_NONE && player->getSkull() == SKULL_NONE) {
+									tilePlayer->setSkull(SKULL_WHITE);
+								}
+								return RETURNVALUE_YOUCANNOTPASSTHROUGHAGGRESSIVEPLAYERS;
+							}
+						} else if (Monster* tileMonster = const_cast<Creature*>(tileCreature)->getMonster()) {
+							if (!tileMonster->isSummon() || !tileMonster->getMaster()->getPlayer()) {
+								return RETURNVALUE_NOTPOSSIBLE;
+							}
+							Player* master = tileMonster->getMaster()->getPlayer();
+							if (player->hasPvpActivity(master) || master->getPvpMode() == PVP_MODE_RED_FIST) {
+								master->addAttacked(player);
+								master->addInFightTicks(true);
+								if (master->getSkull() == SKULL_NONE && player->getSkull() == SKULL_NONE) {
+									master->setSkull(SKULL_WHITE);
+								}
+								return RETURNVALUE_YOUCANNOTPASSTHROUGHAGGRESSIVECREATURES;
+							}
+						}
 						return RETURNVALUE_NOTPOSSIBLE;
 					}
 				}
@@ -679,6 +720,10 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			if (items) {
 				for (const Item* tileItem : *items) {
 					const ItemType& iiType = Item::items[tileItem->getID()];
+					if (iiType.id == ITEM_MAGICWALL_NOPVP || iiType.id == ITEM_WILDGROWTH_NOPVP) {
+						return RETURNVALUE_NOTENOUGHROOM;
+					}
+
 					if (!iiType.blockSolid) {
 						continue;
 					}

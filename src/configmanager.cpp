@@ -91,6 +91,7 @@ bool ConfigManager::load()
 	boolean[ENABLE_LIVE_CASTING] = getGlobalBoolean(L, "enableLiveCasting", true);
 	boolean[ALLOW_BLOCK_SPAWN] = getGlobalBoolean(L, "allowBlockSpawn", true);
 	boolean[IS_PREVIEWER] = getGlobalBoolean(L, "isPreviewer", false);
+	boolean[EXPERT_PVP] = getGlobalBoolean(L, "expertPvp", false);
 
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");

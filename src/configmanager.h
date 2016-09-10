@@ -46,6 +46,7 @@ class ConfigManager
 			ENABLE_LIVE_CASTING,
 			ALLOW_BLOCK_SPAWN,
 			IS_PREVIEWER,
+			EXPERT_PVP,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};

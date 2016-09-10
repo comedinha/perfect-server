@@ -1,9 +1,9 @@
 -- Please don't edit those information!
 GameStore = {
 	ModuleName = "GameStore",
-	Developer = "Mattyx14",
+	Developer = "Slavi Dodo",
 	Version = "0.3",
-	LastUpdated = "[CEST] 29-05-2016 07:15PM"
+	LastUpdated = "[CEST] 25-05-2016 07:00AM"
 }
 --== Enums ==--
 GameStore.OfferTypes						= {
@@ -15,7 +15,8 @@ GameStore.OfferTypes						= {
 	OFFER_TYPE_MOUNT						= 5,
 	OFFER_TYPE_NAMECHANGE				= 6,
 	OFFER_TYPE_SEXCHANGE					= 7,
-	OFFER_TYPE_PROMOTION					= 8
+	OFFER_TYPE_PROMOTION					= 8,
+	OFFER_TYPE_PREMIUM					= 9,
 }
 GameStore.ClientOfferTypes				= {
 	CLIENT_STORE_OFFER_OTHER			= 0,
@@ -63,9 +64,6 @@ GameStore.RecivedPackets				= {
 	C_OpenTransactionHistory			= 0xFD, -- 253
 	C_RequestTransactionHistory		= 0xFE, -- 254
 }
-GameStore.DefaultValues					= {
-	DEFAULT_VALUE_ENTRIES_PER_PAGE	= 16
-}
 GameStore.DefaultDescriptions = {
 	OUTFIT = {"This outfit looks nice. Only high-class people are able to wear it!",
 			"An outfit that was created to suit you. We are sure you'll like it.",
@@ -74,7 +72,8 @@ GameStore.DefaultDescriptions = {
 			"The first rider of this mount became the leader of his country! legends say that."},
 	NAMECHANGE = {"Are you hunted? Tired of that? Get a new name, a new life!",
 			"A new name to suit your needs!"},
-	SEXCHANGE = {"Bored of your character's sex? Get a new sex for him now!!"}
+	SEXCHANGE = {"Bored of your character's sex? Get a new sex for him now!!"},
+	PREMIUM = {"Buy Premium Time to enhance your gaming experience by gaining additional abilities and advantages."}
 }
 --==Parsing==--
 GameStore.isItsPacket = function(byte)
@@ -252,6 +251,9 @@ function parseBuyStoreOffer(player, msg)
 		-- If offer is sex change
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_SEXCHANGE then
 			player:toggleSex()
+		-- If offer is premium
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PREMIUM then
+			player:addPremiumDays(offer.count)
 		-- If offer is promotion
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PROMOTION then
 			if not GameStore.addPromotionToPlayer(player, offer.thingId) then
@@ -276,12 +278,13 @@ end
 -- Both functions use same formula!
 function parseOpenTransactionHistory(player, msg)
 	local page = 1
-	GameStore.DefaultValues.DEFAULT_VALUE_ENTRIES_PER_PAGE = msg:getByte()
-	sendStoreTransactionHistory(player, page, GameStore.DefaultValues.DEFAULT_VALUE_ENTRIES_PER_PAGE)
+	local entriesPerPage = msg:getByte()
+	sendStoreTransactionHistory(player, page, entriesPerPage)
 end
 function parseRequestTransactionHistory(player, msg)
-	local page = msg:getU16()
-	sendStoreTransactionHistory(player, page, GameStore.DefaultValues.DEFAULT_VALUE_ENTRIES_PER_PAGE)
+	local currentPage = msg:getU32()
+	local entriesPerPage = msg:getByte()
+	sendStoreTransactionHistory(player, currentPage, entriesPerPage)
 end
 --==Sending==--
 function openStore(player)
@@ -341,6 +344,10 @@ function sendShowStoreOffers(player, category)
 			
 			msg:addU32(offer.price and offer.price or 0xFFFF)
 			msg:addByte(offer.state or GameStore.States.STATE_NONE) -- default is none
+			if offer.state == GameStore.States.STATE_SALE then
+				msg:addU32(offer.saletime and offer.saletime or 0xFFFF)
+				msg:addU32(offer.baseprice and offer.baseprice or 0xFFFF)
+			end
 			
 			local disabled, disabledReason = 0, ""
 			if offer.disabled == true or not offer.type then
@@ -426,8 +433,8 @@ function sendStoreTransactionHistory(player, page, entriesPerPage)
 	
 	local msg = NetworkMessage()
 	msg:addByte(GameStore.SendingPackets.S_OpenTransactionHistory)
-	msg:addU16(page)
-	msg:addByte(#entries > entriesPerPage and 0x01 or 0x00)
+	msg:addU32(page)
+	msg:addU32(entriesPerPage)
 	
 	msg:addByte(#entries >= entriesPerPage and entriesPerPage or #entries)
 	for k, entry in ipairs(entries) do
@@ -541,6 +548,8 @@ GameStore.getDefaultDescription = function(offerType)
 		descList = GameStore.DefaultDescriptions.NAMECHANGE
 	elseif offerType == t.OFFER_TYPE_SEXCHANGE then
 		descList = GameStore.DefaultDescriptions.SEXCHANGE
+	elseif offerType == t.OFFER_TYPE_PREMIUM then
+		descList = GameStore.DefaultDescriptions.PREMIUM
 	else
 		return ""
 	end

@@ -874,72 +874,65 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 		}
 	} else if (it.weaponType != WEAPON_NONE) {
 		bool begin = true;
-
-		int32_t attack, defense, extraDefense, shootRange;
-		int8_t hitChance;
-		if (item) {
-			attack = item->getAttack();
-			hitChance = item->getHitChance();
-			defense = item->getDefense();
-			extraDefense = item->getExtraDefense();
-			shootRange = item->getShootRange();
-		} else {
-			attack = it.attack;
-			hitChance = it.hitChance;
-			defense = it.defense;
-			extraDefense = it.extraDefense;
-			shootRange = it.shootRange;
-		}
-
-		if (attack != 0) {
+		if (it.weaponType == WEAPON_DISTANCE && it.ammoType != AMMO_NONE) {
 			begin = false;
-			s << "(Atk: " << attack;
+			s << " (Range:" << static_cast<uint16_t>(item ? item->getShootRange() : it.shootRange);
 
-			if (it.abilities && it.abilities->elementType != COMBAT_NONE && it.abilities->elementDamage != 0) {
-				s << " physical + " << it.abilities->elementDamage << ' ' << getCombatName(it.abilities->elementType);
-			}
-		}
-		if (defense != 0) {
-			if (begin) {
-				begin = false;
-				s << " (";
+			int32_t attack;
+			int8_t hitChance;
+			if (item) {
+				attack = item->getAttack();
+				hitChance = item->getHitChance();
 			} else {
-				s << ", ";
+				attack = it.attack;
+				hitChance = it.hitChance;
 			}
-			s << "Def:" << defense;
-		}
-		if (hitChance != 0) {
-			if (begin) {
-				begin = false;
-				s << " (";
+
+			if (attack != 0) {
+				s << ", Atk" << std::showpos << attack << std::noshowpos;
+			}
+
+			if (hitChance != 0) {
+				s << ", Hit%" << std::showpos << static_cast<int16_t>(hitChance) << std::noshowpos;
+			}
+		} else if (it.weaponType != WEAPON_AMMO) {
+			int32_t attack, defense, extraDefense;
+			if (item) {
+				attack = item->getAttack();
+				defense = item->getDefense();
+				extraDefense = item->getExtraDefense();
 			} else {
-				s << ", ";
+				attack = it.attack;
+				defense = it.defense;
+				extraDefense = it.extraDefense;
 			}
-			s << " Hit%" << std::showpos << static_cast<int16_t>(hitChance) << std::noshowpos;
-		}
-		if (shootRange >= 2) {
+
+			if (attack != 0) {
+				begin = false;
+				s << " (Atk:" << attack;
+
+				if (it.abilities && it.abilities->elementType != COMBAT_NONE && it.abilities->elementDamage != 0) {
+					s << " physical + " << it.abilities->elementDamage << ' ' << getCombatName(it.abilities->elementType);
+				}
+			}
+
+			if (defense != 0 || extraDefense != 0) {
 				if (begin) {
 					begin = false;
 					s << " (";
 				} else {
 					s << ", ";
 				}
-				s << "Range:" << shootRange;
-			} else {
-				s << ", ";
-			}
-		if (extraDefense != 0) {
-				if (begin) {
-					begin = false;
-					s << " (";
-				} else {
-					s << ", ";
+
+				s << "Def:" << defense;
+				if (extraDefense != 0) {
+					s << ' ' << std::showpos << extraDefense << std::noshowpos;
 				}
-				s << ' ' << std::showpos << extraDefense << std::noshowpos;
 			}
-		
+		}
+
 		if (it.abilities) {
-			for (uint8_t i = SKILL_FIRST; i <= SKILL_FISHING; i++) {
+			for (uint8_t i = SKILL_FIRST; i <= SKILL_LAST; i++) {
 				if (!it.abilities->skills[i]) {
 					continue;
 				}
@@ -952,27 +945,17 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 				}
 
 				s << getSkillName(i) << ' ' << std::showpos << it.abilities->skills[i] << std::noshowpos;
-			}
 
-			for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_LAST; i++) {
-				if (!it.abilities->skills[i]) {
-					continue;
+				if (i >= SKILL_CRITICAL_HIT_CHANCE && i <= SKILL_MANA_LEECH_AMOUNT) {
+					s << "%";
 				}
-
-				if (begin) {
-					begin = false;
-					s << " (";
-				} else {
-					s << ", ";
-				}
-				s << getSkillName(i) << ' ' << std::showpos << it.abilities->skills[i] << std::noshowpos;
 			}
 
 			if (it.abilities->stats[STAT_MAGICPOINTS]) {
 				if (begin) {
 					begin = false;
-						s << " (";
-					} else {
+					s << " (";
+				} else {
 					s << ", ";
 				}
 
@@ -1003,29 +986,28 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 						if (begin) {
 							begin = false;
 							s << " (";
-							} else {
-								s << ", ";
-							}
-
-							s << "protection ";
 						} else {
 							s << ", ";
 						}
 
-						s << getCombatName(indexToCombatType(i)) << ' ' << std::showpos << it.abilities->absorbPercent[i] << std::noshowpos << '%';
-					}
-				} else {
-					if (begin) {
-						begin = false;
-						s << " (";
+						s << "protection ";
 					} else {
+						s << ", ";
+					}
+
+					s << getCombatName(indexToCombatType(i)) << ' ' << std::showpos << it.abilities->absorbPercent[i] << std::noshowpos << '%';
+				}
+			} else {
+				if (begin) {
+					begin = false;
+					s << " (";
+				} else {
 					s << ", ";
 				}
 
 				s << "protection all " << std::showpos << show << std::noshowpos << '%';
 			}
 
-			// reflect
 			show = it.abilities->reflectPercent[0];
 			if (show != 0) {
 				for (size_t i = 1; i < COMBAT_COUNT; ++i) {
@@ -1050,22 +1032,22 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 						if (begin) {
 							begin = false;
 							s << " (";
-							} else {
-								s << ", ";
-							}
-
-							s << "reflect ";
 						} else {
 							s << ", ";
 						}
 
-						s << getCombatName(indexToCombatType(i)) << ' ' << std::showpos << it.abilities->reflectPercent[i] << std::noshowpos << '%';
-					}
-				} else {
-					if (begin) {
-						begin = false;
-						s << " (";
+						s << "reflect ";
 					} else {
+						s << ", ";
+					}
+
+					s << getCombatName(indexToCombatType(i)) << ' ' << std::showpos << it.abilities->reflectPercent[i] << std::noshowpos << '%';
+				}
+			} else {
+				if (begin) {
+					begin = false;
+					s << " (";
+				} else {
 					s << ", ";
 				}
 
@@ -1096,35 +1078,35 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 						if (begin) {
 							begin = false;
 							s << " (";
-							} else {
-								s << ", ";
-							}
-
-							s << "protection ";
 						} else {
 							s << ", ";
 						}
 
-						s << getCombatName(indexToCombatType(i)) << " field " << std::showpos << it.abilities->fieldAbsorbPercent[i] << std::noshowpos << '%';
-					}
-				} else {
-					if (begin) {
-						begin = false;
-						s << " (";
+						s << "protection ";
 					} else {
 						s << ", ";
 					}
 
-					s << "protection all fields " << std::showpos << show << std::noshowpos << '%';
+					s << getCombatName(indexToCombatType(i)) << " field " << std::showpos << it.abilities->fieldAbsorbPercent[i] << std::noshowpos << '%';
+				}
+			} else {
+				if (begin) {
+					begin = false;
+					s << " (";
+				} else {
+					s << ", ";
 				}
 
-				if (it.abilities->speed) {
-					if (begin) {
-						begin = false;
-						s << " (";
-					} else {
-						s << ", ";
-					}
+				s << "protection all fields " << std::showpos << show << std::noshowpos << '%';
+			}
+
+			if (it.abilities->speed) {
+				if (begin) {
+					begin = false;
+					s << " (";
+				} else {
+					s << ", ";
+				}
 
 				s << "speed " << std::showpos << (it.abilities->speed >> 1) << std::noshowpos;
 			}
@@ -1143,7 +1125,7 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 		}
 
 		if (it.abilities) {
-			for (uint8_t i = SKILL_FIRST; i <= SKILL_FISHING; i++) {
+			for (uint8_t i = SKILL_FIRST; i <= SKILL_LAST; i++) {
 				if (!it.abilities->skills[i]) {
 					continue;
 				}
@@ -1152,22 +1134,6 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 					begin = false;
 					s << " (";
 				} else {
-					s << ", ";
-				}
-
-				s << getSkillName(i) << ' ' << std::showpos << it.abilities->skills[i] << std::noshowpos;
-			}
-
-			for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_LAST; i++) {
-				if (!it.abilities->skills[i]) {
-					continue;
-				}
-
-				if (begin) {
-					begin = false;
-					s << " (";
-				}
-				else {
 					s << ", ";
 				}
 
@@ -1230,7 +1196,6 @@ std::string Item::getDescription(const ItemType& it, int32_t lookDistance,
 				s << "protection all " << std::showpos << show << std::noshowpos << '%';
 			}
 
-			// reflect
 			show = it.abilities->reflectPercent[0];
 			if (show != 0) {
 				for (size_t i = 1; i < COMBAT_COUNT; ++i) {

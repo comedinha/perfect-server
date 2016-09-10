@@ -30,6 +30,11 @@ function onRecvbyte(player, msg, byte)
 	if newItemType:getWeaponType() == WEAPON_SHIELD  then
 		slotP = CONST_SLOT_RIGHT
 	end
+
+	--Desativado munição por enquanto
+	--if slotP == CONST_SLOT_AMMO then
+		--return player:sendCancelMessage("Sorry, ammo is disabled for this action.")
+	--end
 	
 	if slotP == CONST_SLOT_BACKPACK then
 		player:sendCancelMessage("You can't equip a backpack.")

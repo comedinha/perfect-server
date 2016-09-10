@@ -565,7 +565,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0x99: parseCloseChannel(msg); break;
 		case 0x9A: parseOpenPrivateChannel(msg); break;
 		case 0x9E: addGameTask(&Game::playerCloseNpcChannel, player->getID()); break;
-		case 0xA0: parseFightModes(msg); break;
+		case 0xA0: /* FightModes */ break;
 		case 0xA1: parseAttack(msg); break;
 		case 0xA2: parseFollow(msg); break;
 		case 0xA3: parseInviteToParty(msg); break;
@@ -588,9 +588,9 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xDC: parseAddVip(msg); break;
 		case 0xDD: parseRemoveVip(msg); break;
 		case 0xDE: parseEditVip(msg); break;
-		case 0xE6: parseBugReport(msg); break;
+		case 0xE6: /* bug report */ break;
 		case 0xE7: /* thank you */ break;
-		case 0xE8: parseDebugAssert(msg); break;
+		case 0xE8: parseDebugAssert(msg); break; /* next */
 		case 0xF0: addGameTaskTimed(DISPATCHER_TASK_EXPIRATION, &Game::playerShowQuestLog, player->getID()); break;
 		case 0xF1: parseQuestLine(msg); break;
 		case 0xF2: /* rule violation report */ break;
@@ -810,32 +810,6 @@ void ProtocolGame::parseSay(NetworkMessage& msg)
 	addGameTask(&Game::playerSay, player->getID(), channelId, type, receiver, text);
 }
 
-void ProtocolGame::parseFightModes(NetworkMessage& msg)
-{
-	uint8_t rawFightMode = msg.getByte(); // 1 - offensive, 2 - balanced, 3 - defensive
-	uint8_t rawChaseMode = msg.getByte(); // 0 - stand while fightning, 1 - chase opponent
-	uint8_t rawSecureMode = msg.getByte(); // 0 - can't attack unmarked, 1 - can attack unmarked
-	// uint8_t rawPvpMode = msg.getByte(); // pvp mode introduced in 10.0
-
-	chaseMode_t chaseMode;
-	if (rawChaseMode == 1) {
-		chaseMode = CHASEMODE_FOLLOW;
-	} else {
-		chaseMode = CHASEMODE_STANDSTILL;
-	}
-
-	fightMode_t fightMode;
-	if (rawFightMode == 1) {
-		fightMode = FIGHTMODE_ATTACK;
-	} else if (rawFightMode == 2) {
-		fightMode = FIGHTMODE_BALANCED;
-	} else {
-		fightMode = FIGHTMODE_DEFENSE;
-	}
-
-	addGameTask(&Game::playerSetFightModes, player->getID(), fightMode, chaseMode, rawSecureMode != 0);
-}
-
 void ProtocolGame::parseAttack(NetworkMessage& msg)
 {
 	uint32_t creatureId = msg.get<uint32_t>();
@@ -934,19 +908,6 @@ void ProtocolGame::parseRotateItem(NetworkMessage& msg)
 	uint16_t spriteId = msg.get<uint16_t>();
 	uint8_t stackpos = msg.getByte();
 	addGameTaskTimed(DISPATCHER_TASK_EXPIRATION, &Game::playerRotateItem, player->getID(), pos, stackpos, spriteId);
-}
-
-void ProtocolGame::parseBugReport(NetworkMessage& msg)
-{
-	uint8_t category = msg.getByte();
-	std::string message = msg.getString();
-
-	Position position;
-	if (category == BUG_CATEGORY_MAP) {
-		position = msg.getPosition();
-	}
-
-	addGameTask(&Game::playerReportBug, player->getID(), message, position, category);
 }
 
 void ProtocolGame::parseDebugAssert(NetworkMessage& msg)
@@ -1157,7 +1118,7 @@ void ProtocolGame::sendCreatureHelpers(uint32_t creatureId, uint16_t helpers)
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendCreatureSquare(const Creature* creature, SquareColor_t color)
+void ProtocolGame::sendCreatureSquare(const Creature* creature, SquareColor_t color, uint8_t length)
 {
 	if (!canSee(creature)) {
 		return;
@@ -1166,7 +1127,7 @@ void ProtocolGame::sendCreatureSquare(const Creature* creature, SquareColor_t co
 	NetworkMessage msg;
 	msg.addByte(0x93);
 	msg.add<uint32_t>(creature->getID());
-	msg.addByte(0x01);
+	msg.addByte(length);
 	msg.addByte(color);
 	writeToOutputBuffer(msg);
 }
@@ -2083,17 +2044,6 @@ void ProtocolGame::sendRemoveTileThing(const Position& pos, uint32_t stackpos)
 
 	NetworkMessage msg;
 	RemoveTileThing(msg, pos, stackpos);
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendFightModes()
-{
-	NetworkMessage msg;
-	msg.addByte(0xA7);
-	msg.addByte(player->fightMode);
-	msg.addByte(player->chaseMode);
-	msg.addByte(player->secureMode);
-	msg.addByte(PVP_MODE_DOVE);
 	writeToOutputBuffer(msg);
 }
 

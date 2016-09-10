@@ -212,11 +212,9 @@ class ProtocolGame final : public ProtocolGameBase
 		void parseSay(NetworkMessage& msg);
 		void parseLookAt(NetworkMessage& msg);
 		void parseLookInBattleList(NetworkMessage& msg);
-		void parseFightModes(NetworkMessage& msg);
 		void parseAttack(NetworkMessage& msg);
 		void parseFollow(NetworkMessage& msg);
 
-		void parseBugReport(NetworkMessage& msg);
 		void parseDebugAssert(NetworkMessage& msg);
 
 		void parseThrow(NetworkMessage& msg);
@@ -331,7 +329,7 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendFightModes();
 
-		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
+		void sendCreatureSquare(const Creature* creature, SquareColor_t color, uint8_t length);
 
 		void sendSpellCooldown(uint8_t spellId, uint32_t time);
 		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);

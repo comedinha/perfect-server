@@ -24,6 +24,8 @@
 #include "condition.h"
 #include "map.h"
 #include "baseevents.h"
+#include "player.h"
+#include "monster.h"
 
 class Condition;
 class Creature;
@@ -186,7 +188,7 @@ class AreaCombat
 		// non-assignable
 		AreaCombat& operator=(const AreaCombat&) = delete;
 
-		void getList(const Position& centerPos, const Position& targetPos, std::forward_list<Tile*>& list) const;
+		void getList(const Position& centerPos, const Position& targetPos, std::forward_list<Tile*>& list, Creature* creature = nullptr) const;
 
 		void setupArea(const std::list<uint32_t>& list, uint32_t rows);
 		void setupArea(int32_t length, int32_t spread);
@@ -266,7 +268,7 @@ class Combat
 		static void doCombatDispel(Creature* caster, Creature* target, const CombatParams& params);
 		static void doCombatDispel(Creature* caster, const Position& position, const AreaCombat* area, const CombatParams& params);
 
-		static void getCombatArea(const Position& centerPos, const Position& targetPos, const AreaCombat* area, std::forward_list<Tile*>& list);
+		static void getCombatArea(const Position& centerPos, const Position& targetPos, const AreaCombat* area, std::forward_list<Tile*>& list, Creature* caster = nullptr);
 
 		static bool isInPvpZone(const Creature* attacker, const Creature* target);
 		static bool isProtected(const Player* attacker, const Player* target);
@@ -280,8 +282,8 @@ class Combat
 
 		static void addDistanceEffect(Creature* caster, const Position& fromPos, const Position& toPos, uint8_t effect);
 
-		void doCombat(Creature* caster, Creature* target) const;
-		void doCombat(Creature* caster, const Position& pos) const;
+		bool doCombat(Creature* caster, Creature* target) const;
+		bool doCombat(Creature* caster, const Position& pos) const;
 
 		bool setCallback(CallBackParam_t key);
 		CallBack* getCallback(CallBackParam_t key);
@@ -337,6 +339,8 @@ class MagicField final : public Item
 	public:
 		explicit MagicField(uint16_t type) : Item(type) {
 			createTime = OTSYS_TIME();
+			pvpMode = PVP_MODE_DOVE;
+			isCasterPlayer = false;
 		}
 
 		MagicField* getMagicField() final {
@@ -355,6 +359,8 @@ class MagicField final : public Item
 		}
 		void onStepInField(Creature* creature);
 
+		pvpMode_t pvpMode;
+		bool isCasterPlayer;
 	private:
 		int64_t createTime;
 };
