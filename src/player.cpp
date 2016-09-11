@@ -728,7 +728,7 @@ bool Player::canWalkthrough(const Creature* creature) const
 		if (!g_game.isExpertPvpEnabled() && g_game.getWorldType() != WORLD_TYPE_NO_PVP) {
 			return false;
 		}
-		if (creatureTile && creatureTile->hasFlag(TILESTATE_PVPZONE)) {
+		if (!creatureTile || creatureTile->hasFlag(TILESTATE_PVPZONE)) {
 			return false;
 		}
 		if (const Monster* monster = creature->getMonster()) {
@@ -742,6 +742,7 @@ bool Player::canWalkthrough(const Creature* creature) const
 				return master != this && canWalkthrough(master);
 			}
 		}
+		return false;
 	}
 
 	const Tile* playerTile = player->getTile();
@@ -790,7 +791,7 @@ bool Player::canWalkthroughEx(const Creature* creature) const
 		if (!g_game.isExpertPvpEnabled() && g_game.getWorldType() != WORLD_TYPE_NO_PVP) {
 			return false;
 		}
-		if (creatureTile && creatureTile->hasFlag(TILESTATE_PVPZONE)) {
+		if (!creatureTile || creatureTile->hasFlag(TILESTATE_PVPZONE)) {
 			return false;
 		}
 		if (const Monster* monster = creature->getMonster()) {
@@ -803,6 +804,7 @@ bool Player::canWalkthroughEx(const Creature* creature) const
 				return canWalkthroughEx(monster->getMaster()->getPlayer());
 			}
 		}
+		return false;
 	}
 
 	const Tile* playerTile = player->getTile();

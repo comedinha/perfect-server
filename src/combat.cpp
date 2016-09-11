@@ -771,27 +771,29 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 
 bool Combat::doCombat(Creature* caster, Creature* target) const
 {
-	if (Tile* tile = g_game.map.getTile(target->getPosition())) {
-		for (auto it : *tile->getItemList()) {
-			if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
-				continue;
-			}
-
-			Player* owner = g_game.getPlayerByID(it->getOwner());
-			if (!owner) {
-				continue;
-			}
-
-			if (Player* player = caster->getPlayer()) {
-				if (!player->hasPvpActivity(owner)) {
+	if (g_game.isExpertPvpEnabled()) {
+		if (Tile* tile = g_game.map.getTile(target->getPosition())) {
+			for (auto it : *tile->getItemList()) {
+				if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
 					continue;
 				}
 
-				g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
-				player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
+				Player* owner = g_game.getPlayerByID(it->getOwner());
+				if (!owner) {
+					continue;
+				}
+
+				if (Player* player = caster->getPlayer()) {
+					if (!player->hasPvpActivity(owner)) {
+						continue;
+					}
+
+					g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+					player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
+				}
+				// Monsters, etc...
+				return false;
 			}
-			// Monsters, etc...
-			return false;
 		}
 	}
 	//target combat callback function
@@ -811,27 +813,29 @@ bool Combat::doCombat(Creature* caster, Creature* target) const
 
 bool Combat::doCombat(Creature* caster, const Position& position) const
 {
-	if (Tile* tile = g_game.map.getTile(position)) {
-		for (auto it : *tile->getItemList()) {
-			if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
-				continue;
-			}
-
-			Player* owner = g_game.getPlayerByID(it->getOwner());
-			if (!owner) {
-				continue;
-			}
-
-			if (Player* player = caster->getPlayer()) {
-				if (!player->hasPvpActivity(owner)) {
+	if (g_game.isExpertPvpEnabled()) {
+		if (Tile* tile = g_game.map.getTile(position)) {
+			for (auto it : *tile->getItemList()) {
+				if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
 					continue;
 				}
 
-				g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
-				player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
+				Player* owner = g_game.getPlayerByID(it->getOwner());
+				if (!owner) {
+					continue;
+				}
+
+				if (Player* player = caster->getPlayer()) {
+					if (!player->hasPvpActivity(owner)) {
+						continue;
+					}
+
+					g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+					player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
+				}
+				// Monsters, etc...
+				return false;
 			}
-			// Monsters, etc...
-			return false;
 		}
 	}
 	//area combat callback function
