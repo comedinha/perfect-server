@@ -502,12 +502,19 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 
 	uint8_t recvbyte = msg.getByte();
 
-	//a dead player can not perform actions
-	if (!player || player->isRemoved() || player->getHealth() <= 0) {
+	if (!player) {
 		auto this_ptr = getThis();
-		g_dispatcher.addTask(createTask([this_ptr]() {
-			this_ptr->stopLiveCast();
-		}));
+		g_dispatcher.addTask(createTask([this_ptr]() {this_ptr->stopLiveCast();}));
+		if (recvbyte == 0x0F) {
+			disconnect();
+		}
+		return;
+	}
+
+	//a dead player can not perform actions
+	if (player->isRemoved() || player->getHealth() <= 0) {
+		auto this_ptr = getThis();
+		g_dispatcher.addTask(createTask([this_ptr]() {this_ptr->stopLiveCast();}));
 		if (recvbyte == 0x0F) {
 			disconnect();
 			return;

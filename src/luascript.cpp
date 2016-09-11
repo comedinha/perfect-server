@@ -1816,6 +1816,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::CLASSIC_EQUIPMENT_SLOTS)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_WALKTHROUGH)
 	registerEnumIn("configKeys", ConfigManager::ENABLE_LIVE_CASTING)
+	registerEnumIn("configKeys", ConfigManager::ENABLE_RECORD)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
 	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
 	registerEnumIn("configKeys", ConfigManager::EXPERT_PVP)
@@ -1874,6 +1875,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::STORE_COIN_PACKET)
 	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
 	registerEnumIn("configKeys", ConfigManager::WORLD_ID)
+	registerEnumIn("configKeys", ConfigManager::RECORD_PORT)
 
 	// os
 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);

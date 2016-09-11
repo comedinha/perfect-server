@@ -3264,11 +3264,23 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 		return;
 	}
 
-	if (playerSayCommand(player, text)) {
+	if (playerSaySpell(player, type, text)) {
 		return;
 	}
 
-	if (playerSaySpell(player, type, text)) {
+	Player* playerreceiver = g_game.getPlayerByName(receiver);
+	uint32_t receiverid = 0;
+
+	if (playerreceiver) {
+		receiverid = playerreceiver->getGUID();
+	}
+
+	Database* db = Database::getInstance();
+	std::ostringstream query;
+	query << "INSERT INTO `logs_msgs` (`player_id`, `channel_id`, `text`, `receiver_id` ,`date`) VALUES (" << player->getGUID() << ',' << channelId << ',' << db->escapeString(text) << ',' << receiverid << ',' << (OTSYS_TIME() / 1000) << ')';
+	db->executeQuery(query.str());
+
+	if (playerSayCommand(player, text)) {
 		return;
 	}
 

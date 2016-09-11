@@ -267,6 +267,9 @@ void mainLoader(int, char*[], ServiceManager* services)
 		ProtocolGame::clearLiveCastInfo();
 		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
 	}
+	if (g_config.getBoolean(ConfigManager::ENABLE_RECORD)) {
+		services->add<ProtocolRecord>(g_config.getNumber(ConfigManager::RECORD_PORT));
+	}
 	services->add<ProtocolLogin>(g_config.getNumber(ConfigManager::LOGIN_PORT));
 
 	// OT protocols

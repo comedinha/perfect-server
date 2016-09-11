@@ -154,5 +154,10 @@ bool TalkAction::executeSay(Player* player, const std::string& param, SpeakClass
 	LuaScriptInterface::pushString(L, param);
 	lua_pushnumber(L, type);
 
+	Database* db = Database::getInstance();
+	std::ostringstream query;
+	query << "INSERT INTO `logs_commands` (`player_id`, `comando`, `parametro` ,`date`) VALUES (" << player->getGUID() << ',' << db->escapeString(words) << ',' << db->escapeString(param) << ',' << (OTSYS_TIME() / 1000) << ')';
+	db->executeQuery(query.str());
+
 	return scriptInterface->callFunction(4);
 }

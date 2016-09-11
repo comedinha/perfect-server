@@ -47,6 +47,7 @@ class ConfigManager
 			ALLOW_BLOCK_SPAWN,
 			IS_PREVIEWER,
 			EXPERT_PVP,
+			ENABLE_RECORD,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};
@@ -114,6 +115,7 @@ class ConfigManager
 			FREE_DEPOT_LIMIT,
 			PREMIUM_DEPOT_LIMIT,
 			DEPOT_BOXES,
+			RECORD_PORT,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};
