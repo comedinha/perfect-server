@@ -43,23 +43,16 @@ extern Game g_game;
 
 struct TextMessage
 {
-	MessageClasses type;
+	MessageClasses type = MESSAGE_STATUS_DEFAULT;
 	std::string text;
 	Position position;
 	struct {
-		int32_t value;
+		int32_t value = 0;
 		TextColor_t color;
 	} primary, secondary;
 
-	TextMessage() {
-		type = MESSAGE_STATUS_DEFAULT;
-		primary.value = 0;
-		secondary.value = 0;
-	}
-	TextMessage(MessageClasses type, std::string text) : type(type), text(text) {
-		primary.value = 0;
-		secondary.value = 0;
-	}
+	TextMessage() = default;
+	TextMessage(MessageClasses type, std::string text) : type(type), text(text) {}
 };
 
 class ProtocolGame final : public ProtocolGameBase
@@ -69,8 +62,7 @@ class ProtocolGame final : public ProtocolGameBase
 			return "gameworld protocol";
 		}
 
-		explicit ProtocolGame(Connection_ptr connection) :
-			ProtocolGameBase(connection) {}
+		explicit ProtocolGame(Connection_ptr connection) : ProtocolGameBase(connection) {}
 
 		void login(const std::string& name, uint32_t accnumber, OperatingSystem_t operatingSystem);
 		void logout(bool displayEffect, bool forced);
@@ -82,6 +74,10 @@ class ProtocolGame final : public ProtocolGameBase
 		const std::unordered_set<uint32_t>& getKnownCreatures() const {
 			return knownCreatureSet;
 		}
+
+		bool startRecord();
+		bool stopRecord();
+		std::vector<NetworkMessage> protocolRecords;
 
 		typedef std::unordered_map<Player*, ProtocolGame_ptr> LiveCastsMap;
 		typedef std::vector<ProtocolSpectator_ptr> CastSpectatorVec;

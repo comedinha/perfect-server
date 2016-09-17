@@ -36,6 +36,7 @@ class IOLoginData
 		static bool loadCasts(Casts& casts);
 		static bool loadWorlds(World& world);
 		static uint32_t getWorldId(uint32_t playerId);
+		static bool loadRecords(Records& records);
 		static std::string generateFlashSessionKey(const std::string& token);
 		static uint32_t gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName);
 

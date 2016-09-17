@@ -153,19 +153,19 @@ class MoveEvent final : public Event
 		static EquipFunction EquipItem;
 		static EquipFunction DeEquipItem;
 
-		MoveEvent_t eventType;
-		StepFunction* stepFunction;
-		MoveFunction* moveFunction;
-		EquipFunction* equipFunction;
-		uint32_t slot;
+		MoveEvent_t eventType = MOVE_EVENT_NONE;
+		StepFunction* stepFunction = nullptr;
+		MoveFunction* moveFunction = nullptr;
+		EquipFunction* equipFunction = nullptr;
+		uint32_t slot = SLOTP_WHEREEVER;
 
 		//onEquip information
-		uint32_t reqLevel;
-		uint32_t reqMagLevel;
-		uint32_t reqSkillLevel;
-		bool premium;
+		uint32_t reqLevel = 0;
+		uint32_t reqMagLevel = 0;
+		uint32_t reqSkillLevel = 0;
+		bool premium = false;
 		std::string vocationString;
-		uint32_t wieldInfo;
+		uint32_t wieldInfo = 0;
 		VocEquipMap vocEquipMap;
 };
 

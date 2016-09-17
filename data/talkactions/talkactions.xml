@@ -44,6 +44,7 @@
 	<!-- player talkactions -->
 	<talkaction words="!buyhouse" script="buyhouse.lua" />
 	<talkaction words="!leavehouse" script="leavehouse.lua" />
+	<talkaction words="!record" script="record.lua" />
 	<talkaction words="!cast" separator=" " script="cast.lua" />
 	<talkaction words="!serverinfo" script="serverinfo.lua" />
 	<talkaction words="!online" script="online.lua" />

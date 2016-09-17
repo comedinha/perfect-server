@@ -844,7 +844,7 @@ int_fast32_t AStarNodes::getTileWalkCost(const Creature& creature, const Tile* t
 	if (const MagicField* field = tile->getFieldItem()) {
 		CombatType_t combatType = field->getCombatType();
 		if (!creature.isImmune(combatType)) {
-			if (!creature.passMagicField(combatType)) {
+			if ((!g_game.isExpertPvpEnabled() && combatType == COMBAT_NONE) || !creature.passMagicField(combatType)) {
 				cost += MAP_NORMALWALKCOST * 18;
 			}
 		}
@@ -863,21 +863,11 @@ Floor::~Floor()
 }
 
 // QTreeNode
-QTreeNode::QTreeNode()
-{
-	leaf = false;
-	child[0] = nullptr;
-	child[1] = nullptr;
-	child[2] = nullptr;
-	child[3] = nullptr;
-}
-
 QTreeNode::~QTreeNode()
 {
-	delete child[0];
-	delete child[1];
-	delete child[2];
-	delete child[3];
+	for (auto* ptr : child) {
+		delete ptr;
+	}
 }
 
 QTreeLeafNode* QTreeNode::getLeaf(uint32_t x, uint32_t y)
@@ -912,21 +902,11 @@ QTreeLeafNode* QTreeNode::createLeaf(uint32_t x, uint32_t y, uint32_t level)
 
 // QTreeLeafNode
 bool QTreeLeafNode::newLeaf = false;
-QTreeLeafNode::QTreeLeafNode()
-{
-	for (uint32_t i = 0; i < MAP_MAX_LAYERS; ++i) {
-		array[i] = nullptr;
-	}
-
-	leaf = true;
-	leafS = nullptr;
-	leafE = nullptr;
-}
 
 QTreeLeafNode::~QTreeLeafNode()
 {
-	for (uint32_t i = 0; i < MAP_MAX_LAYERS; ++i) {
-		delete array[i];
+	for (auto* ptr : array) {
+		delete ptr;
 	}
 }
 

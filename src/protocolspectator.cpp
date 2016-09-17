@@ -414,13 +414,10 @@ void ProtocolSpectator::onLiveCastStop()
 bool ProtocolSpectator::parseCoomand(const std::string& text)
 {
 	if (text[0] == '/') {
-
 		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
 			toLowerCaseString(t[0]);
-
 			std::string command = t[0];
-
 			if (command == "spectators") {
 				std::stringstream ss;
 				ss << "Spectators: ";
@@ -437,7 +434,6 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 				sendChannelMessage("", ss.str().c_str(), TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 			} else if (command == "name" || command == "nick") {
 				if (t.size() == 2) {
-
 					std::string newName = t[1];
 
 					bool allowChangeName = true;
@@ -449,6 +445,11 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 
 					if (!allowChangeName) {
 						sendChannelMessage("", "Other spectator is using this name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						return true;
+					}
+
+					if (newName == player->getName()) {
+						sendChannelMessage("", "You not allow to use this name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
 						return true;
 					}
 

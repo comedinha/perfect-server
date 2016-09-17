@@ -27,12 +27,12 @@ struct Account {
 	std::vector<uint16_t> world;
 	std::string name;
 	std::string key;
-	time_t lastDay;
-	uint32_t id;
-	uint16_t premiumDays;
-	AccountType_t accountType;
+	time_t lastDay = 0;
+	uint32_t id = 0;
+	uint16_t premiumDays = 0;
+	AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
 
-	Account() : lastDay(0), id(0), premiumDays(0), accountType(ACCOUNT_TYPE_NORMAL) {}
+	Account() = default;
 };
 
 struct World {
@@ -42,7 +42,7 @@ struct World {
 	std::vector<uint16_t> port;
 	std::vector<uint16_t> previewer;
 
-	World() : id(0), ip(0), port(0), previewer(0) {}
+	World() = default;
 };
 
 struct Casts {
@@ -53,14 +53,22 @@ struct Casts {
 	std::vector<uint16_t> spectators;
 	std::vector<uint16_t> worldid;
 
-	Casts() : id(0), password(0), spectators(0), worldid(0) {}
+	Casts() = default;
+};
+
+struct Records {
+	std::vector<uint16_t> id;
+	std::vector<std::string> name;
+	std::vector<uint16_t> worldid;
+
+	Records() = default;
 };
 
 struct Playerson {
 	std::vector<uint32_t> id;
 	std::vector<uint16_t> world;
 
-	Playerson() : id(0), world(0) {}
+	Playerson() = default;
 };
 
 #endif

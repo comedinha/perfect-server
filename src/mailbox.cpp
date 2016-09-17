@@ -91,7 +91,8 @@ void Mailbox::postRemoveNotification(Thing* thing, const Cylinder* newParent, in
 bool Mailbox::sendItem(Item* item) const
 {
 	std::string receiver;
-	if (!getReceiver(item, receiver)) {
+	std::string sender;
+	if (!getReceiver(item, receiver, sender)) {
 		return false;
 	}
 
@@ -114,6 +115,22 @@ bool Mailbox::sendItem(Item* item) const
 			return false;
 		}
 
+		Player* tmpPlayerSender = g_game.getPlayerByName(sender);
+		if (tmpPlayerSender) {
+			if (tmpPlayer.getWorldId() != tmpPlayerSender->getWorldId()) {
+				return false;
+			}
+		} else {
+			Player tmpSenderPlayer(nullptr);
+			if (!IOLoginData::loadPlayerByName(&tmpSenderPlayer, sender)) {
+				return false;
+			}
+
+			if (tmpPlayer.getWorldId() != tmpSenderPlayer.getWorldId()) {
+				return false;
+			}
+		}
+
 		if (g_game.internalMoveItem(item->getParent(), tmpPlayer.getInbox(), INDEX_WHEREEVER,
 		                            item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
 			g_game.transformItem(item, item->getID() + 1);
@@ -124,12 +141,12 @@ bool Mailbox::sendItem(Item* item) const
 	return false;
 }
 
-bool Mailbox::getReceiver(Item* item, std::string& name) const
+bool Mailbox::getReceiver(Item* item, std::string& name, std::string& person) const
 {
 	const Container* container = item->getContainer();
 	if (container) {
 		for (Item* containerItem : container->getItemList()) {
-			if (containerItem->getID() == ITEM_LABEL && getReceiver(containerItem, name)) {
+			if (containerItem->getID() == ITEM_LABEL && getReceiver(containerItem, name, person)) {
 				return true;
 			}
 		}
@@ -141,6 +158,7 @@ bool Mailbox::getReceiver(Item* item, std::string& name) const
 		return false;
 	}
 
+	person = item->getWriter();
 	name = getFirstLine(text);
 	trimString(name);
 	return true;

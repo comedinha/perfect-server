@@ -33,6 +33,7 @@
 #include "scriptmanager.h"
 #include "rsa.h"
 #include "protocolspectator.h"
+#include "protocolrecord.h"
 #include "protocolold.h"
 #include "protocollogin.h"
 #include "protocolstatus.h"

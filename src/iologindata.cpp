@@ -124,7 +124,7 @@ bool IOLoginData::loadCasts(Casts& casts)
 	Database* db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `player_id`, `cast_name`, `password`, `description`, `spectators`, `world_id` FROM `live_casts` ORDER BY `cast_name`";
+	query << "SELECT `player_id`, `cast_name`, `password`, `description`, `spectators`, `world_id` FROM `live_casts` ORDER BY `spectators` DESC";
 	DBResult_ptr result = db->storeQuery(query.str());
 	if (!result) {
 		return false;
@@ -173,6 +173,25 @@ uint32_t IOLoginData::getWorldId(uint32_t playerId)
 		return 1;
 	}
 	return result->getNumber<uint16_t>("world_id");
+}
+
+bool IOLoginData::loadRecords(Records& records)
+{
+	Database* db = Database::getInstance();
+
+	std::ostringstream query;
+	query << "SELECT `id`, `name`, `world_id` FROM `recordings` ORDER BY `id` DESC LIMIT 25";
+	DBResult_ptr result = db->storeQuery(query.str());
+	if (!result) {
+		return false;
+	}
+
+	do {
+		records.id.push_back(result->getNumber<uint16_t>("id"));
+		records.name.push_back(result->getString("name"));
+		records.worldid.push_back(result->getNumber<uint16_t>("world_id"));
+	} while (result->next());
+	return true;
 }
 
 std::string IOLoginData::generateFlashSessionKey(const std::string& token)

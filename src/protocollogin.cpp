@@ -45,7 +45,7 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 	disconnect();
 }
 
-void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t version, bool isLiveCastLogin /*=false*/)
+void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t version, bool specialLogin /*=false*/)
 {
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
@@ -71,10 +71,14 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	}
 
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
-	if (isLiveCastLogin) {
+	if (specialLogin) {
 		output->addByte(size + 1);
 		output->addByte(-1);
-		output->addString("Cast Info");
+		if (accountName == "") {
+			output->addString("Cast Info");
+		} else {
+			output->addString("Record Info");
+		}
 		output->addString("");
 		output->add<uint16_t>(0);
 		output->addByte(-1);
@@ -85,13 +89,47 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 		output->addByte(world.id[i]); // world id
 		output->addString(world.name[i]);
 		output->addString(world.ip[i]);
-		if (isLiveCastLogin) {
-			output->add<uint16_t>(world.port[i] + 1000);
+		if (specialLogin) {
+			if (accountName == "") {
+				output->add<uint16_t>(world.port[i] + 1000);
+			} else {
+				output->add<uint16_t>(world.port[i] + 2000);
+			}
 		} else {
 			output->add<uint16_t>(world.port[i]);
 		}
 		output->addByte(world.previewer[i]);
 	}
+}
+
+void ProtocolLogin::getRecordingStreamsList(const std::string& accountName, uint16_t version)
+{
+	//dispatcher thread
+	auto output = OutputMessagePool::getOutputMessage();
+	addWorldInfo(output, accountName, "", version, true);
+
+	Records records;
+	if (!IOLoginData::loadRecords(records)) {
+		disconnectClient("No Records.", version);
+		return;
+	}
+
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), records.id.size());
+	output->addByte(size);
+	std::ostringstream entry;
+	for (uint8_t i = 0; i < size; i++) {
+		output->addByte(records.worldid[i]);
+		entry << records.id[i] << ": " << records.name[i];
+		output->addString(entry.str());
+		entry.str(std::string());
+	}
+	
+	output->addByte(0);
+	output->addByte(0);
+	output->add<uint32_t>(0);
+	send(std::move(output));
+
+	disconnect();
 }
 
 void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t version)
@@ -265,7 +303,11 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	if (password.empty()) {
-		disconnectClient("Invalid password.", version);
+		if (g_config.getBoolean(ConfigManager::ENABLE_RECORD)) {
+			g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getRecordingStreamsList, thisPtr, accountName, version)));
+		} else {
+			disconnectClient("Invalid password.", version);
+		}
 		return;
 	}
 

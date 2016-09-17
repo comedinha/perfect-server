@@ -380,38 +380,6 @@ bool CombatSpell::executeCastSpell(Creature* creature, const LuaVariant& var)
 	return scriptInterface->callFunction(2);
 }
 
-Spell::Spell()
-{
-	spellId = 0;
-	level = 0;
-	magLevel = 0;
-	mana = 0;
-	manaPercent = 0;
-	soul = 0;
-	range = -1;
-	fist = 0;
-	club = 0;
-	sword = 0;
-	axe = 0;
-	distance = 0;
-	shield = 0;
-	fish = 0;
-	cooldown = 1000;
-	needTarget = false;
-	needWeapon = false;
-	selfTarget = false;
-	blockingSolid = false;
-	blockingCreature = false;
-	premium = false;
-	enabled = true;
-	aggressive = true;
-	learnable = false;
-	group = SPELLGROUP_NONE;
-	groupCooldown = 1000;
-	secondaryGroup = SPELLGROUP_NONE;
-	secondaryGroupCooldown = 0;
-}
-
 bool Spell::configureSpell(const pugi::xml_node& node)
 {
 	pugi::xml_attribute nameAttribute = node.attribute("name");
@@ -950,12 +918,12 @@ ReturnValue Spell::CreateIllusion(Creature* creature, const std::string& name, i
 
 	Player* player = creature->getPlayer();
 	if (player && !player->hasFlag(PlayerFlag_CanIllusionAll)) {
-		if (!mType->isIllusionable) {
+		if (!mType->info.isIllusionable) {
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 	}
 
-	return CreateIllusion(creature, mType->outfit, time);
+	return CreateIllusion(creature, mType->info.outfit, time);
 }
 
 ReturnValue Spell::CreateIllusion(Creature* creature, uint32_t itemId, int32_t time)
@@ -970,16 +938,6 @@ ReturnValue Spell::CreateIllusion(Creature* creature, uint32_t itemId, int32_t t
 
 	return CreateIllusion(creature, outfit, time);
 }
-
-InstantSpell::InstantSpell(LuaScriptInterface* interface) :
-	TalkAction(interface),
-	function(nullptr),
-	needDirection(false),
-	hasParam(false),
-	hasPlayerNameParam(false),
-	checkLineOfSight(true),
-	casterTargetOrDirection(false)
-{}
 
 std::string InstantSpell::getScriptEventName() const
 {
@@ -1568,13 +1526,13 @@ bool InstantSpell::SummonMonster(const InstantSpell* spell, Creature* creature, 
 	}
 
 	if (!player->hasFlag(PlayerFlag_CanSummonAll)) {
-		if (!mType->isSummonable) {
+		if (!mType->info.isSummonable) {
 			player->sendCancelMessage(RETURNVALUE_NOTPOSSIBLE);
 			g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
 			return false;
 		}
 
-		if (player->getMana() < mType->manaCost) {
+		if (player->getMana() < mType->info.manaCost) {
 			player->sendCancelMessage(RETURNVALUE_NOTENOUGHMANA);
 			g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
 			return false;
@@ -1604,7 +1562,7 @@ bool InstantSpell::SummonMonster(const InstantSpell* spell, Creature* creature, 
 		return false;
 	}
 
-	Spell::postCastSpell(player, mType->manaCost, spell->getSoulCost());
+	Spell::postCastSpell(player, mType->info.manaCost, spell->getSoulCost());
 	g_game.addMagicEffect(player->getPosition(), CONST_ME_MAGIC_BLUE);
 	g_game.addMagicEffect(monster->getPosition(), CONST_ME_TELEPORT);
 	return true;
@@ -1695,14 +1653,6 @@ bool InstantSpell::canCast(const Player* player) const
 	return false;
 }
 
-
-ConjureSpell::ConjureSpell(LuaScriptInterface* interface) :
-	InstantSpell(interface),
-	conjureId(0),
-	conjureCount(1),
-	reagentId(0)
-{}
-
 std::string ConjureSpell::getScriptEventName() const
 {
 	return "onCastSpell";
@@ -1789,13 +1739,6 @@ bool ConjureSpell::playerCastInstant(Player* player, std::string& param)
 	}
 	return conjureItem(player);
 }
-
-RuneSpell::RuneSpell(LuaScriptInterface* interface) :
-	Action(interface),
-	runeFunction(nullptr),
-	runeId(0),
-	hasCharges(true)
-{}
 
 std::string RuneSpell::getScriptEventName() const
 {

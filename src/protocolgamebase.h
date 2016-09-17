@@ -44,15 +44,7 @@ class ProtocolGameBase : public Protocol {
 		enum {use_checksum = true};
 
 	protected:
-		explicit ProtocolGameBase(Connection_ptr connection):
-			Protocol(connection),
-			player(nullptr),
-			eventConnect(0),
-			version(CLIENT_VERSION_MIN),
-			challengeTimestamp(0),
-			challengeRandom(0),
-			debugAssertSent(false),
-			acceptPackets(false) {}
+		explicit ProtocolGameBase(Connection_ptr connection) : Protocol(connection) {}
 
 		virtual void writeToOutputBuffer(const NetworkMessage& msg, bool broadcast = true) = 0;
 		void onConnect() final;
@@ -107,15 +99,16 @@ class ProtocolGameBase : public Protocol {
 		bool canSee(const Creature*) const;
 		bool canSee(const Position& pos) const;
 
-		Player* player;
-		uint32_t eventConnect;
-		uint16_t version;
+		Player* player = nullptr;
 
-		uint32_t challengeTimestamp;
-		uint8_t challengeRandom;
+		uint32_t eventConnect = 0;
+		uint32_t challengeTimestamp = 0;
+		uint16_t version = CLIENT_VERSION_MIN;
 
-		bool debugAssertSent;
-		bool acceptPackets;
+		uint8_t challengeRandom = 0;
+
+		bool debugAssertSent = false;
+		bool acceptPackets = false;
 
 		std::unordered_set<uint32_t> knownCreatureSet;
 };

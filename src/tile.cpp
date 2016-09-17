@@ -555,11 +555,14 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			if (field && !field->isBlocking()) {
 				CombatType_t combatType = field->getCombatType();
 				if (!monster->isImmune(combatType)) {
+					if (!g_game.isExpertPvpEnabled() && combatType == COMBAT_NONE) {
+						return RETURNVALUE_NOTPOSSIBLE;
+					}
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, flags)) {
 						MonsterType* mType = g_monsters.getMonsterType(monster->getName());
 						int32_t elementMod = 0;
-						auto it = mType->elementMap.find(combatType);
-						if (it != mType->elementMap.end()) {
+						auto it = mType->info.elementMap.find(combatType);
+						if (it != mType->info.elementMap.end()) {
 							elementMod = it->second;
 						}
 						if (!(elementMod >= 50 || monster->passMagicField(combatType) || monster->isAttacked())) {
