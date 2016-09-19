@@ -3505,7 +3505,7 @@ bool Game::internalCreatureSay(Creature* creature, MessageClasses type, const st
 		// is used if available and if it can be used, else a local vector is
 		// used (hopefully the compiler will optimize away the construction of
 		// the temporary when it's not used).
-		if (type != MESSAGE_BARK_LOUD) {
+		if (type != MESSAGE_YELL && type != MESSAGE_BARK_LOUD) {
 			map.getSpectators(list, *pos, false, false,
 			              Map::maxClientViewportX, Map::maxClientViewportX,
 			              Map::maxClientViewportY, Map::maxClientViewportY);
@@ -4997,9 +4997,7 @@ void Game::sendGuildMotd(uint32_t playerId)
 
 	Guild* guild = player->getGuild();
 	if (guild) {
-		std::ostringstream ss;
-		ss << "Message of the Day: " << guild->getMotd();
-		player->sendTextMessage(MESSAGE_GUILD, ss.str(), CHANNEL_GUILD);
+		player->sendTextMessage(MESSAGE_GUILD, "Message of the Day: " + guild->getMotd(), CHANNEL_GUILD);
 	}
 }
 
