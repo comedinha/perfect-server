@@ -298,6 +298,7 @@ bool ProtocolGame::startLiveCast(const std::string& password /*= ""*/)
 	registerLiveCast();
 	//Send a "dummy" channel
 	sendChannel(CHANNEL_CAST, LIVE_CAST_CHAT_NAME, nullptr, nullptr);
+	g_scheduler.addEvent(createSchedulerTask(150, std::bind(&ProtocolGameBase::broadcastTextMessage, getThis(), TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick and !help."), CHANNEL_CAST, false)));
 	return true;
 }
 
@@ -675,7 +676,7 @@ void ProtocolGame::parseCloseChannel(NetworkMessage& msg)
 	uint16_t channelId = msg.get<uint16_t>();
 	if (channelId == CHANNEL_CAST) {
 		stopLiveCast();
-		sendTextMessage(TextMessage(MESSAGE_INFO_DESCR, "You have stopped casting."));
+		sendTextMessage(TextMessage(MESSAGE_LOOK, "You have stopped casting."));
 	} else {
 		addGameTask(&Game::playerCloseChannel, player->getID(), channelId);
 	}
@@ -817,19 +818,17 @@ void ProtocolGame::parseSay(NetworkMessage& msg)
 	std::string receiver;
 	uint16_t channelId;
 
-	SpeakClasses type = static_cast<SpeakClasses>(msg.getByte());
+	MessageClasses type = static_cast<MessageClasses>(msg.getByte());
 	switch (type) {
-		case TALKTYPE_PRIVATE_TO:
-		case TALKTYPE_PRIVATE_RED_TO:
+		case MESSAGE_CHANNEL:
+		case MESSAGE_GAMEMASTER_CHANNEL:
+			channelId = msg.get<uint16_t>();
+			break;
+		case MESSAGE_PRIVATE_TO:
+		case MESSAGE_GAMEMASTER_PRIVATE_TO:
 			receiver = msg.getString();
 			channelId = 0;
 			break;
-
-		case TALKTYPE_CHANNEL_Y:
-		case TALKTYPE_CHANNEL_R1:
-			channelId = msg.get<uint16_t>();
-			break;
-
 		default:
 			channelId = 0;
 			break;
@@ -869,10 +868,10 @@ void ProtocolGame::parseTextWindow(NetworkMessage& msg)
 
 void ProtocolGame::parseHouseWindow(NetworkMessage& msg)
 {
-	uint8_t doorId = msg.getByte();
+	uint8_t type = msg.getByte();
 	uint32_t id = msg.get<uint32_t>();
 	const std::string text = msg.getString();
-	addGameTask(&Game::playerUpdateHouseWindow, player->getID(), doorId, id, text);
+	addGameTask(&Game::playerUpdateHouseWindow, player->getID(), type, id, text);
 }
 
 void ProtocolGame::parseLookInShop(NetworkMessage& msg)
@@ -1193,39 +1192,6 @@ void ProtocolGame::sendReLoginWindow(uint8_t unfairFightReduction)
 	msg.addByte(0x00);
 	msg.addByte(unfairFightReduction);
 	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendTextMessage(const TextMessage& message, bool broadcast)
-{
-	NetworkMessage msg;
-	msg.addByte(0xB4);
-	msg.addByte(message.type);
-	switch (message.type) {
-		case MESSAGE_DAMAGE_DEALT:
-		case MESSAGE_DAMAGE_RECEIVED:
-		case MESSAGE_DAMAGE_OTHERS: {
-			msg.addPosition(message.position);
-			msg.add<uint32_t>(message.primary.value);
-			msg.addByte(message.primary.color);
-			msg.add<uint32_t>(message.secondary.value);
-			msg.addByte(message.secondary.color);
-			break;
-		}
-		case MESSAGE_HEALED:
-		case MESSAGE_HEALED_OTHERS:
-		case MESSAGE_EXPERIENCE:
-		case MESSAGE_EXPERIENCE_OTHERS: {
-			msg.addPosition(message.position);
-			msg.add<uint32_t>(message.primary.value);
-			msg.addByte(message.primary.color);
-			break;
-		}
-		default: {
-			break;
-		}
-	}
-	msg.addString(message.text);
-	writeToOutputBuffer(msg, broadcast);
 }
 
 void ProtocolGame::sendClosePrivate(uint16_t channelId)
@@ -1711,7 +1677,7 @@ void ProtocolGame::sendMarketDetail(uint16_t itemId)
 			ss << getSkillName(i) << ' ' << std::showpos << it.abilities->skills[i] << std::noshowpos;
 		}
 
-		for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_LAST; i++) {
+		for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_MANA_LEECH_AMOUNT; i++) {
 			if (!it.abilities->skills[i]) {
 				continue;
 			}
@@ -1911,79 +1877,6 @@ void ProtocolGame::sendCreatureTurn(const Creature* creature, uint32_t stackPos)
 	msg.add<uint32_t>(creature->getID());
 	msg.addByte(creature->getDirection());
 	msg.addByte(player->canWalkthroughEx(creature) ? 0x00 : 0x01);
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos/* = nullptr*/)
-{
-	NetworkMessage msg;
-	msg.addByte(0xAA);
-
-	static uint32_t statementId = 0;
-	msg.add<uint32_t>(++statementId);
-
-	msg.addString(creature->getName());
-
-	//Add level only for players
-	if (const Player* speaker = creature->getPlayer()) {
-		msg.add<uint16_t>(speaker->getLevel());
-	} else {
-		msg.add<uint16_t>(0x00);
-	}
-
-	msg.addByte(type);
-	if (pos) {
-		msg.addPosition(*pos);
-	} else {
-		msg.addPosition(creature->getPosition());
-	}
-
-	msg.addString(text);
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId)
-{
-	NetworkMessage msg;
-	msg.addByte(0xAA);
-
-	static uint32_t statementId = 0;
-	msg.add<uint32_t>(++statementId);
-	if (!creature) {
-		msg.add<uint32_t>(0x00);
-	} else if (type == TALKTYPE_CHANNEL_R2) {
-		msg.add<uint32_t>(0x00);
-		type = TALKTYPE_CHANNEL_R1;
-	} else {
-		msg.addString(creature->getName());
-		//Add level only for players
-		if (const Player* speaker = creature->getPlayer()) {
-			msg.add<uint16_t>(speaker->getLevel());
-		} else {
-			msg.add<uint16_t>(0x00);
-		}
-	}
-
-	msg.addByte(type);
-	msg.add<uint16_t>(channelId);
-	msg.addString(text);
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text)
-{
-	NetworkMessage msg;
-	msg.addByte(0xAA);
-	static uint32_t statementId = 0;
-	msg.add<uint32_t>(++statementId);
-	if (speaker) {
-		msg.addString(speaker->getName());
-		msg.add<uint16_t>(speaker->getLevel());
-	} else {
-		msg.add<uint32_t>(0x00);
-	}
-	msg.addByte(type);
-	msg.addString(text);
 	writeToOutputBuffer(msg);
 }
 
@@ -2226,11 +2119,17 @@ void ProtocolGame::sendTextWindow(uint32_t windowTextId, uint32_t itemId, const 
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendHouseWindow(uint32_t windowTextId, const std::string& text)
+void ProtocolGame::sendHouseWindow(uint32_t listId, uint32_t windowTextId, const std::string& text)
 {
 	NetworkMessage msg;
 	msg.addByte(0x97);
-	msg.addByte(0x00);
+	if (listId == GUEST_LIST) {
+		msg.addByte(0x01);
+	} else if (listId == SUBOWNER_LIST) {
+		msg.addByte(0x02);
+	} else {
+		msg.addByte(0x03);
+	}
 	msg.add<uint32_t>(windowTextId);
 	msg.addString(text);
 	writeToOutputBuffer(msg);
@@ -2480,7 +2379,7 @@ std::shared_ptr<ProtocolSpectator> ProtocolGame::getSpectatorByName(const std::s
 
 void ProtocolGame::checkCommand(const std::string& text)
 {
-	if (text[0] == '/') {
+	if (text[0] == '!') {
 		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
 			toLowerCaseString(t[0]);
@@ -2493,18 +2392,18 @@ void ProtocolGame::checkCommand(const std::string& text)
 					std::string toMute = t[1];
 
 					if (toMute == "") {
-						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 						return;
 					}
 
 					ProtocolSpectator_ptr spectator = static_cast<ProtocolSpectator_ptr>(getSpectatorByName(toMute));
 					if (spectator) {
 						if (command == "mute") {
-							sendChannelMessage("", spectator->getSpectatorName() + " has been muted.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+							sendTextMessage(TextMessage(MESSAGE_GUILD, spectator->getSpectatorName() + " has been muted."), CHANNEL_CAST);
 
 							muteList.push_back(spectator->getSpectatorId());
 						} else {
-							sendChannelMessage("", spectator->getSpectatorName() + " has been unmuted.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+							sendTextMessage(TextMessage(MESSAGE_GUILD, spectator->getSpectatorName() + " has been unmuted."), CHANNEL_CAST);
 
 							auto it = std::find(muteList.begin(), muteList.end(), spectator->getSpectatorId());
 							if (it != muteList.end()) {
@@ -2513,10 +2412,10 @@ void ProtocolGame::checkCommand(const std::string& text)
 						}
 					}
 					else {
-						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Spectator not found."), false);
+						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Spectator not found."), CHANNEL_CAST, false);
 					}
 				} else {
-					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+					sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 				}
 				return;
 			} else if (command == "ban" || command == "unban") {
@@ -2526,7 +2425,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 					toLowerCaseString(toBan);
 
 					if (toBan == "") {
-						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 						return;
 					}
 
@@ -2541,7 +2440,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 						if (spectator) {
 							std::string name = spectator->getSpectatorName();
 
-							sendChannelMessage("", name + " has been banned.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+							sendTextMessage(TextMessage(MESSAGE_GUILD, name + " has been banned."), CHANNEL_CAST);
 							toLowerCaseString(name);
 
 							banMap.insert(std::make_pair(spectator->getIP(), name));
@@ -2549,7 +2448,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 							removeSpectator(spectator);
 							spectator->getConnection()->close();
 						} else {
-							sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Spectator not found."), false);
+							sendTextMessage(TextMessage(MESSAGE_FAILURE, "Spectator not found."), CHANNEL_CAST, false);
 						}
 					} else {
 						bool found = false;
@@ -2562,13 +2461,13 @@ void ProtocolGame::checkCommand(const std::string& text)
 						}
 
 						if (found) {
-							sendChannelMessage("",t[1] + " has been unbanned.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+							sendTextMessage(TextMessage(MESSAGE_GUILD, t[1] + " has been unbanned."), CHANNEL_CAST, true);
 						} else {
-							sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Spectator not found."), false);
+							sendTextMessage(TextMessage(MESSAGE_FAILURE, "Spectator not found."), CHANNEL_CAST, false);
 						}
 					}
 				} else {
-					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+					sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 				}
 				return;
 			} else if (command == "spectators") {
@@ -2588,7 +2487,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 					ss << "No spectators.";
 				}
 
-				sendChannelMessage("", ss.str().c_str(), SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST, false);
 				return;
 			} else if (command == "password") {
 				if (t.size() == 2) {
@@ -2596,10 +2495,10 @@ void ProtocolGame::checkCommand(const std::string& text)
 					std::string newPassword = t[1];
 					liveCastPassword = newPassword;
 
-					sendChannelMessage("", "Casting new password: " + newPassword, SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+					sendTextMessage(TextMessage(MESSAGE_GUILD, "Casting new password: " + newPassword), CHANNEL_CAST, false);
 				} else {
 					liveCastPassword = "";
-					sendChannelMessage("", "Casting new password: {No Password}", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+					sendTextMessage(TextMessage(MESSAGE_GUILD, "Casting new password: {No Password}"), CHANNEL_CAST, false);
 				}
 				updateLiveCastInfo();
 				return;
@@ -2609,24 +2508,24 @@ void ProtocolGame::checkCommand(const std::string& text)
 					std::string toKick = t[1];
 
 					if (toKick == "") {
-						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 						return;
 					}
 
 					ProtocolSpectator_ptr spectator = static_cast<ProtocolSpectator_ptr>(getSpectatorByName(toKick));
 					if (spectator) {
-						sendChannelMessage("", spectator->getSpectatorName() + " has been kicked.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+						sendTextMessage(TextMessage(MESSAGE_GUILD, spectator->getSpectatorName() + " has been kicked."), CHANNEL_CAST);
 						removeSpectator(spectator);
 						spectator->getConnection()->close();;
 					} else {
-						sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Spectator not found."), false);
+						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Spectator not found."), CHANNEL_CAST, false);
 					}
 				} else {
-					sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, "Not enough parameters."), false);
+					sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 				}
 				return;
 			} else if (command == "help") {
-				sendChannelMessage("", "Avalible commands: /mute, /unmute, /ban, /unban, /spectators, /password, /kick and /help.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick and !help."), CHANNEL_CAST, false);
 				return;
 			}
 		}

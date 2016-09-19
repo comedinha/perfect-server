@@ -91,6 +91,7 @@ enum ChannelEvent_t : uint8_t {
 	CHANNELEVENT_LEAVE = 1,
 	CHANNELEVENT_INVITE = 2,
 	CHANNELEVENT_EXCLUDE = 3,
+	CHANNELEVENT_PENDING = 3,
 };
 
 enum CreatureType_t : uint8_t {

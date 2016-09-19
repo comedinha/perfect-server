@@ -314,24 +314,24 @@ bool AnnounceEvent::configureRaidEvent(const pugi::xml_node& eventNode)
 	if (typeAttribute) {
 		std::string tmpStrValue = asLowerCaseString(typeAttribute.as_string());
 		if (tmpStrValue == "warning") {
-			messageType = MESSAGE_STATUS_WARNING;
+			messageType = MESSAGE_ADMIN;
 		} else if (tmpStrValue == "event") {
-			messageType = MESSAGE_EVENT_ADVANCE;
+			messageType = MESSAGE_GAME;
 		} else if (tmpStrValue == "default") {
-			messageType = MESSAGE_EVENT_DEFAULT;
+			messageType = MESSAGE_STATUS;
 		} else if (tmpStrValue == "description") {
-			messageType = MESSAGE_INFO_DESCR;
+			messageType = MESSAGE_LOOK;
 		} else if (tmpStrValue == "smallstatus") {
-			messageType = MESSAGE_STATUS_SMALL;
+			messageType = MESSAGE_FAILURE;
 		} else if (tmpStrValue == "blueconsole") {
-			messageType = MESSAGE_STATUS_CONSOLE_BLUE;
+			messageType = MESSAGE_PRIVATE_FROM;
 		} else if (tmpStrValue == "redconsole") {
-			messageType = MESSAGE_STATUS_CONSOLE_RED;
+			messageType = MESSAGE_GAMEMASTER_BROADCAST;
 		} else {
 			std::cout << "[Notice] Raid: Unknown type tag missing for announce event. Using default: " << static_cast<uint32_t>(messageType) << std::endl;
 		}
 	} else {
-		messageType = MESSAGE_EVENT_ADVANCE;
+		messageType = MESSAGE_GAME;
 		std::cout << "[Notice] Raid: type tag missing for announce event. Using default: " << static_cast<uint32_t>(messageType) << std::endl;
 	}
 	return true;

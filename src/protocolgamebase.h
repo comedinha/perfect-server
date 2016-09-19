@@ -34,6 +34,20 @@ class Tile;
 class Connection;
 class Quest;
 
+struct TextMessage
+{
+	MessageClasses type = MESSAGE_LOGIN;
+	std::string text;
+	Position position;
+	struct {
+		int32_t value = 0;
+		TextColor_t color;
+	} primary, secondary;
+
+	TextMessage() = default;
+	TextMessage(MessageClasses type, std::string text) : type(type), text(text) {}
+};
+
 /** \brief Contains methods and member variables common to both the game and spectator protocols
  */
 class ProtocolGameBase : public Protocol {
@@ -42,6 +56,12 @@ class ProtocolGameBase : public Protocol {
 		enum {server_sends_first = true};
 		enum {protocol_identifier = 0}; // Not required as we send first
 		enum {use_checksum = true};
+
+		void broadcastTextMessage(const TextMessage& message, uint16_t channelId = 0, bool broadcast = true) {
+			if (player) {
+				sendTextMessage(message, channelId, broadcast);
+			}
+		}
 
 	protected:
 		explicit ProtocolGameBase(Connection_ptr connection) : Protocol(connection) {}
@@ -68,7 +88,8 @@ class ProtocolGameBase : public Protocol {
 
 		static void RemoveTileThing(NetworkMessage& msg, const Position& pos, uint32_t stackpos);
 
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true);
+		void sendTextMessage(const TextMessage& message, uint16_t channelId = 0, bool broadcast = true);
+		void sendChannelMessage(const std::string& author, const std::string& text, MessageClasses type, uint16_t channel, const Creature* creature = nullptr, const Position* pos = nullptr, bool broadcast = true);
 		void sendUpdateTile(const Tile* tile, const Position& pos);
 		void sendContainer(uint8_t cid, const Container* container, bool hasParent, uint16_t firstIndex);
 		void sendChannel(uint16_t channelId, const std::string& channelName, const UsersMap* channelUsers, const InvitedMap* invitedUsers);
@@ -76,6 +97,7 @@ class ProtocolGameBase : public Protocol {
 		void sendMagicEffect(const Position& pos, uint8_t type);
 		void sendStats();
 		void sendSkullTime();
+		void sendPremiumTrigger();
 		void sendBasicData();
 		void sendPendingStateEntered();
 		void sendEnterWorld();

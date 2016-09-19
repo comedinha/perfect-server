@@ -1506,7 +1506,7 @@ bool InstantSpell::SearchPlayer(const InstantSpell*, Creature* creature, const s
 				break;
 		}
 	}
-	player->sendTextMessage(MESSAGE_INFO_DESCR, ss.str());
+	player->sendTextMessage(MESSAGE_LOOK, ss.str());
 	g_game.addMagicEffect(player->getPosition(), CONST_ME_MAGIC_BLUE);
 	return true;
 }

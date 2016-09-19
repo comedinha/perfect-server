@@ -186,7 +186,7 @@ class AnnounceEvent final : public RaidEvent
 
 	private:
 		std::string message;
-		MessageClasses messageType = MESSAGE_EVENT_ADVANCE;
+		MessageClasses messageType = MESSAGE_GAME;
 };
 
 class SingleSpawnEvent final : public RaidEvent

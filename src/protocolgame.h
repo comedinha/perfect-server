@@ -41,20 +41,6 @@ typedef std::shared_ptr<ProtocolGame> ProtocolGame_ptr;
 
 extern Game g_game;
 
-struct TextMessage
-{
-	MessageClasses type = MESSAGE_STATUS_DEFAULT;
-	std::string text;
-	Position position;
-	struct {
-		int32_t value = 0;
-		TextColor_t color;
-	} primary, secondary;
-
-	TextMessage() = default;
-	TextMessage(MessageClasses type, std::string text) : type(type), text(text) {}
-};
-
 class ProtocolGame final : public ProtocolGameBase
 {
 	public:
@@ -165,9 +151,9 @@ class ProtocolGame final : public ProtocolGameBase
 		*   and then get broadcast to the rest of the spectators
 		*  \param text string containing the text message
 		*/
-		void broadcastSpectatorMessage(const std::string& name, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true) {
+		void broadcastSpectatorMessage(const std::string& name, const std::string& text, MessageClasses type) {
 			if (player) {
-				sendChannelMessage(name, text, type, channel, broadcast);
+				sendChannelMessage(name, text, type, CHANNEL_CAST);
 			}
 		}
 
@@ -273,15 +259,12 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
 		void sendChannelsDialog();
 		void sendOpenPrivateChannel(const std::string& receiver);
-		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId);
-		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text);
 		void sendIcons(uint16_t icons);
 		void sendFYIBox(const std::string& message);
 
 		void sendDistanceShoot(const Position& from, const Position& to, uint8_t type);
 		void sendCreatureHealth(const Creature* creature);
 		void sendCreatureTurn(const Creature* creature, uint32_t stackpos);
-		void sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos = nullptr);
 
 		void sendQuestLog();
 		void sendQuestLine(const Quest* quest);
@@ -295,7 +278,6 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendTutorial(uint8_t tutorialId);
 		void sendAddMarker(const Position& pos, uint8_t markType, const std::string& desc);
 
-		void sendTextMessage(const TextMessage& message, bool broadcast = true);
 		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough);
 		void sendCreatureShield(const Creature* creature);
 		void sendCreatureSkull(const Creature* creature);
@@ -318,7 +300,7 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendTextWindow(uint32_t windowTextId, Item* item, uint16_t maxlen, bool canWrite);
 		void sendTextWindow(uint32_t windowTextId, uint32_t itemId, const std::string& text);
-		void sendHouseWindow(uint32_t windowTextId, const std::string& text);
+		void sendHouseWindow(uint32_t listId, uint32_t windowTextId, const std::string& text);
 		void sendOutfitWindow();
 
 		void sendUpdatedVIPStatus(uint32_t guid, VipStatus_t newStatus);

@@ -242,8 +242,8 @@ void ProtocolSpectator::syncChatChannels()
 	} else {
 		ss << "{Only you}";
 	}
-	sendChannelMessage("", ss.str().c_str(), TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
-	sendChannelMessage("", "Avalible commands: /spectators, /nick or /help.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+	sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST);
+	sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !nick or !help."), CHANNEL_CAST);
 }
 
 void ProtocolSpectator::syncOpenContainers()
@@ -353,10 +353,10 @@ void ProtocolSpectator::parsePacket(NetworkMessage& msg)
 
 void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 {
-	SpeakClasses type = (SpeakClasses)msg.getByte();
+	MessageClasses type = (MessageClasses)msg.getByte();
 	uint16_t channelId = 0;
 
-	if (type == TALKTYPE_CHANNEL_Y) {
+	if (type == MESSAGE_CHANNEL) {
 		channelId = msg.get<uint16_t>();
 	} else {
 		return;
@@ -370,7 +370,7 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 
 	if (client) {
 		if (client->isSpectatorMuted(spectatorId)) {
-			sendChannelMessage("", "You have been muted.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+			sendTextMessage(TextMessage(MESSAGE_FAILURE, "You have been muted."), CHANNEL_CAST);
 			return;
 		}
 
@@ -378,7 +378,7 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 			return;
 		}
 
-		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, TALKTYPE_CHANNEL_Y, CHANNEL_CAST, true)));
+		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, MESSAGE_CHANNEL)));
 	}
 }
 
@@ -413,7 +413,7 @@ void ProtocolSpectator::onLiveCastStop()
 
 bool ProtocolSpectator::parseCoomand(const std::string& text)
 {
-	if (text[0] == '/') {
+	if (text[0] == '!') {
 		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
 			toLowerCaseString(t[0]);
@@ -431,8 +431,8 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 				}
 				ss << ".";
 
-				sendChannelMessage("", ss.str().c_str(), TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
-			} else if (command == "name" || command == "nick") {
+				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST);
+			} else if (command == "name") {
 				if (t.size() == 2) {
 					std::string newName = t[1];
 
@@ -444,30 +444,30 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 					}
 
 					if (!allowChangeName) {
-						sendChannelMessage("", "Other spectator is using this name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						sendTextMessage(TextMessage(MESSAGE_GUILD, "Other spectator is using this name."), CHANNEL_CAST);
 						return true;
 					}
 
 					if (newName == player->getName()) {
-						sendChannelMessage("", "You not allow to use this name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						sendTextMessage(TextMessage(MESSAGE_GUILD, "You not allow to use this name."), CHANNEL_CAST);
 						return true;
 					}
 
 					if (newName.empty()) {
-						sendChannelMessage("", "You can not talk before choosing a nick with the /nick YOURNAME.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						sendTextMessage(TextMessage(MESSAGE_GUILD, "Please say !name {YOURNAME}."), CHANNEL_CAST);
 						return true;
 					}
 
 					if (newName.length() > 30) {
-						sendChannelMessage("", "Name invalid, please try again.", TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+						sendTextMessage(TextMessage(MESSAGE_GUILD, "Name invalid, please try again."), CHANNEL_CAST);
 						return true;
 					}
 
-					client->broadcastSpectatorMessage("", spectatorName + " new name: " + newName, SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, true);
+					g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, "my new name is " + newName, MESSAGE_GAMEMASTER_CHANNEL)));
 					spectatorName = newName;
 				}
 			} else if (command == "help") {
-				sendChannelMessage("", "Avalible commands: /spectators, /nick or /help.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !nick or !help."), CHANNEL_CAST);
 			}
 		}
 

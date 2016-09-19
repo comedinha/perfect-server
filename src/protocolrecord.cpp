@@ -229,7 +229,7 @@ void ProtocolRecord::writeToOutputBuffer(const NetworkMessage& msg, bool broadca
 
 bool ProtocolRecord::parseCoomand(const std::string& text)
 {
-	if (text[0] == '/') {
+	if (text[0] == '!') {
 
 		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
@@ -238,7 +238,7 @@ bool ProtocolRecord::parseCoomand(const std::string& text)
 			std::string command = t[0];
 
 			if (command == "help") {
-				sendChannelMessage("", "Avalible commands: /spectators, /nick or /help.", SpeakClasses::TALKTYPE_CHANNEL_O, CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_CHANNEL, "Avalible commands: !help."));
 			}
 		}
 

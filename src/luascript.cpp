@@ -1380,24 +1380,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(GAME_STATE_CLOSING)
 	registerEnum(GAME_STATE_MAINTAIN)
 
-	registerEnum(MESSAGE_STATUS_CONSOLE_BLUE)
-	registerEnum(MESSAGE_STATUS_CONSOLE_RED)
-	registerEnum(MESSAGE_STATUS_DEFAULT)
-	registerEnum(MESSAGE_STATUS_WARNING)
-	registerEnum(MESSAGE_EVENT_ADVANCE)
-	registerEnum(MESSAGE_STATUS_SMALL)
-	registerEnum(MESSAGE_INFO_DESCR)
-	registerEnum(MESSAGE_DAMAGE_DEALT)
-	registerEnum(MESSAGE_DAMAGE_RECEIVED)
-	registerEnum(MESSAGE_HEALED)
-	registerEnum(MESSAGE_EXPERIENCE)
-	registerEnum(MESSAGE_DAMAGE_OTHERS)
-	registerEnum(MESSAGE_HEALED_OTHERS)
-	registerEnum(MESSAGE_EXPERIENCE_OTHERS)
-	registerEnum(MESSAGE_EVENT_DEFAULT)
-	registerEnum(MESSAGE_EVENT_ORANGE)
-	registerEnum(MESSAGE_STATUS_CONSOLE_ORANGE)
-
 	registerEnum(CREATURETYPE_PLAYER)
 	registerEnum(CREATURETYPE_MONSTER)
 	registerEnum(CREATURETYPE_NPC)
@@ -1481,6 +1463,51 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(ITEM_WILDGROWTH_SAFE)
 	registerEnum(ITEM_WILDGROWTH_NOPVP)
 
+	registerEnum(MESSAGE_SAY)
+	registerEnum(MESSAGE_WHISPER)
+	registerEnum(MESSAGE_YELL)
+	registerEnum(MESSAGE_PRIVATE_FROM)
+	registerEnum(MESSAGE_PRIVATE_TO)
+	registerEnum(MESSAGE_CHANNEL_MANAGEMENT)
+	registerEnum(MESSAGE_CHANNEL)
+	registerEnum(MESSAGE_CHANNEL_HIGHLIGHT)
+	registerEnum(MESSAGE_SPELL)
+	registerEnum(MESSAGE_NPC_FROM_START_BLOCK)
+	registerEnum(MESSAGE_NPC_FROM)
+	registerEnum(MESSAGE_NPC_TO)
+	registerEnum(MESSAGE_GAMEMASTER_BROADCAST)
+	registerEnum(MESSAGE_GAMEMASTER_CHANNEL)
+	registerEnum(MESSAGE_GAMEMASTER_PRIVATE_FROM)
+	registerEnum(MESSAGE_GAMEMASTER_PRIVATE_TO)
+	registerEnum(MESSAGE_LOGIN)
+	registerEnum(MESSAGE_ADMIN)
+	registerEnum(MESSAGE_GAME)
+	registerEnum(MESSAGE_GAME_HIGHLIGHT)
+	registerEnum(MESSAGE_FAILURE)
+	registerEnum(MESSAGE_LOOK)
+	registerEnum(MESSAGE_DAMAGE_DEALED)
+	registerEnum(MESSAGE_DAMAGE_RECEIVED)
+	registerEnum(MESSAGE_HEAL)
+	registerEnum(MESSAGE_EXP)
+	registerEnum(MESSAGE_DAMAGE_OTHERS)
+	registerEnum(MESSAGE_HEAL_OTHERS)
+	registerEnum(MESSAGE_EXP_OTHERS)
+	registerEnum(MESSAGE_STATUS)
+	registerEnum(MESSAGE_LOOT)
+	registerEnum(MESSAGE_TRADE_NPC)
+	registerEnum(MESSAGE_GUILD)
+	registerEnum(MESSAGE_PARTY_MANAGEMENT)
+	registerEnum(MESSAGE_PARTY)
+	registerEnum(MESSAGE_BARK_LOW)
+	registerEnum(MESSAGE_BARK_LOUD)
+	registerEnum(MESSAGE_REPORT)
+	registerEnum(MESSAGE_HOTKEY_USE)
+	registerEnum(MESSAGE_TUTORIAL_HINT)
+	registerEnum(MESSAGE_THANKYOU)
+	registerEnum(MESSAGE_MARKET)
+	registerEnum(MESSAGE_MANA)
+	registerEnum(MESSAGE_BEYOND_LAST)
+
 	registerEnum(PlayerFlag_CannotUseCombat)
 	registerEnum(PlayerFlag_CannotAttackPlayer)
 	registerEnum(PlayerFlag_CannotAttackMonster)
@@ -1548,23 +1575,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(SKULL_RED)
 	registerEnum(SKULL_BLACK)
 	registerEnum(SKULL_ORANGE)
-
-	registerEnum(TALKTYPE_SAY)
-	registerEnum(TALKTYPE_WHISPER)
-	registerEnum(TALKTYPE_YELL)
-	registerEnum(TALKTYPE_PRIVATE_FROM)
-	registerEnum(TALKTYPE_PRIVATE_TO)
-	registerEnum(TALKTYPE_CHANNEL_Y)
-	registerEnum(TALKTYPE_CHANNEL_O)
-	registerEnum(TALKTYPE_PRIVATE_NP)
-	registerEnum(TALKTYPE_PRIVATE_PN)
-	registerEnum(TALKTYPE_BROADCAST)
-	registerEnum(TALKTYPE_CHANNEL_R1)
-	registerEnum(TALKTYPE_PRIVATE_RED_FROM)
-	registerEnum(TALKTYPE_PRIVATE_RED_TO)
-	registerEnum(TALKTYPE_MONSTER_SAY)
-	registerEnum(TALKTYPE_MONSTER_YELL)
-	registerEnum(TALKTYPE_CHANNEL_R2)
 
 	registerEnum(TEXTCOLOR_BLUE)
 	registerEnum(TEXTCOLOR_LIGHTGREEN)
@@ -3875,7 +3885,7 @@ int LuaScriptInterface::luaSendChannelMessage(lua_State* L)
 		return 1;
 	}
 
-	SpeakClasses type = getNumber<SpeakClasses>(L, 2);
+	MessageClasses type = getNumber<MessageClasses>(L, 2);
 	std::string message = getString(L, 3);
 	channel->sendToAll(message, type);
 	pushBoolean(L, true);
@@ -3892,7 +3902,7 @@ int LuaScriptInterface::luaSendGuildChannelMessage(lua_State* L)
 		return 1;
 	}
 
-	SpeakClasses type = getNumber<SpeakClasses>(L, 2);
+	MessageClasses type = getNumber<MessageClasses>(L, 2);
 	std::string message = getString(L, 3);
 	channel->sendToAll(message, type);
 	pushBoolean(L, true);
@@ -7578,7 +7588,7 @@ int LuaScriptInterface::luaCreatureSay(lua_State* L)
 
 	bool ghost = getBoolean(L, 4, false);
 
-	SpeakClasses type = getNumber<SpeakClasses>(L, 3);
+	MessageClasses type = getNumber<MessageClasses>(L, 3);
 	const std::string& text = getString(L, 2);
 	Creature* creature = getUserdata<Creature>(L, 1);
 	if (!creature) {
@@ -9001,7 +9011,7 @@ int LuaScriptInterface::luaPlayerSendChannelMessage(lua_State* L)
 {
 	// player:sendChannelMessage(author, text, type, channelId)
 	uint16_t channelId = getNumber<uint16_t>(L, 5);
-	SpeakClasses type = getNumber<SpeakClasses>(L, 4);
+	MessageClasses type = getNumber<MessageClasses>(L, 4);
 	const std::string& text = getString(L, 3);
 	const std::string& author = getString(L, 2);
 	Player* player = getUserdata<Player>(L, 1);
@@ -9025,8 +9035,8 @@ int LuaScriptInterface::luaPlayerSendPrivateMessage(lua_State* L)
 
 	const Player* speaker = getUserdata<const Player>(L, 2);
 	const std::string& text = getString(L, 3);
-	SpeakClasses type = getNumber<SpeakClasses>(L, 4, TALKTYPE_PRIVATE_FROM);
-	player->sendPrivateMessage(speaker, type, text);
+	MessageClasses type = getNumber<MessageClasses>(L, 4, MESSAGE_PRIVATE_FROM);
+	player->sendChannelMessage("", text, type, 0, speaker);
 	pushBoolean(L, true);
 	return 1;
 }
@@ -9041,10 +9051,10 @@ int LuaScriptInterface::luaPlayerChannelSay(lua_State* L)
 	}
 
 	Creature* speaker = getCreature(L, 2);
-	SpeakClasses type = getNumber<SpeakClasses>(L, 3);
+	MessageClasses type = getNumber<MessageClasses>(L, 3);
 	const std::string& text = getString(L, 4);
 	uint16_t channelId = getNumber<uint16_t>(L, 5);
-	player->sendToChannel(speaker, type, text, channelId);
+	player->sendChannelMessage("", text, type, channelId, speaker);
 	pushBoolean(L, true);
 	return 1;
 }

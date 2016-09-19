@@ -144,7 +144,7 @@ void ProtocolGameBase::AddCreature(NetworkMessage& msg, const Creature* creature
 
 	LightInfo lightInfo;
 	creature->getCreatureLight(lightInfo);
-	msg.addByte(player->isAccessPlayer() ? 0xFF : lightInfo.level);
+	msg.addByte(lightInfo.level);
 	msg.addByte(lightInfo.color);
 
 	msg.add<uint16_t>(creature->getStepSpeed() / 2);
@@ -246,7 +246,7 @@ void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
 		msg.addByte(player->getSkillPercent(i));
 	}
 
-	for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_LAST; ++i) {
+	for (uint8_t i = SKILL_CRITICAL_HIT_CHANCE; i <= SKILL_MANA_LEECH_AMOUNT; ++i) {
 		msg.add<uint16_t>(std::min<int32_t>(player->getSkillLevel(i), std::numeric_limits<uint16_t>::max()));
 		msg.add<uint16_t>(player->getBaseSkill(i));
 	}
@@ -255,7 +255,7 @@ void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
 void ProtocolGameBase::AddWorldLight(NetworkMessage& msg, const LightInfo& lightInfo)
 {
 	msg.addByte(0x82);
-	msg.addByte((player->isAccessPlayer() ? 0xFF : lightInfo.level));
+	msg.addByte(lightInfo.level);
 	msg.addByte(lightInfo.color);
 }
 
@@ -266,7 +266,7 @@ void ProtocolGameBase::AddCreatureLight(NetworkMessage& msg, const Creature* cre
 
 	msg.addByte(0x8D);
 	msg.add<uint32_t>(creature->getID());
-	msg.addByte((player->isAccessPlayer() ? 0xFF : lightInfo.level));
+	msg.addByte(lightInfo.level);
 	msg.addByte(lightInfo.color);
 }
 
@@ -330,15 +330,91 @@ void ProtocolGameBase::RemoveTileThing(NetworkMessage& msg, const Position& pos,
 	msg.addByte(stackpos);
 }
 
-void ProtocolGameBase::sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast)
+void ProtocolGameBase::sendTextMessage(const TextMessage& message, uint16_t channelId, bool broadcast)
+{
+	NetworkMessage msg;
+	msg.addByte(0xB4);
+	msg.addByte(message.type);
+	switch (message.type) {
+		case MESSAGE_CHANNEL_MANAGEMENT:
+		case MESSAGE_GUILD:
+		case MESSAGE_PARTY_MANAGEMENT:
+		case MESSAGE_PARTY: {
+			msg.add<uint16_t>(channelId);
+			break;
+		}
+		case MESSAGE_DAMAGE_DEALED:
+		case MESSAGE_DAMAGE_RECEIVED:
+		case MESSAGE_DAMAGE_OTHERS: {
+			msg.addPosition(message.position);
+			msg.add<uint32_t>(message.primary.value);
+			msg.addByte(message.primary.color);
+			msg.add<uint32_t>(message.secondary.value);
+			msg.addByte(message.secondary.color);
+			break;
+		}
+		case MESSAGE_HEAL:
+		case MESSAGE_MANA:
+		case MESSAGE_EXP:
+		case MESSAGE_HEAL_OTHERS:
+		case MESSAGE_EXP_OTHERS: {
+			msg.addPosition(message.position);
+			msg.add<uint32_t>(message.primary.value);
+			msg.addByte(message.primary.color);
+			break;
+		}
+		default: {
+			break;
+		}
+	}
+	msg.addString(message.text);
+	writeToOutputBuffer(msg, broadcast);
+}
+
+void ProtocolGameBase::sendChannelMessage(const std::string& author, const std::string& text, MessageClasses type, uint16_t channel, const Creature* creature, const Position* pos/* = nullptr*/, bool broadcast)
 {
 	NetworkMessage msg;
 	msg.addByte(0xAA);
-	msg.add<uint32_t>(0x00);
-	msg.addString(author);
-	msg.add<uint16_t>(0x00);
+	if (creature) {
+		static uint32_t statementId = 0;
+		msg.add<uint32_t>(++statementId);
+		msg.addString(creature->getName());
+		if (const Player* speaker = creature->getPlayer()) {
+			msg.add<uint16_t>(speaker->getLevel());
+		} else {
+			msg.add<uint16_t>(0x00);
+		}
+	} else {
+		msg.add<uint32_t>(0x00);
+		msg.addString(author);
+		msg.add<uint16_t>(0x00);
+	}
 	msg.addByte(type);
-	msg.add<uint16_t>(channel);
+	switch (type) {
+		case MESSAGE_SAY:
+		case MESSAGE_WHISPER:
+		case MESSAGE_YELL:
+		case MESSAGE_NPC_FROM_START_BLOCK:
+		case MESSAGE_SPELL:
+		case MESSAGE_BARK_LOW:
+		case MESSAGE_BARK_LOUD: {
+			if (pos) {
+				msg.addPosition(*pos);
+			} else {
+				msg.addPosition(creature->getPosition());
+			}
+			break;
+		}
+		case MESSAGE_CHANNEL:
+		case MESSAGE_CHANNEL_HIGHLIGHT:
+		case MESSAGE_GAMEMASTER_CHANNEL: {
+			msg.add<uint16_t>(channel);
+			break;
+		}
+		default: {
+			break;
+		}
+	}
 	msg.addString(text);
 	writeToOutputBuffer(msg, broadcast);
 }
@@ -668,6 +744,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	}
 
 	sendBasicData();
+	sendPremiumTrigger();
 	sendInventoryClientIds();
 	sendSkullTime();
 	player->sendIcons();
@@ -695,14 +772,30 @@ void ProtocolGameBase::sendSkullTime() {
 
 	NetworkMessage msg;
 	msg.addByte(0xB7);
-	msg.addByte(percentage);
+	msg.addByte(percentage); //day
 	msg.addByte(killsLeft);
-	msg.addByte(percentage);
+	msg.addByte(percentage); //week
 	msg.addByte(killsLeft);
-	msg.addByte(percentage);
+	msg.addByte(percentage); //month
 	msg.addByte(killsLeft);
 	msg.addByte(skullTime < time(nullptr) + skullTime ? 0 : std::ceil(((double) skullTime - (double) time(nullptr)) / (double) 86400));
+
+	msg.addByte(0xB8);
+	msg.addByte(kills);
 	writeToOutputBuffer(msg);
+}
+
+void ProtocolGameBase::sendPremiumTrigger()
+{
+	if (!g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
+		NetworkMessage msg;
+		msg.addByte(0x9E);
+		msg.addByte(16);
+		for (uint16_t i = 0; i <= 15; i++) {
+			msg.addByte(i);
+		}
+		writeToOutputBuffer(msg);
+	}
 }
 
 void ProtocolGameBase::sendBasicData()

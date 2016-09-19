@@ -132,7 +132,7 @@ class Monster final : public Creature
 		void onCreatureAppear(Creature* creature, bool isLogin) final;
 		void onRemoveCreature(Creature* creature, bool isLogout) final;
 		void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos, const Tile* oldTile, const Position& oldPos, bool teleport) final;
-		void onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text) final;
+		void onCreatureSay(Creature* creature, MessageClasses type, const std::string& text) final;
 
 		void drainHealth(Creature* attacker, int32_t damage) final;
 		void changeHealth(int32_t healthChange, bool sendHealthChange = true) final;

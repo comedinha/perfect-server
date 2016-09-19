@@ -68,7 +68,7 @@ bool TalkActions::registerEvent(Event* event, const pugi::xml_node&)
 	return true;
 }
 
-TalkActionResult_t TalkActions::playerSaySpell(Player* player, SpeakClasses type, const std::string& words) const
+TalkActionResult_t TalkActions::playerSaySpell(Player* player, MessageClasses type, const std::string& words) const
 {
 	size_t wordsLength = words.length();
 	for (TalkAction* talkAction : talkActions) {
@@ -129,7 +129,7 @@ std::string TalkAction::getScriptEventName() const
 	return "onSay";
 }
 
-bool TalkAction::executeSay(Player* player, const std::string& param, SpeakClasses type) const
+bool TalkAction::executeSay(Player* player, const std::string& param, MessageClasses type) const
 {
 	//onSay(player, words, param, type)
 	if (!scriptInterface->reserveScriptEnv()) {

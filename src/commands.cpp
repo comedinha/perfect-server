@@ -140,7 +140,7 @@ bool Commands::exeCommand(Player& player, const std::string& cmd)
 	Command* command = it->second;
 	if (command->groupId > player.getGroup()->id || command->accountType > player.getAccountType()) {
 		if (player.getGroup()->access) {
-			player.sendTextMessage(MESSAGE_STATUS_SMALL, "You can not execute this command.");
+			player.sendTextMessage(MESSAGE_FAILURE, "You can not execute this command.");
 		}
 
 		return false;
@@ -151,7 +151,7 @@ bool Commands::exeCommand(Player& player, const std::string& cmd)
 	(this->*cfunc)(player, str_param);
 
 	if (command->log) {
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_RED, cmd);
+		player.sendTextMessage(MESSAGE_GAMEMASTER_BROADCAST, cmd);
 
 		std::ostringstream logFile;
 		logFile << "data/logs/" << player.getName() << " commands.log";
@@ -226,12 +226,12 @@ void Commands::forceRaid(Player& player, const std::string& param)
 {
 	Raid* raid = g_game.raids.getRaidByName(param);
 	if (!raid || !raid->isLoaded()) {
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "No such raid exists.");
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "No such raid exists.");
 		return;
 	}
 
 	if (g_game.raids.getRunning()) {
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Another raid is already being executed.");
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Another raid is already being executed.");
 		return;
 	}
 
@@ -239,7 +239,7 @@ void Commands::forceRaid(Player& player, const std::string& param)
 
 	RaidEvent* event = raid->getNextRaidEvent();
 	if (!event) {
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "The raid does not contain any data.");
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "The raid does not contain any data.");
 		return;
 	}
 
@@ -252,5 +252,5 @@ void Commands::forceRaid(Player& player, const std::string& param)
 		g_dispatcher.addTask(createTask(std::bind(&Raid::executeRaidEvent, raid, event)));
 	}
 
-	player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Raid started.");
+	player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Raid started.");
 }

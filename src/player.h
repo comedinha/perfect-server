@@ -750,9 +750,9 @@ class Player final : public Creature, public Cylinder
 			}
 		}
 
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, bool broadcast = true) {
+		void sendChannelMessage(const std::string& author, const std::string& text, MessageClasses type, uint16_t channel, const Creature* creature = nullptr, const Position* pos = nullptr, bool broadcast = true) {
 			if (client) {
-				client->sendChannelMessage(author, text, type, channel, broadcast);
+				client->sendChannelMessage(author, text, type, channel, creature, pos, broadcast);
 			}
 		}
 		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent) {
@@ -776,16 +776,6 @@ class Player final : public Creature, public Cylinder
 				if (stackpos != -1) {
 					client->sendCreatureTurn(creature, stackpos);
 				}
-			}
-		}
-		void sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos = nullptr) {
-			if (client) {
-				client->sendCreatureSay(creature, type, text, pos);
-			}
-		}
-		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text) {
-			if (client) {
-				client->sendPrivateMessage(speaker, type, text);
 			}
 		}
 		void sendCreatureSquare(const Creature* creature, SquareColor_t color, uint8_t length = 1) {
@@ -914,7 +904,7 @@ class Player final : public Creature, public Cylinder
 
 		void sendCancelMessage(const std::string& msg) const {
 			if (client) {
-				client->sendTextMessage(TextMessage(MESSAGE_STATUS_SMALL, msg));
+				client->sendTextMessage(TextMessage(MESSAGE_FAILURE, msg));
 			}
 		}
 		void sendCancelMessage(ReturnValue message) const;
@@ -977,14 +967,14 @@ class Player final : public Creature, public Cylinder
 				client->sendSkills();
 			}
 		}
-		void sendTextMessage(MessageClasses mclass, const std::string& message, bool broadcast = true) const {
+		void sendTextMessage(MessageClasses mclass, const std::string& message, uint16_t channelId = 0, bool broadcast = true) const {
 			if (client) {
-				client->sendTextMessage(TextMessage(mclass, message), broadcast);
+				client->sendTextMessage(TextMessage(mclass, message), channelId, broadcast);
 			}
 		}
-		void sendTextMessage(const TextMessage& message, bool broadcast = true) const {
+		void sendTextMessage(const TextMessage& message, uint16_t channelId = 0, bool broadcast = true) const {
 			if (client) {
-				client->sendTextMessage(message, broadcast);
+				client->sendTextMessage(message, channelId, broadcast);
 			}
 		}
 		void sendReLoginWindow(uint8_t unfairFightReduction) const {
@@ -1000,11 +990,6 @@ class Player final : public Creature, public Cylinder
 		void sendTextWindow(uint32_t itemId, const std::string& text) const {
 			if (client) {
 				client->sendTextWindow(windowTextId, itemId, text);
-			}
-		}
-		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId) const {
-			if (client) {
-				client->sendToChannel(creature, type, text, channelId);
 			}
 		}
 		void sendShop(Npc* npc) const {
