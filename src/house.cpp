@@ -229,6 +229,22 @@ bool House::transferToDepot(Player* player) const
 	for (HouseTile* tile : houseTiles) {
 		if (const TileItemVector* items = tile->getItemList()) {
 			for (Item* item : *items) {
+				if (item->isWrappable() && !item->isPickupable()) {
+					Container* container = item->getContainer();
+					if (container) {
+						for (Item* containerItem : container->getItemList()) {
+							moveItemList.push_back(containerItem);
+						}
+					}
+					wrapItems(item);
+				}
+			}
+		}
+	}
+
+	for (HouseTile* tile : houseTiles) {
+		if (const TileItemVector* items = tile->getItemList()) {
+			for (Item* item : *items) {
 				if (item->isPickupable()) {
 					moveItemList.push_back(item);
 				} else {
@@ -245,6 +261,19 @@ bool House::transferToDepot(Player* player) const
 
 	for (Item* item : moveItemList) {
 		g_game.internalMoveItem(item->getParent(), player->getInbox(), INDEX_WHEREEVER, item, item->getItemCount(), nullptr, FLAG_NOLIMIT);
+	}
+	return true;
+}
+
+bool House::wrapItems(Item* item) const
+{
+	if (!item || !item->isWrappable() || item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
+		return false;
+	}
+
+	uint16_t newId = Item::items[item->getID()].wrapTo;
+	if (newId != 0) {
+		g_game.transformItem(item, newId);
 	}
 	return true;
 }

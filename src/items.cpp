@@ -276,6 +276,8 @@ FILELOADER_ERRORS Items::loadFromOtb(const std::string& file)
 		iType.isHangable = hasBitSet(FLAG_HANGABLE, flags);
 		iType.allowDistRead = hasBitSet(FLAG_ALLOWDISTREAD, flags);
 		iType.rotatable = hasBitSet(FLAG_ROTATABLE, flags);
+		iType.wrappable = hasBitSet(FLAG_WRAPPABLE, flags);
+		iType.unwrappable = hasBitSet(FLAG_UNWRAPPABLE, flags);
 		iType.canReadText = hasBitSet(FLAG_READABLE, flags);
 		iType.lookThrough = hasBitSet(FLAG_LOOKTHROUGH, flags);
 		iType.isAnimation = hasBitSet(FLAG_ANIMATION, flags);
@@ -423,6 +425,8 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			it.attack = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "rotateto") {
 			it.rotateTo = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "wrapto") {
+			it.wrapTo = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "moveable" || tmpStrValue == "movable") {
 			it.moveable = valueAttribute.as_bool();
 		} else if (tmpStrValue == "blockprojectile") {

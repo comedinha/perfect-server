@@ -176,6 +176,8 @@ enum itemflags_t {
 	FLAG_ANIMATION = 1 << 24,
 	FLAG_FULLTILE = 1 << 25, // unused
 	FLAG_FORCEUSE = 1 << 26,
+	FLAG_WRAPPABLE = 1 << 27,
+	FLAG_UNWRAPPABLE = 1 << 28,
 };
 
 //1-byte aligned structs

@@ -243,7 +243,7 @@ void ProtocolSpectator::syncChatChannels()
 		ss << "{Only you}";
 	}
 	sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST);
-	sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !nick or !help."), CHANNEL_CAST);
+	sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !name or !help."), CHANNEL_CAST);
 }
 
 void ProtocolSpectator::syncOpenContainers()
@@ -467,7 +467,7 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 					spectatorName = newName;
 				}
 			} else if (command == "help") {
-				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !nick or !help."), CHANNEL_CAST);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !name or !help."), CHANNEL_CAST);
 			}
 		}
 

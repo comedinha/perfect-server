@@ -19324,7 +19324,7 @@
 	<item id="11161" article="a" name="bonebeast trophy">
 		<attribute key="weight" value="500" />
 	</item>
-	<item fromid="11162" toid="11163" name="fish" />
+	<item fromid="11162" toid="11163" name="fish group" />
 	<item id="11164" article="a" name="weapons crate">
 		<attribute key="description" value="This crate contains a set of weapons." />
 		<attribute key="weight" value="8000" />
@@ -24888,7 +24888,11 @@
 	<item fromid="18314" toid="18319" article="a" name="lonely crystal">
 		<attribute key="weight" value="100" />
 	</item>
-	<item fromid="18320" toid="18326" article="a" name="large crystal" />
+	<item id="18320" article="a" name="large crystal">
+		<attribute key="decayTo" value="18321" />
+		<attribute key="duration" value="40" />
+	</item>
+	<item fromid="18321" toid="18326" article="a" name="large crystal"/>
 	<item id="18327" article="a" name="puffball mushroom">
 		<attribute key="decayTo" value="18220" />
 		<attribute key="duration" value="120" />
@@ -30006,6 +30010,10 @@
 		<attribute key="weaponType" value="shield" />
 	</item>
 	<item id="22444" article="a" name="bad dream" />
+	<item id="22455" name="water vortex">
+		<attribute key="decayTo" value="0" />
+		<attribute key="duration" value="180" />
+	</item>
 	<item id="22458" article="a" name="ramp">
 		<attribute key="floorchange" value="south" />
 	</item>
@@ -35357,6 +35365,11 @@
 	<item id="11257" article="a" name="heavy ball">
 		<attribute key="weight" value="670" />
 	</item>
+	<item id="26054" article="a" name="decoration kit">
+		<attribute key="description" value="You bought this item in the Store." />
+		<attribute key="wrapTo" value="1" />
+		<attribute key="weight" value="0" />
+	</item>
 	<item id="26344" article="a" name="hand puppets">
 		<attribute key="description" value="Souvenir from Thais Museum." />
 		<attribute key="weight" value="5" />
@@ -35389,7 +35402,9 @@
 		<attribute key="description" value="Souvenir from Thais Museum." />
 		<attribute key="weight" value="4690" />
 	</item>
-	<item id="26355" article="a" name="fish tank" />
+	<item id="26355" article="a" name="fish tank">
+		<attribute key="wrapTo" value="26054" />
+	</item>
 	<item id="26357" article="a" name="rustic chair">
 		<attribute key="rotateTo" value="26358" />
 	</item>
@@ -35461,7 +35476,9 @@
 	<item id="26383" article="a" name="dark parquet" />
 	<item id="26384" article="a" name="marble floor" />
 	<item id="26385" article="your" name="gold pouch">
-		<attribute key="containerSize" value="20" />
+		<attribute key="weight" value="1" />
+		<attribute key="containerSize" value="1" />
+		<attribute key="slotType" value="backpack" />
 	</item>
 	<item id="26386" article="a" name="gold converter" />
 	<item id="26387" article="a" name="golden dragon tapestry" />

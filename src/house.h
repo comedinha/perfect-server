@@ -227,6 +227,7 @@ class House
 	private:
 		bool transferToDepot() const;
 		bool transferToDepot(Player* player) const;
+		bool wrapItems(Item* item) const;
 
 		AccessList guestList;
 		AccessList subOwnerList;

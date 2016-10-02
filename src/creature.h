@@ -76,7 +76,7 @@ class Tile;
 class FrozenPathingConditionCall
 {
 	public:
-		explicit constexpr FrozenPathingConditionCall(Position targetPos) : targetPos(std::move(targetPos)) {}
+		explicit FrozenPathingConditionCall(Position targetPos) : targetPos(std::move(targetPos)) {}
 
 		bool operator()(const Position& startPos, const Position& testPos,
 		                const FindPathParams& fpp, int32_t& bestMatchDist) const;
@@ -146,13 +146,6 @@ class Creature : virtual public Thing
 		}
 		virtual void removeList() = 0;
 		virtual void addList() = 0;
-
-		const Position& getLastPosition() const {
-			return lastPosition;
-		}
-		void setLastPosition(const Position& newLastPos) {
-			lastPosition = newLastPos;
-		}
 
 		virtual bool canSee(const Position& pos) const;
 		virtual bool canSeeCreature(const Creature* creature) const;
@@ -471,6 +464,13 @@ class Creature : virtual public Thing
 		}
 
 		int32_t getWalkCache(const Position& pos) const;
+
+		const Position& getLastPosition() const {
+			return lastPosition;
+		}
+		void setLastPosition(const Position& newLastPos) {
+			lastPosition = newLastPos;
+		}
 
 		static bool canSee(const Position& myPos, const Position& pos, int32_t viewRangeX, int32_t viewRangeY);
 
