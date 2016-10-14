@@ -1824,6 +1824,8 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
 	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
 	registerEnumIn("configKeys", ConfigManager::EXPERT_PVP)
+	registerEnumIn("configKeys", ConfigManager::EXP_BOOSTER)
+	registerEnumIn("configKeys", ConfigManager::LOWLEVEL_BONUS)
 
 	registerEnumIn("configKeys", ConfigManager::MAP_NAME)
 	registerEnumIn("configKeys", ConfigManager::HOUSE_RENT_PERIOD)
@@ -1880,6 +1882,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
 	registerEnumIn("configKeys", ConfigManager::WORLD_ID)
 	registerEnumIn("configKeys", ConfigManager::RECORD_PORT)
+	registerEnumIn("configKeys", ConfigManager::EXP_BOOSTER_EXTRA)
 
 	// os
 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);
@@ -2246,6 +2249,10 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "getSkillPercent", LuaScriptInterface::luaPlayerGetSkillPercent);
 	registerMethod("Player", "getSkillTries", LuaScriptInterface::luaPlayerGetSkillTries);
 	registerMethod("Player", "addSkillTries", LuaScriptInterface::luaPlayerAddSkillTries);
+
+	registerMethod("Player", "addExpBoostTime", LuaScriptInterface::luaPlayerAddExpBoostTime);
+	registerMethod("Player", "getExpBoostTime", LuaScriptInterface::luaPlayerGetExpBoostTime);
+	registerMethod("Player", "removeExpBoostTime", LuaScriptInterface::luaPlayerRemoveExpBoostTime);
 
 	registerMethod("Player", "addOfflineTrainingTime", LuaScriptInterface::luaPlayerAddOfflineTrainingTime);
 	registerMethod("Player", "getOfflineTrainingTime", LuaScriptInterface::luaPlayerGetOfflineTrainingTime);
@@ -8280,6 +8287,49 @@ int LuaScriptInterface::luaPlayerAddSkillTries(lua_State* L)
 		skills_t skillType = getNumber<skills_t>(L, 2);
 		uint64_t tries = getNumber<uint64_t>(L, 3);
 		player->addSkillAdvance(skillType, tries);
+		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerAddExpBoostTime(lua_State* L)
+{
+	// player:addExpBoostTime(time)
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		int32_t time = getNumber<int32_t>(L, 2);
+		player->addExpBoostTime(time);
+		player->sendStats();
+		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+
+int LuaScriptInterface::luaPlayerGetExpBoostTime(lua_State* L)
+{
+	// player:getExpBoostTime()
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		lua_pushnumber(L, player->getExpBoostTime());
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerRemoveExpBoostTime(lua_State* L)
+{
+	// player:removeExpBoostTime(time)
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		int32_t time = getNumber<int32_t>(L, 2);
+		player->removeExpBoostTime(time);
+		player->sendStats();
 		pushBoolean(L, true);
 	} else {
 		lua_pushnil(L);

@@ -205,6 +205,16 @@ class Player final : public Creature, public Cylinder
 			return staminaMinutes;
 		}
 
+		void addExpBoostTime(int32_t addTime) {
+			expBoostTime = std::min<int32_t>(12 * 3600 * 1000, expBoostTime + addTime);
+		}
+		void removeExpBoostTime(int32_t removeTime) {
+			expBoostTime = std::max<int32_t>(0, expBoostTime - removeTime);
+		}
+		int32_t getExpBoostTime() const {
+			return expBoostTime;
+		}
+
 		bool addOfflineTrainingTries(skills_t skill, uint64_t tries);
 
 		void addOfflineTrainingTime(int32_t addTime) {
@@ -1318,7 +1328,7 @@ class Player final : public Creature, public Cylinder
 		Group* group = nullptr;
 		Inbox* inbox;
 		Item* tradeItem = nullptr;
-		Item* inventory[CONST_SLOT_LAST + 1] = { nullptr };
+		Item* inventory[CONST_SLOT_LAST + 1] = {};
 		Item* writeItem = nullptr;
 		House* editHouse = nullptr;
 		Npc* shopOwner = nullptr;
@@ -1346,8 +1356,8 @@ class Player final : public Creature, public Cylinder
 		uint32_t windowTextId = 0;
 		uint32_t editListId = 0;
 		uint32_t manaMax = 0;
-		int32_t varSkills[SKILL_LAST + 1] = { 0 };
-		int32_t varStats[STAT_LAST + 1] = { 0 };
+		int32_t varSkills[SKILL_LAST + 1] = {};
+		int32_t varStats[STAT_LAST + 1] = {};
 		int32_t purchaseCallback = -1;
 		int32_t saleCallback = -1;
 		int32_t MessageBufferCount = 0;
@@ -1357,6 +1367,7 @@ class Player final : public Creature, public Cylinder
 		int32_t offlineTrainingSkill = -1;
 		int32_t offlineTrainingTime = 0;
 		int32_t idleTime = 0;
+		int32_t expBoostTime = 0;
 
 		uint16_t lastStatsTrainingTime = 0;
 		uint16_t staminaMinutes = 2520;
@@ -1392,7 +1403,7 @@ class Player final : public Creature, public Cylinder
 		bool pzLocked = false;
 		bool isConnecting = false;
 		bool addAttackSkillPoint = false;
-		bool inventoryAbilities[CONST_SLOT_LAST + 1] = { false };
+		bool inventoryAbilities[CONST_SLOT_LAST + 1] = {};
 
 		static uint32_t playerAutoID;
 

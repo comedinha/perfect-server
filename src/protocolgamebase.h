@@ -45,7 +45,7 @@ struct TextMessage
 	} primary, secondary;
 
 	TextMessage() = default;
-	TextMessage(MessageClasses type, std::string text) : type(type), text(text) {}
+	TextMessage(MessageClasses type, std::string text) : type(type), text(std::move(text)) {}
 };
 
 /** \brief Contains methods and member variables common to both the game and spectator protocols

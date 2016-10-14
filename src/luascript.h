@@ -871,6 +871,10 @@ class LuaScriptInterface
 		static int luaPlayerGetSkillTries(lua_State* L);
 		static int luaPlayerAddSkillTries(lua_State* L);
 
+		static int luaPlayerAddExpBoostTime(lua_State* L);
+		static int luaPlayerGetExpBoostTime(lua_State* L);
+		static int luaPlayerRemoveExpBoostTime(lua_State* L);
+
 		static int luaPlayerAddOfflineTrainingTime(lua_State* L);
 		static int luaPlayerGetOfflineTrainingTime(lua_State* L);
 		static int luaPlayerRemoveOfflineTrainingTime(lua_State* L);

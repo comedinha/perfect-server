@@ -48,6 +48,8 @@ class ConfigManager
 			IS_PREVIEWER,
 			EXPERT_PVP,
 			ENABLE_RECORD,
+			EXP_BOOSTER,
+			LOWLEVEL_BONUS,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};
@@ -116,6 +118,7 @@ class ConfigManager
 			PREMIUM_DEPOT_LIMIT,
 			DEPOT_BOXES,
 			RECORD_PORT,
+			EXP_BOOSTER_EXTRA,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};

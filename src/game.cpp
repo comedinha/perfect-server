@@ -2339,12 +2339,16 @@ void Game::playerWrapItem(uint32_t playerId, const Position& pos, uint8_t stackP
 			return;
 		}
 	}
+	uint16_t oldId = 0;
 	if (newId == 26054 || newId == 26129) {
-		item->setActionId(item->getID());
+		oldId = item->getID();
 	}
 	if (newId != 0) {
 		addMagicEffect(item->getPosition(), CONST_ME_POFF);
 		transformItem(item, newId);
+		if (oldId != 0) {
+			item->setActionId(oldId);
+		}
 	}
 }
 
@@ -2683,7 +2687,7 @@ void Game::playerAcceptTrade(uint32_t playerId)
 		player->setTradeState(TRADE_TRANSFER);
 		tradePartner->setTradeState(TRADE_TRANSFER);
 
-		std::map<Item*, uint32_t>::iterator it = tradeItems.find(tradeItem1);
+		auto it = tradeItems.find(tradeItem1);
 		if (it != tradeItems.end()) {
 			ReleaseItem(it->first);
 			tradeItems.erase(it);
@@ -2854,7 +2858,7 @@ void Game::internalCloseTrade(Player* player)
 	}
 
 	if (player->getTradeItem()) {
-		std::map<Item*, uint32_t>::iterator it = tradeItems.find(player->getTradeItem());
+		auto it = tradeItems.find(player->getTradeItem());
 		if (it != tradeItems.end()) {
 			ReleaseItem(it->first);
 			tradeItems.erase(it);
@@ -2872,7 +2876,7 @@ void Game::internalCloseTrade(Player* player)
 
 	if (tradePartner) {
 		if (tradePartner->getTradeItem()) {
-			std::map<Item*, uint32_t>::iterator it = tradeItems.find(tradePartner->getTradeItem());
+			auto it = tradeItems.find(tradePartner->getTradeItem());
 			if (it != tradeItems.end()) {
 				ReleaseItem(it->first);
 				tradeItems.erase(it);

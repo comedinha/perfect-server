@@ -93,6 +93,8 @@ bool ConfigManager::load()
 	boolean[IS_PREVIEWER] = getGlobalBoolean(L, "isPreviewer", false);
 	boolean[EXPERT_PVP] = getGlobalBoolean(L, "expertPvp", false);
 	boolean[ENABLE_RECORD] = getGlobalBoolean(L, "enableRecord", true);
+	boolean[EXP_BOOSTER] = getGlobalBoolean(L, "expBoosterEnabled", false);
+	boolean[LOWLEVEL_BONUS] = getGlobalBoolean(L, "lowLevelBonusEnabled", false);
 
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");
@@ -133,6 +135,7 @@ bool ConfigManager::load()
 	integer[STORE_COIN_PACKET] = getGlobalNumber(L, "coinPacketSize", 25);
 	integer[LIVE_CAST_PORT] = getGlobalNumber(L, "liveCastPort", 8172);
 	integer[RECORD_PORT] = getGlobalNumber(L, "RecordPort", 9172);
+	integer[EXP_BOOSTER_EXTRA] = getGlobalNumber(L, "expBoosterMultipler", 50);
 
 	loaded = true;
 	lua_close(L);

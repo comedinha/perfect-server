@@ -88,7 +88,7 @@ void ProtocolGameBase::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& 
 
 	if (knownCreatureSet.size() > 1300) {
 		// Look for a creature to remove
-		for (std::unordered_set<uint32_t>::iterator it = knownCreatureSet.begin(), end = knownCreatureSet.end(); it != end; ++it) {
+		for (auto it = knownCreatureSet.begin(), end = knownCreatureSet.end(); it != end; ++it) {
 			Creature* creature = g_game.getCreatureByID(*it);
 			if (!canSee(creature)) {
 				removedKnown = *it;
@@ -98,7 +98,7 @@ void ProtocolGameBase::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& 
 		}
 
 		// Bad situation. Let's just remove anyone.
-		std::unordered_set<uint32_t>::iterator it = knownCreatureSet.begin();
+		auto it = knownCreatureSet.begin();
 		if (*it == id) {
 			++it;
 		}
@@ -200,15 +200,23 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 
 	//Exp boosters
 	msg.add<uint16_t>(g_game.getExperienceStage(player->getLevel()) * 100); //Normal Rate
-	msg.add<uint16_t>(0x00); //XP Voucher
-	msg.add<uint16_t>(0x00); //Low Level (50-)
-	msg.add<uint16_t>(0x00); //XP Booster
+	msg.add<uint16_t>(0); //XP Voucher
+	if (g_config.getBoolean(ConfigManager::LOWLEVEL_BONUS) && (player->getLevel() < 50)) { //Low Level (50-)
+		msg.add<uint16_t>(50 - player->getLevel());
+	} else {
+		msg.add<uint16_t>(0);
+	}
+	if (g_config.getBoolean(ConfigManager::EXP_BOOSTER) && player->getExpBoostTime() > 0 && player->getStaminaMinutes() >= 840) { //EXP Booster
+		msg.add<uint16_t>(g_config.getNumber(ConfigManager::EXP_BOOSTER_EXTRA));
+	} else {
+		msg.add<uint16_t>(0);
+	}
 	if (player->getStaminaMinutes() > 2400 && player->isPremium()) { //Stamina multi
 		msg.add<uint16_t>(150);
 	} else if (player->getStaminaMinutes() > 0 && player->getStaminaMinutes() <= 840) {
 		msg.add<uint16_t>(50);
 	} else if (player->getStaminaMinutes() == 0) {
-		msg.add<uint16_t>(0x00);
+		msg.add<uint16_t>(0);
 	} else {
 		msg.add<uint16_t>(100);
 	}
@@ -231,9 +239,12 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 
 	msg.add<uint16_t>(player->getOfflineTrainingTime() / 60 / 1000);
 
-	//New EXP boosters
-	msg.add<uint16_t>(0x00);
-	msg.addByte(0x00);
+	if (g_config.getBoolean(ConfigManager::EXP_BOOSTER) && player->getExpBoostTime() > 0) {
+		msg.add<uint16_t>(player->getExpBoostTime() / 1000);
+	} else {
+		msg.add<uint16_t>(0x00);
+	}
+	msg.addByte(g_config.getBoolean(ConfigManager::EXP_BOOSTER) ? 0x01 : 0x00);
 }
 
 void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
@@ -584,7 +595,7 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 
 		uint32_t i = 0;
 		const ItemDeque& itemList = container->getItemList();
-		for (ItemDeque::const_iterator it = itemList.begin() + firstIndex, end = itemList.end(); i < maxItemsToSend && it != end; ++it, ++i) {
+		for (auto it = itemList.begin() + firstIndex, end = itemList.end(); i < maxItemsToSend && it != end; ++it, ++i) {
 			msg.addItem(*it);
 		}
 	}
@@ -792,7 +803,12 @@ void ProtocolGameBase::sendPremiumTrigger()
 		msg.addByte(0x9E);
 		msg.addByte(16);
 		for (uint16_t i = 0; i <= 15; i++) {
-			msg.addByte(i);
+			//PREMIUM_TRIGGER_TRAIN_OFFLINE = false, PREMIUM_TRIGGER_XP_BOOST = false, PREMIUM_TRIGGER_MARKET = false, PREMIUM_TRIGGER_VIP_LIST = false, PREMIUM_TRIGGER_DEPOT_SPACE = false, PREMIUM_TRIGGER_INVITE_PRIVCHAT = false
+			if (i != 1 && i != 6 && i != 8 && i != 10 && i != 11 && i != 12) {
+				msg.addByte(0x01);
+			} else {
+				msg.addByte(0x00);
+			}
 		}
 		writeToOutputBuffer(msg);
 	}
