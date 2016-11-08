@@ -742,18 +742,29 @@ bool Player::canWalkthrough(const Creature* creature) const
 	}
 
 	const Tile* playerTile = player->getTile();
-	if (playerTile && playerTile->hasFlag(TILESTATE_PVPZONE)) {
+	if (!playerTile || playerTile->hasFlag(TILESTATE_PVPZONE)) {
 		return false;
 	}
 
-	if (g_game.isExpertPvpEnabled() && !player->getGroup()->access && g_game.getWorldType() != WORLD_TYPE_NO_PVP) {
-		if (player->pvpMode == PVP_MODE_RED_FIST || hasPvpActivity(const_cast<Player*>(player)) || (pvpMode >= PVP_MODE_WHITE_HAND && hasPvpActivity(const_cast<Player*>(player), true))) {
-			return false;
+	if (g_game.isExpertPvpEnabled()) {
+		if (!player->getGroup()->access && g_game.getWorldType() != WORLD_TYPE_NO_PVP) {
+			if (player->pvpMode == PVP_MODE_RED_FIST || hasPvpActivity(const_cast<Player*>(player)) || (pvpMode >= PVP_MODE_WHITE_HAND && hasPvpActivity(const_cast<Player*>(player), true))) {
+				return false;
+			}
 		}
-	}
-
-	if (!playerTile || (!g_game.isExpertPvpEnabled() && !playerTile->hasFlag(TILESTATE_PROTECTIONZONE))) {
-		return false;
+	} else {
+		if (g_config.getBoolean(ConfigManager::ALLOW_WALKTHROUGH)) {
+			if (g_game.getWorldType() == WORLD_TYPE_NO_PVP) {
+				const Item* topItem = playerTile->getTopTopItem();
+				if (topItem && topItem->getDoor() && topItem->hasAttribute(ITEM_ATTRIBUTE_ACTIONID)) {
+					return false;
+				}
+			} else {
+				if (!playerTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
+					return false;
+				}
+			}
+		}
 	}
 
 	const Item* playerTileGround = playerTile->getGround();
@@ -808,10 +819,20 @@ bool Player::canWalkthroughEx(const Creature* creature) const
 		return false;
 	}
 
-	if (!g_game.isExpertPvpEnabled()) {
-		return playerTile->hasFlag(TILESTATE_PROTECTIONZONE);
-	} else {
+	if (g_game.isExpertPvpEnabled()) {
 		return !hasPvpActivity(const_cast<Player*>(player), true);
+	} else {
+		if (!g_config.getBoolean(ConfigManager::ALLOW_WALKTHROUGH)) {
+			if (!playerTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
+				return false;
+			}
+		} else {
+			const Item* topItem = playerTile->getTopTopItem();
+			if (topItem && topItem->getDoor() && topItem->hasAttribute(ITEM_ATTRIBUTE_ACTIONID)) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
 
@@ -2218,7 +2239,7 @@ void Player::death(Creature* lastHitCreature)
 
 bool Player::dropCorpse(Creature* lastHitCreature, Creature* mostDamageCreature, bool lastHitUnjustified, bool mostDamageUnjustified)
 {
-	if (getZone() != ZONE_PVP || !Player::lastHitIsPlayer(lastHitCreature)) {
+	if ((getZone() != ZONE_PVP) || !Player::lastHitIsPlayer(lastHitCreature)) {
 		return Creature::dropCorpse(lastHitCreature, mostDamageCreature, lastHitUnjustified, mostDamageUnjustified);
 	}
 
@@ -3335,7 +3356,7 @@ bool Player::setAttackedCreature(Creature* creature)
 					if (owner != const_cast<Player*>(this)) {
 						addAttacked(owner);
 						addInFightTicks(true);
-						if (skull == SKULL_NONE && owner->skull == SKULL_NONE) {
+						if (skull == SKULL_NONE && owner->skull == SKULL_NONE && owner->getLevel() > 50) {
 							setSkull(SKULL_WHITE);
 						}
 					}
@@ -3639,7 +3660,7 @@ void Player::onAttackedCreature(Creature* target)
 			if (!Combat::isInPvpZone(this, targetPlayer) && !isInWar(targetPlayer)) {
 				addAttacked(targetPlayer);
 
-				if (targetPlayer->getSkull() == SKULL_NONE && getSkull() == SKULL_NONE) {
+				if (targetPlayer->getSkull() == SKULL_NONE && getSkull() == SKULL_NONE && targetPlayer->getLevel() > 50) {
 					setSkull(SKULL_WHITE);
 				}
 
@@ -3726,9 +3747,11 @@ bool Player::onKilledCreature(Creature* target, bool lastHit/* = true*/)
 	Creature::onKilledCreature(target, lastHit);
 
 	if (Player* targetPlayer = target->getPlayer()) {
-		if (targetPlayer && targetPlayer->getZone() == ZONE_PVP) {
+		if (targetPlayer && (targetPlayer->getZone() == ZONE_PVP)) {
 			targetPlayer->setDropLoot(false);
 			targetPlayer->setLossSkill(false);
+		} else if (targetPlayer->getLevel() <= 50 && targetPlayer->getSkull() == SKULL_NONE){
+			return unjustified;
 		} else if (!hasFlag(PlayerFlag_NotGainInFight) && !isPartner(targetPlayer)) {
 			if (!Combat::isInPvpZone(this, targetPlayer) && hasAttacked(targetPlayer) && !targetPlayer->hasAttacked(this) && !isGuildMate(targetPlayer) && targetPlayer != this) {
 				if (targetPlayer->getSkull() == SKULL_NONE && !isInWar(targetPlayer)) {

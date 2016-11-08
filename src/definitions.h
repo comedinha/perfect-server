@@ -20,20 +20,20 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-#define STATUS_SERVER_NAME "Perfect Server"
-#define STATUS_SERVER_VERSION "0"
-#define MINOR_VERSION "2"
-#define REVISION_VERSION "DEV"
-#define SOFTWARE_CODENAME "COMEDIAN"
-#define STATUS_SERVER_DEVELOPERS "Mattyx14, Brewsterl, Malucooo, CaterOT Team and The Forgotten Server Developers"
-#define GIT_REPO "https://github.com/comedinha/perfect-server"
+static constexpr auto STATUS_SERVER_NAME = "Perfect Server";
+static constexpr auto STATUS_SERVER_VERSION = "0";
+static constexpr auto MINOR_VERSION = "3";
+static constexpr auto REVISION_VERSION = "DEV";
+static constexpr auto SOFTWARE_CODENAME = "COMEDIAN";
+static constexpr auto STATUS_SERVER_DEVELOPERS = "Mattyx14, Brewsterl, Malucooo, CaterOT Team and The Forgotten Server Developers";
+static constexpr auto GIT_REPO = "https://github.com/comedinha/perfect-server";
 
-#define CLIENT_VERSION_MIN 1097
-#define CLIENT_VERSION_MAX 1097
-#define CLIENT_VERSION_STR "10.97"
+static constexpr auto CLIENT_VERSION_MIN = 1097;
+static constexpr auto CLIENT_VERSION_MAX = 1099;
+static constexpr auto CLIENT_VERSION_STR = "10.97";
 
-#define AUTHENTICATOR_DIGITS 6U
-#define AUTHENTICATOR_PERIOD 30U
+static constexpr auto AUTHENTICATOR_DIGITS = 6U;
+static constexpr auto AUTHENTICATOR_PERIOD = 30U;
 
 #ifndef __FUNCTION__
 #define __FUNCTION__ __func__

@@ -198,11 +198,12 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 
 		//nopvp-zone
 		if (isPlayerCombat(target)) {
-			if (player->getZone() == ZONE_NOPVP) {
+			if (player->getZone() == ZONE_NOPVP && !(player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
 				return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 			}
 
-			if (target->getZone() == ZONE_NOPVP) {
+			Player* targetplayer = target->getPlayer();
+			if (target->getZone() == ZONE_NOPVP && !(targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
 				return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
 			}
 		}
@@ -287,9 +288,9 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 		return true;
 	}
 
-	if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
-		return true;
-	}
+	//if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
+		//return true;
+	//}
 
 	if (attacker->getSkull() == SKULL_BLACK && attacker->getSkullClient(target) == SKULL_NONE) {
 		return true;
@@ -317,9 +318,9 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 
 				//nopvp-zone
 				const Tile* targetPlayerTile = targetPlayer->getTile();
-				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE)) {
+				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE) && !(targetPlayer->getVocationId() == VOCATION_NONE && targetPlayer->getLevel() >= 11)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
-				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
+				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !(attackerPlayer->getVocationId() == VOCATION_NONE && attackerPlayer->getLevel() >= 11) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			}
@@ -1510,7 +1511,7 @@ void MagicField::onStepInField(Creature* creature)
 						} else if (pvpMode == PVP_MODE_RED_FIST) {
 							attackerPlayer->addAttacked(targetPlayer);
 							attackerPlayer->addInFightTicks(true);
-							if (attackerPlayer->getSkull() == SKULL_NONE && targetPlayer->getSkull() == SKULL_NONE) {
+							if (attackerPlayer->getSkull() == SKULL_NONE && targetPlayer->getSkull() == SKULL_NONE && targetPlayer->getLevel() > 50) {
 								attackerPlayer->setSkull(SKULL_WHITE);
 							}
 						}

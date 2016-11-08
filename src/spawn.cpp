@@ -33,7 +33,7 @@ extern ConfigManager g_config;
 extern Monsters g_monsters;
 extern Game g_game;
 
-#define MINSPAWN_INTERVAL 1000
+static constexpr int32_t MINSPAWN_INTERVAL = 1000;
 
 bool Spawns::loadFromXml(const std::string& filename)
 {
@@ -90,7 +90,7 @@ bool Spawns::loadFromXml(const std::string& filename)
 					centerPos.y + pugi::cast<uint16_t>(childNode.attribute("y").value()),
 					centerPos.z
 				);
-				uint32_t interval = pugi::cast<uint32_t>(childNode.attribute("spawntime").value()) * 1000;
+				uint32_t interval = pugi::cast<uint32_t>(childNode.attribute("spawntime").value()) * g_config.getNumber(ConfigManager::RATE_SPAWNTIME) * 1000;
 				if (interval > MINSPAWN_INTERVAL) {
 					spawn.addMonster(nameAttribute.as_string(), pos, dir, interval);
 				} else {
