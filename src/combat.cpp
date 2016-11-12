@@ -1511,7 +1511,7 @@ void MagicField::onStepInField(Creature* creature)
 						} else if (pvpMode == PVP_MODE_RED_FIST) {
 							attackerPlayer->addAttacked(targetPlayer);
 							attackerPlayer->addInFightTicks(true);
-							if (attackerPlayer->getSkull() == SKULL_NONE && targetPlayer->getSkull() == SKULL_NONE && targetPlayer->getLevel() > 50) {
+							if (attackerPlayer->getSkull() == SKULL_NONE && targetPlayer->getSkull() == SKULL_NONE && targetPlayer->getLevel() > 0) {
 								attackerPlayer->setSkull(SKULL_WHITE);
 							}
 						}
