@@ -1630,18 +1630,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(WORLD_TYPE_PVP)
 	registerEnum(WORLD_TYPE_PVP_ENFORCED)
 
-	registerEnum(CHASEMODE_STANDSTILL)
-	registerEnum(CHASEMODE_FOLLOW)
-
-	registerEnum(FIGHTMODE_ATTACK)
-	registerEnum(FIGHTMODE_BALANCED)
-	registerEnum(FIGHTMODE_DEFENSE)
-
-	registerEnum(PVP_MODE_DOVE)
-	registerEnum(PVP_MODE_WHITE_HAND)
-	registerEnum(PVP_MODE_YELLOW_HAND)
-	registerEnum(PVP_MODE_RED_FIST)
-
 	// Use with container:addItem, container:addItemEx and possibly other functions.
 	registerEnum(FLAG_NOLIMIT)
 	registerEnum(FLAG_IGNOREBLOCKITEM)
@@ -1823,7 +1811,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::ENABLE_RECORD)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
 	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
-	registerEnumIn("configKeys", ConfigManager::EXPERT_PVP)
 	registerEnumIn("configKeys", ConfigManager::EXP_BOOSTER)
 	registerEnumIn("configKeys", ConfigManager::LOWLEVEL_BONUS)
 
@@ -2374,12 +2361,10 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "getChaseMode", LuaScriptInterface::luaPlayerGetChaseMode);
 	registerMethod("Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
 	registerMethod("Player", "getSecureMode", LuaScriptInterface::luaPlayerGetSecureMode);
-	registerMethod("Player", "getPvpMode", LuaScriptInterface::luaPlayerGetPvpMode);
 
 	registerMethod("Player", "setChaseMode", LuaScriptInterface::luaPlayerSetChaseMode);
 	registerMethod("Player", "setFightMode", LuaScriptInterface::luaPlayerSetFightMode);
 	registerMethod("Player", "setSecureMode", LuaScriptInterface::luaPlayerSetSecureMode);
-	registerMethod("Player", "setPvpMode", LuaScriptInterface::luaPlayerSetPvpMode);
 
 	registerMethod("Player", "hasSecureMode", LuaScriptInterface::luaPlayerHasSecureMode);
 
@@ -9882,18 +9867,6 @@ int LuaScriptInterface::luaPlayerGetSecureMode(lua_State* L)
 	return 1;
 }
 
-int LuaScriptInterface::luaPlayerGetPvpMode(lua_State* L)
-{
-	// player:getPvpMode()
-	Player* player = getUserdata<Player>(L, 1);
-	if (player) {
-		lua_pushnumber(L, player->getPvpMode());
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
-}
-
 int LuaScriptInterface::luaPlayerSetChaseMode(lua_State* L)
 {
 	// player:setChaseMode(mode)
@@ -9926,19 +9899,6 @@ int LuaScriptInterface::luaPlayerSetSecureMode(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (player) {
 		player->setSecureMode(getBoolean(L, 2));
-		lua_pushboolean(L, true);
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
-}
-
-int LuaScriptInterface::luaPlayerSetPvpMode(lua_State* L)
-{
-	// player:setPvpMode(mode)
-	Player* player = getUserdata<Player>(L, 1);
-	if (player) {
-		player->setPvpMode(getNumber<pvpMode_t>(L, 2));
 		lua_pushboolean(L, true);
 	} else {
 		lua_pushnil(L);

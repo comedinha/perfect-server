@@ -325,11 +325,7 @@ const uint8_t fluidMap[] = {
 };
 
 enum SquareColor_t : uint8_t {
-	SQ_COLOR_BLACK = 0,
-	SQ_COLOR_BROWN = 114,
-	SQ_COLOR_ORANGE = 198,
-	SQ_COLOR_YELLOW = 210,
-	SQ_COLOR_NONE = 255, // internal
+	SQ_COLOR_BLACK = 0
 };
 
 enum TextColor_t : uint8_t {
@@ -443,8 +439,6 @@ enum GuildEmblems_t : uint8_t {
 enum item_t : uint16_t {
 	ITEM_BROWSEFIELD = 460, // for internal use
 
-	ITEM_PVP_SAFE_NULL = 461, // for internal use
-
 	ITEM_DEPOT_NULL = 25452, // for internal use
 
 	ITEM_DEPOT_I = 25453,
@@ -523,11 +517,6 @@ enum item_t : uint16_t {
 	ITEM_AMULETOFLOSS = 2173,
 
 	ITEM_DOCUMENT_RO = 1968, //read-only
-};
-
-enum ItemPvpStat : uint8_t {
-	ITEM_IS_PVP,
-	ITEM_IS_SAFE
 };
 
 enum PlayerFlags : uint64_t {

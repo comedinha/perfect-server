@@ -55,16 +55,6 @@ enum skillsid_t {
 	SKILLVALUE_PERCENT = 2,
 };
 
-enum playerinfo_t {
-	PLAYERINFO_LEVELPERCENT,
-	PLAYERINFO_HEALTH,
-	PLAYERINFO_MAXHEALTH,
-	PLAYERINFO_MANA,
-	PLAYERINFO_MAXMANA,
-	PLAYERINFO_MAGICLEVEL,
-	PLAYERINFO_MAGICLEVELPERCENT,
-};
-
 enum chaseMode_t : uint8_t {
 	CHASEMODE_STANDSTILL = 0,
 	CHASEMODE_FOLLOW = 1,
@@ -414,11 +404,17 @@ class Player final : public Creature, public Cylinder
 		uint32_t getLevel() const {
 			return level;
 		}
+		uint8_t getLevelPercent() const {
+			return levelPercent;
+		}
 		uint32_t getMagicLevel() const {
-			return getPlayerInfo(PLAYERINFO_MAGICLEVEL);
+			return std::max<int32_t>(0, magLevel + varStats[STAT_MAGICPOINTS]);
 		}
 		uint32_t getBaseMagicLevel() const {
 			return magLevel;
+		}
+		uint8_t getMagicLevelPercent() const {
+			return magLevelPercent;
 		}
 		uint8_t getSoul() const {
 			return soul;
@@ -440,7 +436,6 @@ class Player final : public Creature, public Cylinder
 			return sex;
 		}
 		void setSex(PlayerSex_t);
-		int32_t getPlayerInfo(playerinfo_t playerinfo) const;
 		uint64_t getExperience() const {
 			return experience;
 		}
@@ -490,21 +485,17 @@ class Player final : public Creature, public Cylinder
 			if (hasFlag(PlayerFlag_CannotPickupItem)) {
 				return 0;
 			} else if (hasFlag(PlayerFlag_HasInfiniteCapacity)) {
-				if (operatingSystem == CLIENTOS_FLASH) {
-					return 5000000;
-				} else {
-					return std::numeric_limits<uint32_t>::max();
-				}
+				return std::numeric_limits<uint32_t>::max();
 			} else {
 				return std::max<int32_t>(0, capacity - inventoryWeight);
 			}
 		}
 
 		int32_t getMaxHealth() const final {
-			return getPlayerInfo(PLAYERINFO_MAXHEALTH);
+			return std::max<int32_t>(1, healthMax + varStats[STAT_MAXHITPOINTS]);
 		}
 		uint32_t getMaxMana() const {
-			return getPlayerInfo(PLAYERINFO_MAXMANA);
+			return std::max<int32_t>(0, manaMax + varStats[STAT_MAXMANAPOINTS]);
 		}
 
 		Item* getInventoryItem(slots_t slot) const;
@@ -530,7 +521,7 @@ class Player final : public Creature, public Cylinder
 		void removeReward(uint32_t rewardId);
 		void getRewardList(std::vector<uint32_t>& rewards);
 		RewardChest* getRewardChest();
-		
+
 		DepotChest* getDepotBox();
 		DepotChest* getDepotChest(uint32_t depotId, bool autoCreate);
 		DepotLocker* getDepotLocker(uint32_t depotId);
@@ -607,9 +598,6 @@ class Player final : public Creature, public Cylinder
 		void setChaseMode(chaseMode_t mode);
 		void setFightMode(fightMode_t mode) {
 			fightMode = mode;
-		}
-		void setPvpMode(pvpMode_t mode) {
-			pvpMode = mode;
 		}
 		void setSecureMode(bool mode) {
 			secureMode = mode;
@@ -1208,24 +1196,6 @@ class Player final : public Creature, public Cylinder
 			return openContainers;
 		}
 
-		bool hasPvpActivity(Player* player, bool guildAndParty = false) const;
-
-		bool canAttack(Creature* creature)const final;
-		bool canWalkThroughTileItems(Tile* creature)const final;
-		bool isInPvpSituation();
-
-		void sendPvpSquare(Creature* creature, SquareColor_t squareColor);
-		pvpMode_t getPvpMode() const {
-			return pvpMode;
-		}
-
-		int64_t getLastWalkThroughAttempt() const {
-			return lastWalkthroughAttempt;
-		}
-
-		void setPvpSituation(bool situation) {
-			isPvpSituation = situation;
-		}
 	protected:
 		std::forward_list<Condition*> getMuteConditions() const;
 
@@ -1392,10 +1362,8 @@ class Player final : public Creature, public Cylinder
 		tradestate_t tradeState = TRADE_NONE;
 		chaseMode_t chaseMode = CHASEMODE_STANDSTILL;
 		fightMode_t fightMode = FIGHTMODE_ATTACK;
-		pvpMode_t pvpMode = PVP_MODE_DOVE;
 		AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
 
-		bool isPvpSituation = false;
 		bool secureMode = false;
 		bool inMarket = false;
 		bool wasMounted = false;

@@ -61,7 +61,7 @@ ReturnValue DepotChest::queryAdd(int32_t index, const Thing& thing, uint32_t cou
 		}
 	}
 
-	return RETURNVALUE_NOERROR;
+	return Container::queryAdd(index, thing, count, flags, actor);
 }
 
 void DepotChest::postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t index, cylinderlink_t)

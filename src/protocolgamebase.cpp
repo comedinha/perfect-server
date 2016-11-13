@@ -188,7 +188,7 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 	msg.addByte(0xA0);
 
 	msg.add<uint16_t>(std::min<int32_t>(player->getHealth(), std::numeric_limits<uint16_t>::max()));
-	msg.add<uint16_t>(std::min<int32_t>(player->getPlayerInfo(PLAYERINFO_MAXHEALTH), std::numeric_limits<uint16_t>::max()));
+	msg.add<uint16_t>(std::min<int32_t>(player->getMaxHealth(), std::numeric_limits<uint16_t>::max()));
 
 	msg.add<uint32_t>(player->getFreeCapacity());
 	msg.add<uint32_t>(player->getCapacity());
@@ -196,7 +196,7 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 	msg.add<uint64_t>(player->getExperience());
 
 	msg.add<uint16_t>(player->getLevel());
-	msg.addByte(player->getPlayerInfo(PLAYERINFO_LEVELPERCENT));
+	msg.addByte(player->getLevelPercent());
 
 	//Exp boosters
 	msg.add<uint16_t>(g_game.getExperienceStage(player->getLevel()) * 100); //Normal Rate
@@ -222,11 +222,11 @@ void ProtocolGameBase::AddPlayerStats(NetworkMessage& msg)
 	}
 
 	msg.add<uint16_t>(std::min<int32_t>(player->getMana(), std::numeric_limits<uint16_t>::max()));
-	msg.add<uint16_t>(std::min<int32_t>(player->getPlayerInfo(PLAYERINFO_MAXMANA), std::numeric_limits<uint16_t>::max()));
+	msg.add<uint16_t>(std::min<int32_t>(player->getMaxMana(), std::numeric_limits<uint16_t>::max()));
 
 	msg.addByte(std::min<uint32_t>(player->getMagicLevel(), std::numeric_limits<uint8_t>::max()));
 	msg.addByte(std::min<uint32_t>(player->getBaseMagicLevel(), std::numeric_limits<uint8_t>::max()));
-	msg.addByte(player->getPlayerInfo(PLAYERINFO_MAGICLEVELPERCENT));
+	msg.addByte(player->getMagicLevelPercent());
 
 	msg.addByte(player->getSoul());
 
@@ -685,8 +685,8 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	// can report bugs?
 	msg.addByte(0x01);
 
-	msg.addByte(g_game.isExpertPvpEnabled()); // can change pvp framing option
-	msg.addByte(g_game.isExpertPvpEnabled()); // expert mode button enabled
+	msg.addByte(0x00); // can change pvp framing option
+	msg.addByte(0x00); // expert mode button enabled
 
 	msg.addString(g_config.getString(ConfigManager::STORE_IMAGES_URL));
 	msg.add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::STORE_COIN_PACKET)));

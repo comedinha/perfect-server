@@ -522,7 +522,7 @@ void ProtocolGame::writeToOutputBuffer(const NetworkMessage& msg, bool broadcast
 		out->append(msg);
 	}
 	if (player && player->isRecording) {
-		protocolRecords.emplace_back(msg);
+		//future
 	}
 }
 

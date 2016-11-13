@@ -49,9 +49,9 @@ enum stackPosType_t {
 };
 
 enum WorldType_t {
-	WORLD_TYPE_NO_PVP = 1, // optional pvp
-	WORLD_TYPE_PVP = 2, // open pvp
-	WORLD_TYPE_PVP_ENFORCED = 3, // hardcore pvp
+	WORLD_TYPE_NO_PVP = 1,
+	WORLD_TYPE_PVP = 2,
+	WORLD_TYPE_PVP_ENFORCED = 3,
 };
 
 enum GameState_t {
@@ -411,8 +411,8 @@ class Game
 		void ReleaseItem(Item* item);
 
 		bool canThrowObjectTo(const Position& fromPos, const Position& toPos, bool checkLineOfSight = true,
-		                      int32_t rangex = Map::maxClientViewportX, int32_t rangey = Map::maxClientViewportY, Creature* creature = nullptr) const;
-		bool isSightClear(const Position& fromPos, const Position& toPos, bool sameFloor, Creature* caster = nullptr) const;
+		                      int32_t rangex = Map::maxClientViewportX, int32_t rangey = Map::maxClientViewportY) const;
+		bool isSightClear(const Position& fromPos, const Position& toPos, bool sameFloor) const;
 
 		void changeSpeed(Creature* creature, int32_t varSpeedDelta);
 		void internalCreatureChangeOutfit(Creature* creature, const Outfit_t& oufit);
@@ -498,9 +498,6 @@ class Game
 		Item* getUniqueItem(uint16_t uniqueId);
 		bool addUniqueItem(uint16_t uniqueId, Item* item);
 		void removeUniqueItem(uint16_t uniqueId);
-
-		bool isExpertPvpEnabled();
-		void updateSpectatorsPvp(Thing* thing);
 
 		bool reload(ReloadTypes_t reloadType);
 

@@ -36,6 +36,7 @@ class ChatChannel
 		ChatChannel(uint16_t channelId, std::string channelName):
 			name(std::move(channelName)),
 			id(channelId) {}
+
 		virtual ~ChatChannel() = default;
 
 		bool addUser(Player& player);

@@ -7,8 +7,6 @@ project(tfs)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-include(cotire)
-
 # Initialize CXXFLAGS.
 set(CMAKE_CXX_FLAGS                "-Wall -Werror -pipe")
 set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g")
@@ -40,7 +38,7 @@ else()
     find_package(Lua)
 endif()
 
-find_package(Boost 1.53.0 COMPONENTS system REQUIRED)
+find_package(Boost 1.53.0 COMPONENTS system iostreams REQUIRED)
 
 include(src/CMakeLists.txt)
 add_executable(tfs ${tfs_SRC})
@@ -50,4 +48,3 @@ target_link_libraries(tfs ${MYSQL_CLIENT_LIBS} ${LUA_LIBRARIES} ${Boost_LIBRARIE
 
 set_target_properties(tfs PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "src/otpch.h")
 set_target_properties(tfs PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-cotire(tfs)

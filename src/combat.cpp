@@ -83,14 +83,14 @@ CombatDamage Combat::getCombatDamage(Creature* creature, Creature* target) const
 	return damage;
 }
 
-void Combat::getCombatArea(const Position& centerPos, const Position& targetPos, const AreaCombat* area, std::forward_list<Tile*>& list, Creature* caster)
+void Combat::getCombatArea(const Position& centerPos, const Position& targetPos, const AreaCombat* area, std::forward_list<Tile*>& list)
 {
 	if (targetPos.z >= MAP_MAX_LAYERS) {
 		return;
 	}
 
 	if (area) {
-		area->getList(centerPos, targetPos, list, caster);
+		area->getList(centerPos, targetPos, list);
 	} else {
 		Tile* tile = g_game.map.getTile(targetPos);
 		if (!tile) {
@@ -198,13 +198,17 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 
 		//nopvp-zone
 		if (isPlayerCombat(target)) {
-			if (player->getZone() == ZONE_NOPVP && !(player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
-				return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
+			if (!(player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
+				if (player->getZone() == ZONE_NOPVP) {
+					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
+				}
 			}
 
 			Player* targetplayer = target->getPlayer();
-			if (target->getZone() == ZONE_NOPVP && !(targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
-				return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
+			if (!targetplayer || !(targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
+				if (target->getZone() == ZONE_NOPVP) {
+					return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
+				}
 			}
 		}
 	}
@@ -222,16 +226,8 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 			return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 		}
 
-		if (!g_game.isExpertPvpEnabled() && player->hasSecureMode() && !Combat::isInPvpZone(player, target) && player->getSkullClient(target->getPlayer()) == SKULL_NONE) {
+		if (player->hasSecureMode() && !Combat::isInPvpZone(player, target) && player->getSkullClient(target->getPlayer()) == SKULL_NONE) {
 			return RETURNVALUE_TURNSECUREMODETOATTACKUNMARKEDPLAYERS;
-		}
-	}
-
-	if (!player->canAttack(target)) {
-		if (target->getPlayer()) {
-			return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER; // trying to attack non-aggressive player
-		} else {
-			return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE; // trying to attack non-aggressive summon.
 		}
 	}
 
@@ -240,7 +236,7 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 
 ReturnValue Combat::canDoCombat(Creature* caster, Tile* tile, bool aggressive)
 {
-	if (tile->hasProperty(CONST_PROP_BLOCKPROJECTILE, caster)) {
+	if (tile->hasProperty(CONST_PROP_BLOCKPROJECTILE)) {
 		return RETURNVALUE_NOTENOUGHROOM;
 	}
 
@@ -288,9 +284,11 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 		return true;
 	}
 
-	//if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
-		//return true;
-	//}
+	if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
+		if (!(attacker->getLevel() >= 11 && target->getLevel() >= 11)) {
+			return true;
+		}
+	}
 
 	if (attacker->getSkull() == SKULL_BLACK && attacker->getSkullClient(target) == SKULL_NONE) {
 		return true;
@@ -601,7 +599,7 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 			}
 
 			if (casterPlayer) {
-				if (!g_game.isExpertPvpEnabled() && !tile->hasFlag(TILESTATE_PVPZONE)) {
+				if (!tile->hasFlag(TILESTATE_PVPZONE)) {
 					if (g_game.getWorldType() == WORLD_TYPE_NO_PVP || tile->hasFlag(TILESTATE_NOPVPZONE)) {
 						if (itemId == ITEM_FIREFIELD_PVP_FULL) {
 							itemId = ITEM_FIREFIELD_NOPVP_FULL;
@@ -625,10 +623,6 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 			casterPlayer = caster->getMaster()->getPlayer();
 		}
 
-		if (casterPlayer && g_game.isExpertPvpEnabled()) {
-			itemId = getPvpItem(itemId, false);
-		}
-
 		Item* item = Item::CreateItem(itemId);
 		if (caster) {
 			item->setOwner(caster->getID());
@@ -637,12 +631,6 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 		ReturnValue ret = g_game.internalAddItem(tile, item);
 		if (ret == RETURNVALUE_NOERROR) {
 			g_game.startDecay(item);
-			if (casterPlayer) {
-				if (MagicField* field = item->getMagicField()) {
-					field->pvpMode = casterPlayer->getPvpMode(); // storeing pvp mode player casted the fire in;
-					field->isCasterPlayer = true;
-				}
-			}
 		} else {
 			delete item;
 		}
@@ -702,7 +690,7 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 	std::forward_list<Tile*> tileList;
 
 	if (caster) {
-		getCombatArea(caster->getPosition(), pos, area, tileList, caster);
+		getCombatArea(caster->getPosition(), pos, area, tileList);
 	} else {
 		getCombatArea(pos, pos, area, tileList);
 	}
@@ -738,11 +726,6 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 		if (CreatureVector* creatures = tile->getCreatures()) {
 			const Creature* topCreature = tile->getTopCreature();
 			for (Creature* creature : *creatures) {
-				if (Player* casterPlayer = caster->getPlayer()) {
-					if (!casterPlayer->canAttack(creature)) {
-						continue;
-					}
-				}
 				if (params.targetCasterOrTopMost) {
 					if (caster && caster->getTile() == tile) {
 						if (creature != caster) {
@@ -770,33 +753,8 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 	postCombatEffects(caster, pos, params);
 }
 
-bool Combat::doCombat(Creature* caster, Creature* target) const
+void Combat::doCombat(Creature* caster, Creature* target) const
 {
-	if (g_game.isExpertPvpEnabled()) {
-		if (Tile* tile = g_game.map.getTile(target->getPosition())) {
-			for (auto it : *tile->getItemList()) {
-				if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
-					continue;
-				}
-
-				Player* owner = g_game.getPlayerByID(it->getOwner());
-				if (!owner) {
-					continue;
-				}
-
-				if (Player* player = caster->getPlayer()) {
-					if (!player->hasPvpActivity(owner)) {
-						continue;
-					}
-
-					g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
-					player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
-				}
-				// Monsters, etc...
-				return false;
-			}
-		}
-	}
 	//target combat callback function
 	if (params.combatType != COMBAT_NONE) {
 		CombatDamage damage = getCombatDamage(caster, target);
@@ -808,37 +766,10 @@ bool Combat::doCombat(Creature* caster, Creature* target) const
 	} else {
 		doCombatDefault(caster, target, params);
 	}
-
-	return true;
 }
 
-bool Combat::doCombat(Creature* caster, const Position& position) const
+void Combat::doCombat(Creature* caster, const Position& position) const
 {
-	if (g_game.isExpertPvpEnabled()) {
-		if (Tile* tile = g_game.map.getTile(position)) {
-			for (auto it : *tile->getItemList()) {
-				if (it->getID() != ITEM_MAGICWALL_NOPVP && it->getID() != ITEM_WILDGROWTH_NOPVP) {
-					continue;
-				}
-
-				Player* owner = g_game.getPlayerByID(it->getOwner());
-				if (!owner) {
-					continue;
-				}
-
-				if (Player* player = caster->getPlayer()) {
-					if (!player->hasPvpActivity(owner)) {
-						continue;
-					}
-
-					g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
-					player->sendCancelMessage(RETURNVALUE_NOTENOUGHROOM);
-				}
-				// Monsters, etc...
-				return false;
-			}
-		}
-	}
 	//area combat callback function
 	if (params.combatType != COMBAT_NONE) {
 		CombatDamage damage = getCombatDamage(caster, nullptr);
@@ -850,7 +781,6 @@ bool Combat::doCombat(Creature* caster, const Position& position) const
 	} else {
 		CombatFunc(caster, position, area.get(), params, CombatNullFunc, nullptr);
 	}
-	return true;
 }
 
 void Combat::doCombatHealth(Creature* caster, Creature* target, CombatDamage& damage, const CombatParams& params)
@@ -1159,7 +1089,7 @@ AreaCombat::AreaCombat(const AreaCombat& rhs)
 	}
 }
 
-void AreaCombat::getList(const Position& centerPos, const Position& targetPos, std::forward_list<Tile*>& list, Creature* caster) const
+void AreaCombat::getList(const Position& centerPos, const Position& targetPos, std::forward_list<Tile*>& list) const
 {
 	const MatrixArea* area = getArea(centerPos, targetPos);
 	if (!area) {
@@ -1174,7 +1104,7 @@ void AreaCombat::getList(const Position& centerPos, const Position& targetPos, s
 	for (uint32_t y = 0, rows = area->getRows(); y < rows; ++y) {
 		for (uint32_t x = 0; x < cols; ++x) {
 			if (area->getValue(y, x) != 0) {
-				if (g_game.isSightClear(targetPos, tmpPos, true, caster)) {
+				if (g_game.isSightClear(targetPos, tmpPos, true)) {
 					Tile* tile = g_game.map.getTile(tmpPos);
 					if (!tile) {
 						tile = new StaticTile(tmpPos.x, tmpPos.y, tmpPos.z);
@@ -1443,36 +1373,13 @@ void MagicField::onStepInField(Creature* creature)
 		return;
 	}
 
-	if (g_game.isExpertPvpEnabled() && (id == ITEM_MAGICWALL_NOPVP || id == ITEM_WILDGROWTH_NOPVP)) {
-		Player* targetPlayer = creature->getPlayer();
-		if (!targetPlayer) {
-			g_game.internalRemoveItem(this, 1);
-			return;
-		}
-		if (Player* owner = g_game.getPlayerByID(getOwner())) {
-			if (owner == targetPlayer) {
-				g_game.internalRemoveItem(this, 1);
-				return;
-			}
-
-			if (owner->isRemoved() || owner->hasPvpActivity(targetPlayer) || owner->getPvpMode() == PVP_MODE_RED_FIST) {
-				g_game.internalRemoveItem(this, 1);
-				return;
-			}
-		}
-	}
-
 	const ItemType& it = items[getID()];
 	if (it.conditionDamage) {
 		Condition* conditionCopy = it.conditionDamage->clone();
 		uint32_t ownerId = getOwner();
 		if (ownerId) {
-			Creature* owner = g_game.getCreatureByID(ownerId);
-			if (!owner && g_game.isExpertPvpEnabled() && isCasterPlayer) {
-				return;
-			}
-
 			bool harmfulField = true;
+			Creature* owner = g_game.getCreatureByID(ownerId);
 
 			if ((g_game.getWorldType() == WORLD_TYPE_NO_PVP && !getTile()->hasFlag(TILESTATE_PVPZONE)) || getTile()->hasFlag(TILESTATE_NOPVPZONE)) {
 				if (owner) {
@@ -1501,24 +1408,6 @@ void MagicField::onStepInField(Creature* creature)
 				if (attackerPlayer) {
 					if (!isSummonField && Combat::isProtected(attackerPlayer, targetPlayer)) {
 						harmfulField = false;
-					}
-
-					// in expert pvp, we don't care about mosnter, we can't about it's owner!
-					if (g_game.isExpertPvpEnabled() && targetPlayer != attackerPlayer && !targetPlayer->hasFlag(PlayerFlag_CannotBeAttacked)) {
-						// if mode is not red but they aren't enganged in pvp
-						if (pvpMode != PVP_MODE_RED_FIST && !attackerPlayer->hasPvpActivity(targetPlayer)) {
-							return;
-						} else if (pvpMode == PVP_MODE_RED_FIST) {
-							attackerPlayer->addAttacked(targetPlayer);
-							attackerPlayer->addInFightTicks(true);
-							if (attackerPlayer->getSkull() == SKULL_NONE && targetPlayer->getSkull() == SKULL_NONE && targetPlayer->getLevel() > 0) {
-								attackerPlayer->setSkull(SKULL_WHITE);
-							}
-						}
-
-						if (isSummonField && !attackerPlayer->hasPvpActivity(targetPlayer)) {
-							return; // ppl aren't get affected by fields of other ppl summons!
-						}
 					}
 				}
 			}

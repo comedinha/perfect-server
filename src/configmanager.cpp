@@ -91,7 +91,6 @@ bool ConfigManager::load()
 	boolean[ENABLE_LIVE_CASTING] = getGlobalBoolean(L, "enableLiveCasting", true);
 	boolean[ALLOW_BLOCK_SPAWN] = getGlobalBoolean(L, "allowBlockSpawn", true);
 	boolean[IS_PREVIEWER] = getGlobalBoolean(L, "isPreviewer", false);
-	boolean[EXPERT_PVP] = getGlobalBoolean(L, "expertPvp", false);
 	boolean[ENABLE_RECORD] = getGlobalBoolean(L, "enableRecord", true);
 	boolean[EXP_BOOSTER] = getGlobalBoolean(L, "expBoosterEnabled", false);
 	boolean[LOWLEVEL_BONUS] = getGlobalBoolean(L, "lowLevelBonusEnabled", false);
