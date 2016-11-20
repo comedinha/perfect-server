@@ -49,6 +49,7 @@ class ConfigManager
 			ENABLE_RECORD,
 			EXP_BOOSTER,
 			LOWLEVEL_BONUS,
+			SKULL_PLAYER_SUMMON,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};

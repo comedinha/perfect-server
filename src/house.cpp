@@ -215,7 +215,7 @@ bool House::transferToDepot() const
 		}
 
 		transferToDepot(&tmpPlayer);
-		IOMapSerialize::saveHouseItems();
+		IOMapSerialize::saveHouse(this);
 		IOLoginData::savePlayer(&tmpPlayer);
 	}
 	return true;

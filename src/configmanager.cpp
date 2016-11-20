@@ -94,6 +94,7 @@ bool ConfigManager::load()
 	boolean[ENABLE_RECORD] = getGlobalBoolean(L, "enableRecord", true);
 	boolean[EXP_BOOSTER] = getGlobalBoolean(L, "expBoosterEnabled", false);
 	boolean[LOWLEVEL_BONUS] = getGlobalBoolean(L, "lowLevelBonusEnabled", false);
+	boolean[SKULL_PLAYER_SUMMON] = getGlobalBoolean(L, "skullPlayerSummon", false);
 
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");

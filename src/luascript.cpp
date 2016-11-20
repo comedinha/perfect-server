@@ -1813,6 +1813,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
 	registerEnumIn("configKeys", ConfigManager::EXP_BOOSTER)
 	registerEnumIn("configKeys", ConfigManager::LOWLEVEL_BONUS)
+	registerEnumIn("configKeys", ConfigManager::SKULL_PLAYER_SUMMON)
 
 	registerEnumIn("configKeys", ConfigManager::MAP_NAME)
 	registerEnumIn("configKeys", ConfigManager::HOUSE_RENT_PERIOD)

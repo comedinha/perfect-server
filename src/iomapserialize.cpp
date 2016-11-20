@@ -121,6 +121,55 @@ bool IOMapSerialize::saveHouseItems()
 	return success;
 }
 
+bool IOMapSerialize::saveHouse(const House* house)
+{
+	int64_t start = OTSYS_TIME();
+	Database* db = Database::getInstance();
+	std::ostringstream query;
+
+	//Start the transaction
+	DBTransaction transaction;
+	if (!transaction.begin()) {
+		return false;
+	}
+
+	//clear old tile data
+	std::ostringstream clearoldtile;
+	clearoldtile << "DELETE FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`tile_store` WHERE `house_id` = " << house->getId();
+	if (!db->executeQuery(clearoldtile.str())) {
+		return false;
+	}
+
+	std::ostringstream inserttile;
+	inserttile << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`tile_store` (`house_id`, `data`) VALUES ";
+	DBInsert stmt(inserttile.str());
+
+	PropWriteStream stream;
+	for (HouseTile* tile : house->getTiles()) {
+		saveTile(stream, tile);
+
+		size_t attributesSize;
+		const char* attributes = stream.getStream(attributesSize);
+		if (attributesSize > 0) {
+			query << house->getId() << ',' << db->escapeBlob(attributes, attributesSize);
+			if (!stmt.addRow(query)) {
+				return false;
+			}
+			stream.clear();
+		}
+	}
+
+	if (!stmt.execute()) {
+		return false;
+	}
+
+	//End the transaction
+	bool success = transaction.commit();
+	std::cout << "> Saved house " << house->getId() << " items in: " <<
+	          (OTSYS_TIME() - start) / (1000.) << " s" << std::endl;
+	return success;
+}
+
 bool IOMapSerialize::loadContainer(PropStream& propStream, Container* container)
 {
 	while (container->serializationCount > 0) {
