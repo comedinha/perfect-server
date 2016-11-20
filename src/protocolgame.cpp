@@ -371,12 +371,12 @@ void ProtocolGame::addSpectator(ProtocolSpectator_ptr spectatorClient)
 	//DO NOT do any send operations here
 	spectators.emplace_back(spectatorClient);
 	
-	std::stringstream ss;
+	std::ostringstream ss;
 	ss << "Spectator " << spectatorsCount << "";
 
-	static_cast<ProtocolSpectator_ptr>(spectatorClient)->setSpectatorName(ss.str().c_str());
+	static_cast<ProtocolSpectator_ptr>(spectatorClient)->setSpectatorName(ss.str());
 	static_cast<ProtocolSpectator_ptr>(spectatorClient)->setSpectatorId(spectatorsCount);
-	player->sendChannelEvent(CHANNEL_CAST, ss.str().c_str(), CHANNELEVENT_JOIN);
+	player->sendChannelEvent(CHANNEL_CAST, ss.str(), CHANNELEVENT_JOIN);
 
 	updateLiveCastInfo();
 }
@@ -605,7 +605,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0x99: parseCloseChannel(msg); break;
 		case 0x9A: parseOpenPrivateChannel(msg); break;
 		case 0x9E: addGameTask(&Game::playerCloseNpcChannel, player->getID()); break;
-		case 0xA0: /* FightModes */ break;
+		case 0xA0: parseFightModes(msg); break;
 		case 0xA1: parseAttack(msg); break;
 		case 0xA2: parseFollow(msg); break;
 		case 0xA3: parseInviteToParty(msg); break;
@@ -846,6 +846,25 @@ void ProtocolGame::parseSay(NetworkMessage& msg)
 		checkCommand(text);
 	}
 	addGameTask(&Game::playerSay, player->getID(), channelId, type, receiver, text);
+}
+
+void ProtocolGame::parseFightModes(NetworkMessage& msg)
+{
+	uint8_t rawFightMode = msg.getByte(); // 1 - offensive, 2 - balanced, 3 - defensive
+	uint8_t rawChaseMode = msg.getByte(); // 0 - stand while fightning, 1 - chase opponent
+	uint8_t rawSecureMode = msg.getByte(); // 0 - can't attack unmarked, 1 - can attack unmarked
+	// uint8_t rawPvpMode = msg.getByte(); // pvp mode introduced in 10.0
+
+	fightMode_t fightMode;
+	if (rawFightMode == 1) {
+		fightMode = FIGHTMODE_ATTACK;
+	} else if (rawFightMode == 2) {
+		fightMode = FIGHTMODE_BALANCED;
+	} else {
+		fightMode = FIGHTMODE_DEFENSE;
+	}
+
+	addGameTask(&Game::playerSetFightModes, player->getID(), fightMode, rawChaseMode != 0, rawSecureMode != 0);
 }
 
 void ProtocolGame::parseAttack(NetworkMessage& msg)
@@ -2482,7 +2501,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 				}
 				return;
 			} else if (command == "spectators") {
-				std::stringstream ss;
+				std::ostringstream ss;
 				if (getSpectatorCount() > 0) {
 					ss << "Spectators: ";
 					size_t scount = 0;
@@ -2498,7 +2517,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 					ss << "No spectators.";
 				}
 
-				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str()), CHANNEL_CAST, false);
 				return;
 			} else if (command == "password") {
 				if (t.size() == 2) {

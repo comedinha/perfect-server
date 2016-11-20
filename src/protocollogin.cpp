@@ -181,10 +181,11 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 		disconnectClient("Account name or password is not correct.", version);
 		return;
 	}
-	
+
+	uint32_t ticks = time(nullptr) / AUTHENTICATOR_PERIOD;
+
 	auto output = OutputMessagePool::getOutputMessage();
 	if (!account.key.empty()) {
- 		int32_t ticks = static_cast<int32_t>(time(nullptr) / AUTHENTICATOR_PERIOD);
  		if (token.empty() || !(token == generateToken(account.key, ticks) || token == generateToken(account.key, ticks - 1) || token == generateToken(account.key, ticks + 1))) {
  			output->addByte(0x0D);
  			output->addByte(0);

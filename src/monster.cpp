@@ -1021,7 +1021,7 @@ void Monster::pushItems(Tile* tile)
 			Item* item = items->at(i);
 			if (item && item->hasProperty(CONST_PROP_MOVEABLE) && (item->hasProperty(CONST_PROP_BLOCKPATH)
 			        || item->hasProperty(CONST_PROP_BLOCKSOLID))) {
-				if (moveCount < 20 && pushItem(item)) {
+				if (moveCount < 20 && Monster::pushItem(item)) {
 					++moveCount;
 				} else if (g_game.internalRemoveItem(item) == RETURNVALUE_NOERROR) {
 					++removeCount;
@@ -1067,7 +1067,7 @@ void Monster::pushCreatures(Tile* tile)
 		for (size_t i = 0; i < creatures->size();) {
 			Monster* monster = creatures->at(i)->getMonster();
 			if (monster && monster->isPushable()) {
-				if (monster != lastPushedMonster && pushCreature(monster)) {
+				if (monster != lastPushedMonster && Monster::pushCreature(monster)) {
 					lastPushedMonster = monster;
 					continue;
 				}
@@ -1121,11 +1121,11 @@ bool Monster::getNextStep(Direction& direction, uint32_t& flags)
 		Tile* tile = g_game.map.getTile(pos);
 		if (tile) {
 			if (canPushItems()) {
-				pushItems(tile);
+				Monster::pushItems(tile);
 			}
 
 			if (canPushCreatures()) {
-				pushCreatures(tile);
+				Monster::pushCreatures(tile);
 			}
 		}
 	}

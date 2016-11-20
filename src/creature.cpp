@@ -154,8 +154,9 @@ void Creature::onThink(uint32_t interval)
 	}
 
 	if (isUpdatingPath) {
-		if (getMonster() && isAttacked()) {
+		if (getMonster() && isAttacked() && !isAttackedCheck) {
 			updateMapCache();
+			isAttackedCheck = true;
 		}
 		isUpdatingPath = false;
 		goToFollowCreature();

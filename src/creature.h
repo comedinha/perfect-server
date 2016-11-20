@@ -540,6 +540,7 @@ class Creature : virtual public Thing
 		bool isInternalRemoved = false;
 		bool isMapLoaded = false;
 		bool isUpdatingPath = false;
+		bool isAttackedCheck = false;
 		bool creatureCheck = false;
 		bool inCheckCreaturesVector = false;
 		bool skillLoss = true;

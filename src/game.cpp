@@ -3139,7 +3139,7 @@ void Game::playerFollowCreature(uint32_t playerId, uint32_t creatureId)
 	player->setFollowCreature(getCreatureByID(creatureId));
 }
 
-void Game::playerSetFightModes(uint32_t playerId, fightMode_t fightMode, chaseMode_t chaseMode, bool secureMode)
+void Game::playerSetFightModes(uint32_t playerId, fightMode_t fightMode, bool chaseMode, bool secureMode)
 {
 	Player* player = getPlayerByID(playerId);
 	if (!player) {
@@ -5244,6 +5244,7 @@ void Game::playerCreateMarketOffer(uint32_t playerId, uint8_t type, uint16_t spr
 	}
 
 	IOMarket::createOffer(player->getGUID(), static_cast<MarketAction_t>(type), it.id, amount, price, anonymous);
+	IOLoginData::savePlayer(player);
 
 	player->sendMarketEnter(player->getLastDepotId());
 	const MarketOfferList& buyOffers = IOMarket::getActiveOffers(MARKETACTION_BUY, it.id);
@@ -5411,8 +5412,8 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 			}
 		}
 
+		IOLoginData::savePlayer(buyerPlayer);
 		if (buyerPlayer->isOffline()) {
-			IOLoginData::savePlayer(buyerPlayer);
 			delete buyerPlayer;
 		} else {
 			buyerPlayer->onReceiveMail();
@@ -5456,6 +5457,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		Player* sellerPlayer = getPlayerByGUID(offer.playerId);
 		if (sellerPlayer) {
 			sellerPlayer->bankBalance += totalPrice;
+			IOLoginData::savePlayer(sellerPlayer);
 		} else {
 			IOLoginData::increaseBankBalance(offer.playerId, totalPrice);
 		}

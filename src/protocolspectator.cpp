@@ -229,7 +229,7 @@ void ProtocolSpectator::syncChatChannels()
 		}
 	}
 	sendChannel(CHANNEL_CAST, LIVE_CAST_CHAT_NAME, nullptr, nullptr);
-	std::stringstream ss;
+	std::ostringstream ss;
 	ss << "Spectators: ";
 	size_t scount = 0;
 	for (auto it : client->getLiveCastSpectators()) {
@@ -244,7 +244,7 @@ void ProtocolSpectator::syncChatChannels()
 	} else {
 		ss << "{Only you}";
 	}
-	sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST);
+	sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str()), CHANNEL_CAST);
 	sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !name or !help."), CHANNEL_CAST);
 }
 
@@ -421,7 +421,7 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 			toLowerCaseString(t[0]);
 			std::string command = t[0];
 			if (command == "spectators") {
-				std::stringstream ss;
+				std::ostringstream ss;
 				ss << "Spectators: ";
 				size_t scount = 0;
 				for (auto it : client->getLiveCastSpectators()) {
@@ -433,7 +433,7 @@ bool ProtocolSpectator::parseCoomand(const std::string& text)
 				}
 				ss << ".";
 
-				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str().c_str()), CHANNEL_CAST);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str()), CHANNEL_CAST);
 			} else if (command == "name") {
 				if (t.size() == 2) {
 					std::string newName = t[1];

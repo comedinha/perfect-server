@@ -750,17 +750,18 @@ bool Player::canWalkthrough(const Creature* creature) const
 		return false;
 	}
 
+	Player* thisPlayer = const_cast<Player*>(this);
 	if ((OTSYS_TIME() - lastWalkthroughAttempt) > 2000) {
-		setLastWalkthroughAttempt(OTSYS_TIME());
+		thisPlayer->setLastWalkthroughAttempt(OTSYS_TIME());
 		return false;
 	}
 
 	if (creature->getPosition() != lastWalkthroughPosition) {
-		setLastWalkthroughPosition(creature->getPosition());
+		thisPlayer->setLastWalkthroughPosition(creature->getPosition());
 		return false;
 	}
 
-	setLastWalkthroughPosition(creature->getPosition());
+	thisPlayer->setLastWalkthroughPosition(creature->getPosition());
 	return true;
 }
 
@@ -3304,7 +3305,7 @@ bool Player::setAttackedCreature(Creature* creature)
 		return false;
 	}
 
-	if (chaseMode == CHASEMODE_FOLLOW && creature) {
+	if (chaseMode && creature) {
 		if (followCreature != creature) {
 			//chase opponent
 			setFollowCreature(creature);
@@ -3407,13 +3408,13 @@ void Player::onFollowCreature(const Creature* creature)
 	}
 }
 
-void Player::setChaseMode(chaseMode_t mode)
+void Player::setChaseMode(bool mode)
 {
-	chaseMode_t prevChaseMode = chaseMode;
+	bool prevChaseMode = chaseMode;
 	chaseMode = mode;
 
 	if (prevChaseMode != chaseMode) {
-		if (chaseMode == CHASEMODE_FOLLOW) {
+		if (chaseMode) {
 			if (!followCreature && attackedCreature) {
 				//chase opponent
 				setFollowCreature(attackedCreature);

@@ -598,7 +598,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 	ItemMap itemMap;
 
 	query.str(std::string());
-	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_items` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC";
+	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_items` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC LIMIT 10000";
 	if ((result = db->storeQuery(query.str()))) {
 		loadItems(itemMap, result);
 
@@ -631,7 +631,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 	itemMap.clear();
 
 	query.str(std::string());
-	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_depotitems` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC";
+	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_depotitems` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC LIMIT 1000";
 	if ((result = db->storeQuery(query.str()))) {
 		loadItems(itemMap, result);
 
@@ -711,7 +711,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 	itemMap.clear();
 
 	query.str(std::string());
-	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_inboxitems` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC";
+	query << "SELECT `pid`, `sid`, `itemtype`, `count`, `attributes` FROM `player_inboxitems` WHERE `player_id` = " << player->getGUID() << " ORDER BY `sid` DESC LIMIT 1000";
 	if ((result = db->storeQuery(query.str()))) {
 		loadItems(itemMap, result);
 

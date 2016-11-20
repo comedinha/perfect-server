@@ -75,6 +75,8 @@ void Teleport::addThing(int32_t, Thing* thing)
 	Tile* destTile = g_game.map.getTile(destPos);
 	if (!destTile) {
 		return;
+	} else if (thing->getPosition() == destTile->getPosition()) {
+		return;
 	}
 
 	const MagicEffectClasses effect = Item::items[id].magicEffect;

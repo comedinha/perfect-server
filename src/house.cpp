@@ -23,6 +23,7 @@
 
 #include "house.h"
 #include "iologindata.h"
+#include "iomapserialize.h"
 #include "game.h"
 #include "configmanager.h"
 #include "bed.h"
@@ -214,6 +215,7 @@ bool House::transferToDepot() const
 		}
 
 		transferToDepot(&tmpPlayer);
+		IOMapSerialize::saveHouseItems();
 		IOLoginData::savePlayer(&tmpPlayer);
 	}
 	return true;
@@ -412,6 +414,10 @@ void HouseTransferItem::onTradeEvent(TradeEvents_t event, Player* owner)
 bool House::executeTransfer(HouseTransferItem* item, Player* newOwner)
 {
 	if (transferItem != item) {
+		return false;
+	}
+
+	if (getPayRentWarnings() > 0) {
 		return false;
 	}
 
@@ -690,7 +696,7 @@ void Houses::payHouses(RentPeriod_t rentPeriod) const
 		Player player(nullptr);
 		if (!IOLoginData::loadPlayerById(&player, ownerId)) {
 			// Player doesn't exist, reset house owner
-			house->setOwner(0);
+			house->setOwner(0, true);
 			continue;
 		}
 

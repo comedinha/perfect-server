@@ -27,6 +27,8 @@ Inbox::Inbox(uint16_t type) : Container(type, 30, false, true) {}
 ReturnValue Inbox::queryAdd(int32_t, const Thing& thing, uint32_t,
 		uint32_t flags, Creature*) const
 {
+	int32_t addCount = 0; // Inbox Fix - Felipe Monteiro
+
 	if (!hasBitSet(FLAG_NOLIMIT, flags)) {
 		return RETURNVALUE_CONTAINERNOTENOUGHROOM;
 	}
@@ -42,6 +44,18 @@ ReturnValue Inbox::queryAdd(int32_t, const Thing& thing, uint32_t,
 
 	if (!item->isPickupable()) {
 		return RETURNVALUE_CANNOTPICKUP;
+	}
+
+	if (item->getTopParent() != this) { // Inbox Fix - Felipe Monteiro
+		if (const Container* container = item->getContainer()) {
+			addCount = container->getItemHoldingCount() + 1;
+		} else {
+			addCount = 1;
+		}
+	}
+
+	if (getItemHoldingCount() + addCount > 4001) { // Inbox Fix - Felipe Monteiro
+		return RETURNVALUE_DEPOTISFULL;
 	}
 
 	return RETURNVALUE_NOERROR;

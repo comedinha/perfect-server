@@ -329,6 +329,7 @@ bool IOMap::parseTileArea(OTB::Loader& loader, const OTB::Node& tileAreaNode, Ma
 					}
 					break;
 				}
+
 				default:
 					std::ostringstream ss;
 					ss << "[x:" << x << ", y:" << y << ", z:" << z << "] Unknown tile attribute.";
@@ -369,7 +370,7 @@ bool IOMap::parseTileArea(OTB::Loader& loader, const OTB::Node& tileAreaNode, Ma
 
 			if (isHouseTile && item->isMoveable()) {
 				std::cout << "[Warning - IOMap::loadMap] Moveable item with ID: " << item->getID() << ", in house: " << house->getId() << ", at position [x: " << x << ", y: " << y << ", z: " << z << "]." << std::endl;
-					delete item;
+				delete item;
 			} else {
 				if (item->getItemCount() <= 0) {
 					item->setItemCount(1);
@@ -400,7 +401,6 @@ bool IOMap::parseTileArea(OTB::Loader& loader, const OTB::Node& tileAreaNode, Ma
 		map.setTile(x, y, z, tile);
 	}
 	return true;
-
 }
 
 bool IOMap::parseTowns(OTB::Loader& loader, const OTB::Node& townsNode, Map& map)
@@ -442,10 +442,12 @@ bool IOMap::parseTowns(OTB::Loader& loader, const OTB::Node& townsNode, Map& map
 			setLastErrorString("Could not read town coordinates.");
 			return false;
 		}
+
 		town->setTemplePos(Position(town_coords.x, town_coords.y, town_coords.z));
 	}
 	return true;
 }
+
 
 bool IOMap::parseWaypoints(OTB::Loader& loader, const OTB::Node& waypointsNode, Map& map)
 {
