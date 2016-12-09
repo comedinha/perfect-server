@@ -225,6 +225,13 @@ class Player final : public Creature, public Cylinder
 		void setBankBalance(uint64_t balance) {
 			bankBalance = balance;
 		}
+		
+		uint64_t getCoinsBalance() const {
+			return coinsBalance;
+		}
+		void setCoinsBalance(uint64_t balance) {
+			coinsBalance = balance;
+		}
 
 		Guild* getGuild() const {
 			return guild;
@@ -1278,6 +1285,7 @@ class Player final : public Creature, public Cylinder
 		uint64_t manaSpent = 0;
 		uint64_t lastAttack = 0;
 		uint64_t bankBalance = 0;
+		uint64_t coinsBalance = 0;
 		uint64_t lastQuestlogUpdate = 0;
 		int64_t lastFailedFollow = 0;
 		int64_t skullTicks = 0;

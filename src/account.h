@@ -30,6 +30,7 @@ struct Account {
 	time_t lastDay = 0;
 	uint32_t id = 0;
 	uint16_t premiumDays = 0;
+	uint64_t coins = 0;
 	AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
 
 	Account() = default;

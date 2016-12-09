@@ -2029,24 +2029,24 @@ void Player::death(Creature* lastHitCreature)
 		uint8_t unfairFightReduction = 100;
 		bool lastHitPlayer = Player::lastHitIsPlayer(lastHitCreature);
 
-		if (lastHitPlayer) {
-			uint32_t sumLevels = 0;
-			uint32_t inFightTicks = g_config.getNumber(ConfigManager::PZ_LOCKED);
-			for (const auto& it : damageMap) {
-				CountBlock_t cb = it.second;
-				if ((OTSYS_TIME() - cb.ticks) <= inFightTicks) {
-					Player* damageDealer = g_game.getPlayerByID(it.first);
-					if (damageDealer) {
-						sumLevels += damageDealer->getLevel();
-					}
-				}
-			}
+		//if (lastHitPlayer) {
+			//uint32_t sumLevels = 0;
+			//uint32_t inFightTicks = g_config.getNumber(ConfigManager::PZ_LOCKED);
+			//for (const auto& it : damageMap) {
+				//CountBlock_t cb = it.second;
+				//if ((OTSYS_TIME() - cb.ticks) <= inFightTicks) {
+					//Player* damageDealer = g_game.getPlayerByID(it.first);
+					//if (damageDealer) {
+					//	sumLevels += damageDealer->getLevel();
+				//	}
+				//}
+			//}
 
-			if (sumLevels > level) {
-				double reduce = level / static_cast<double>(sumLevels);
-				unfairFightReduction = std::max<uint8_t>(20, std::floor((reduce * 100) + 0.5));
-			}
-		}
+			//if (sumLevels > level) {
+			//	double reduce = level / static_cast<double>(sumLevels);
+			//	unfairFightReduction = std::max<uint8_t>(20, std::floor((reduce * 100) + 0.5));
+			//}
+		//}
 
 		//Magic level loss
 		uint64_t sumMana = 0;
@@ -2087,7 +2087,7 @@ void Player::death(Creature* lastHitCreature)
 
 			sumSkillTries += skills[i].tries;
 
-			uint32_t lostSkillTries = static_cast<uint32_t>(sumSkillTries * deathLossPercent);
+			uint32_t lostSkillTries = static_cast<uint32_t>(sumSkillTries * (deathLossPercent+0.10));
 			while (lostSkillTries > skills[i].tries) {
 				lostSkillTries -= skills[i].tries;
 

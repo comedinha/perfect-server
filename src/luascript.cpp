@@ -1813,7 +1813,6 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::IS_PREVIEWER)
 	registerEnumIn("configKeys", ConfigManager::EXP_BOOSTER)
 	registerEnumIn("configKeys", ConfigManager::LOWLEVEL_BONUS)
-	registerEnumIn("configKeys", ConfigManager::SKULL_PLAYER_SUMMON)
 
 	registerEnumIn("configKeys", ConfigManager::MAP_NAME)
 	registerEnumIn("configKeys", ConfigManager::HOUSE_RENT_PERIOD)
@@ -2285,6 +2284,9 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("Player", "getBankBalance", LuaScriptInterface::luaPlayerGetBankBalance);
 	registerMethod("Player", "setBankBalance", LuaScriptInterface::luaPlayerSetBankBalance);
+	
+	registerMethod("Player", "getCoinsBalance", LuaScriptInterface::luaPlayerGetCoinsBalance);
+	registerMethod("Player", "setCoinsBalance", LuaScriptInterface::luaPlayerSetCoinsBalance);
 
 	registerMethod("Player", "getStorageValue", LuaScriptInterface::luaPlayerGetStorageValue);
 	registerMethod("Player", "setStorageValue", LuaScriptInterface::luaPlayerSetStorageValue);
@@ -8723,6 +8725,31 @@ int LuaScriptInterface::luaPlayerSetBankBalance(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (player) {
 		player->setBankBalance(getNumber<uint64_t>(L, 2));
+		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerGetCoinsBalance(lua_State* L)
+{
+	// player:getBankBalance()
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		lua_pushnumber(L, player->getCoinsBalance());
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerSetCoinsBalance(lua_State* L)
+{
+	// player:setBankBalance(bankBalance)
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		player->setCoinsBalance(getNumber<uint64_t>(L, 2));
 		pushBoolean(L, true);
 	} else {
 		lua_pushnil(L);

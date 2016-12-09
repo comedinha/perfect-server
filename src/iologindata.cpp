@@ -33,7 +33,7 @@ Account IOLoginData::loadAccount(uint32_t accno)
 	Account account;
 
 	std::ostringstream query;
-	query << "SELECT `id`, `name`, `password`, `type`, `premdays`, `lastday` FROM `accounts` WHERE `id` = " << accno;
+	query << "SELECT `id`, `name`, `password`, `type`, `premdays`, `lastday`, `coins` FROM `accounts` WHERE `id` = " << accno;
 	DBResult_ptr result = Database::getInstance()->storeQuery(query.str());
 	if (!result) {
 		return account;
@@ -44,6 +44,7 @@ Account IOLoginData::loadAccount(uint32_t accno)
 	account.accountType = static_cast<AccountType_t>(result->getNumber<int32_t>("type"));
 	account.premiumDays = result->getNumber<uint16_t>("premdays");
 	account.lastDay = result->getNumber<time_t>("lastday");
+	account.coins = result->getNumber<uint64_t>("coins");
 	return account;
 }
 
@@ -387,6 +388,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 	player->setGUID(result->getNumber<uint32_t>("id"));
 	player->name = result->getString("name");
 	player->accountNumber = accno;
+	player->coinsBalance = acc.coins;
 	player->worldId = result->getNumber<uint16_t>("world_id");
 
 	player->accountType = acc.accountType;
@@ -1195,6 +1197,13 @@ void IOLoginData::increaseBankBalance(uint32_t guid, uint64_t bankBalance)
 {
 	std::ostringstream query;
 	query << "UPDATE `players` SET `balance` = `balance` + " << bankBalance << " WHERE `id` = " << guid;
+	Database::getInstance()->executeQuery(query.str());
+}
+
+void IOLoginData::increaseCoinsBalance(uint32_t guid, uint64_t coinsBalance)
+{
+	std::ostringstream query;
+	query << "UPDATE `accounts` SET `coins` = `coins` + " << coinsBalance << " WHERE `id` = " << guid;
 	Database::getInstance()->executeQuery(query.str());
 }
 

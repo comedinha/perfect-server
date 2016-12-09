@@ -1375,6 +1375,12 @@ void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
 void ProtocolGame::sendMarketEnter(uint32_t depotId)
 {
 	NetworkMessage msg;
+	msg.addByte(0xDF);
+	msg.addByte(0x01);
+
+	msg.add<uint32_t>(player->getCoinsBalance());
+	msg.add<uint32_t>(player->getCoinsBalance());
+	
 	msg.addByte(0xF6);
 
 	msg.add<uint64_t>(player->getBankBalance());

@@ -916,6 +916,9 @@ class LuaScriptInterface
 
 		static int luaPlayerGetBankBalance(lua_State* L);
 		static int luaPlayerSetBankBalance(lua_State* L);
+		
+		static int luaPlayerGetCoinsBalance(lua_State* L);
+		static int luaPlayerSetCoinsBalance(lua_State* L);
 
 		static int luaPlayerGetStorageValue(lua_State* L);
 		static int luaPlayerSetStorageValue(lua_State* L);
