@@ -590,6 +590,13 @@ MagicEffectNames magicEffectNames = {
 	{"ragiazbonecapsule",		CONST_ME_RAGIAZ_BONE_CAPSULE},
 	{"criticalhit",		CONST_ME_CRITICAL_HIT},
 	{"fishjump",		CONST_ME_FISH_JUMP},
+	{"waveblue",		CONST_ME_WAVE_BLUE},
+	{"waveorange",		CONST_ME_WAVE_ORANGE},
+	{"wavegreen",		CONST_ME_WAVE_GREEN},
+	{"wavered",			CONST_ME_WAVE_RED},
+	{"waveblack",		CONST_ME_WAVE_BLACK},
+	{"waveyellow",		CONST_ME_WAVE_YELLOW},
+	{"magicyellow",		CONST_ME_MAGIC_YELLOW},
 };
 
 ShootTypeNames shootTypeNames = {

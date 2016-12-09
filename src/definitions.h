@@ -28,9 +28,9 @@ static constexpr auto SOFTWARE_CODENAME = "COMEDIAN";
 static constexpr auto STATUS_SERVER_DEVELOPERS = "Mattyx14, Brewsterl, Malucooo, CaterOT Team and The Forgotten Server Developers";
 static constexpr auto GIT_REPO = "https://github.com/comedinha/perfect-server";
 
-static constexpr auto CLIENT_VERSION_MIN = 1097;
-static constexpr auto CLIENT_VERSION_MAX = 1099;
-static constexpr auto CLIENT_VERSION_STR = "10.97";
+static constexpr auto CLIENT_VERSION_MIN = 1100;
+static constexpr auto CLIENT_VERSION_MAX = 1100;
+static constexpr auto CLIENT_VERSION_STR = "11.00";
 
 static constexpr auto AUTHENTICATOR_DIGITS = 6U;
 static constexpr auto AUTHENTICATOR_PERIOD = 30U;

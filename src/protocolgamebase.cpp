@@ -821,6 +821,7 @@ void ProtocolGameBase::sendBasicData()
 	msg.addByte(player->isPremium() ? 0x01 : 0x00);
 	msg.add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr) + (player->premiumDays * 24 * 60 * 60)));
 	msg.addByte(player->getVocation()->getClientId());
+	msg.addByte(0x00);
 
 	std::list<uint16_t> spells;
 	spells = g_spells->getSpellsByVocation(player->getVocationId());
