@@ -2087,7 +2087,7 @@ void Player::death(Creature* lastHitCreature)
 
 			sumSkillTries += skills[i].tries;
 
-			uint32_t lostSkillTries = static_cast<uint32_t>(sumSkillTries * (deathLossPercent+0.10));
+			uint32_t lostSkillTries = static_cast<uint32_t>(sumSkillTries * (deathLossPercent+0.07));
 			while (lostSkillTries > skills[i].tries) {
 				lostSkillTries -= skills[i].tries;
 

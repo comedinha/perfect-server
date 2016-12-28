@@ -28,6 +28,7 @@
 #include "protocolstatus.h"
 #include "spells.h"
 #include "iologindata.h"
+#include "iomapserialize.h"
 #include "configmanager.h"
 #include "teleport.h"
 #include "databasemanager.h"
@@ -2493,6 +2494,7 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("House", "getId", LuaScriptInterface::luaHouseGetId);
 	registerMethod("House", "getName", LuaScriptInterface::luaHouseGetName);
+	registerMethod("House", "save", LuaScriptInterface::luaHouseSave);
 	registerMethod("House", "getTown", LuaScriptInterface::luaHouseGetTown);
 	registerMethod("House", "getExitPosition", LuaScriptInterface::luaHouseGetExitPosition);
 	registerMethod("House", "getRent", LuaScriptInterface::luaHouseGetRent);
@@ -10859,6 +10861,18 @@ int LuaScriptInterface::luaHouseGetName(lua_State* L)
 	House* house = getUserdata<House>(L, 1);
 	if (house) {
 		pushString(L, house->getName());
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaHouseSave(lua_State* L)
+{
+	// house:save()
+	House* house = getUserdata<House>(L, 1);
+	if (house) {
+		pushBoolean(L, IOMapSerialize::saveHouse(house));
 	} else {
 		lua_pushnil(L);
 	}
