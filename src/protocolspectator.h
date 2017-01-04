@@ -37,6 +37,14 @@ class ProtocolSpectator final : public ProtocolGameBase
 
 		ProtocolSpectator(Connection_ptr connection);
 
+		void setSpectatorExaust(time_t time) {
+			exaustTime = time;
+		}
+
+		time_t getSpectatorExaust() {
+			return exaustTime;
+		}
+
 		void setSpectatorName(std::string newName) {
 			spectatorName = newName;
 		}
@@ -62,8 +70,9 @@ class ProtocolSpectator final : public ProtocolGameBase
 		ProtocolGame_ptr client;
 		OperatingSystem_t operatingSystem;
 
-		std::string spectatorName; // Spectator Name
-		uint32_t spectatorId; // Spectator ID
+		std::string spectatorName;
+		uint32_t spectatorId;
+		time_t exaustTime = 0;
 
 		void logout();
 

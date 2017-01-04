@@ -35,10 +35,12 @@
 #include "connection.h"
 #include "scheduler.h"
 #include "ban.h"
+#include "spells.h"
 
 extern Game g_game;
 extern ConfigManager g_config;
 extern Chat* g_chat;
+extern Spells* g_spells;
 
 ProtocolSpectator::ProtocolSpectator(Connection_ptr connection) :
 	ProtocolGameBase(connection),
@@ -355,6 +357,10 @@ void ProtocolSpectator::parsePacket(NetworkMessage& msg)
 
 void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 {
+	if (!client) {
+		return;
+	}
+
 	MessageClasses type = (MessageClasses)msg.getByte();
 	uint16_t channelId = 0;
 
@@ -366,22 +372,34 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 
 	const std::string text = msg.getString();
 
-	if (text.length() > 255 || channelId != CHANNEL_CAST || !client) {
+	if (text.length() > 255 || channelId != CHANNEL_CAST) {
 		return;
 	}
 
-	if (client) {
-		if (client->isSpectatorMuted(spectatorId)) {
-			sendTextMessage(TextMessage(MESSAGE_FAILURE, "You have been muted."), CHANNEL_CAST);
-			return;
-		}
-
-		if (parseCoomand(text)) {
-			return;
-		}
-
-		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, MESSAGE_CHANNEL)));
+	time_t muteTime = getSpectatorExaust();
+	if (muteTime > std::time(nullptr)) {
+		std::ostringstream ss;
+		ss << "You are still exausted for " << muteTime - std::time(nullptr) << " seconds.";
+		sendTextMessage(TextMessage(MESSAGE_FAILURE, ss.str()), CHANNEL_CAST);
+		return;
 	}
+	setSpectatorExaust(std::time(nullptr) + 5);
+
+	if (client->isSpectatorMuted(spectatorId)) {
+		sendTextMessage(TextMessage(MESSAGE_FAILURE, "You have been muted."), CHANNEL_CAST);
+		return;
+	}
+
+	InstantSpell* instantSpell = g_spells->getInstantSpell(text);
+	if (instantSpell) {
+		return;
+	}
+
+	if (parseCoomand(text)) {
+		return;
+	}
+
+	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, MESSAGE_CHANNEL)));
 }
 
 void ProtocolSpectator::release()

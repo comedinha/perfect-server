@@ -319,7 +319,7 @@ uint32_t IOLoginData::getPlayerAccountId(uint32_t playerId)
 	if (!result) {
 		return 1;
 	}
-	return result->getNumber<uint16_t>("account_id");
+	return result->getNumber<uint32_t>("account_id");
 }
 
 bool IOLoginData::preloadPlayer(Player* player, const std::string& name)
@@ -405,8 +405,17 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 		return false;
 	}
 	player->setGroup(group);
+	
+	uint32_t bid = 0;
+	Database* db2 = Database::getInstance();
+	std::ostringstream query2;
+	query2 << "SELECT `bid` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` WHERE `highest_bidder`="<< player->getGUID() <<" LIMIT 1";
+	DBResult_ptr result2 = db2->storeQuery(query2.str());
+	if (result2) {
+		bid = result2->getNumber<uint32_t>("bid");
+	}
 
-	player->bankBalance = result->getNumber<uint64_t>("balance");
+	player->bankBalance = result->getNumber<uint64_t>("balance") - bid;
 
 	player->setSex(static_cast<PlayerSex_t>(result->getNumber<uint16_t>("sex")));
 	player->level = std::max<uint32_t>(1, result->getNumber<uint32_t>("level"));
@@ -828,6 +837,15 @@ bool IOLoginData::savePlayer(Player* player)
 	if (player->getHealth() <= 0) {
 		player->changeHealth(1);
 	}
+	
+	uint32_t bid = 0;
+	Database* db2 = Database::getInstance();
+	std::ostringstream query2;
+	query2 << "SELECT `bid` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` WHERE `highest_bidder`="<< player->getGUID() <<" LIMIT 1";
+	DBResult_ptr result2 = db2->storeQuery(query2.str());
+	if (result2) {
+		bid = result2->getNumber<uint32_t>("bid");
+	}
 
 	Database* db = Database::getInstance();
 
@@ -915,7 +933,7 @@ bool IOLoginData::savePlayer(Player* player)
 	}
 
 	query << "`lastlogout` = " << player->getLastLogout() << ',';
-	query << "`balance` = " << player->bankBalance << ',';
+	query << "`balance` = " << player->bankBalance + bid << ',';
 	query << "`expboost_time` = " << player->getExpBoostTime() / 1000 << ',';
 	query << "`offlinetraining_time` = " << player->getOfflineTrainingTime() / 1000 << ',';
 	query << "`offlinetraining_skill` = " << player->getOfflineTrainingSkill() << ',';

@@ -575,7 +575,7 @@ class Game
 
 		std::string motdHash;
 		uint32_t motdNum = 0;
-
+		uint32_t bid = 0;
 		uint32_t lastStageLevel = 0;
 		bool stagesEnabled = false;
 		bool useLastStageLevel = false;
