@@ -115,6 +115,8 @@ void Connection::accept(Protocol_ptr protocol)
 
 void Connection::accept()
 {
+	receivedServerName = false;
+	receivedServerNameFirst = false;
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
@@ -122,8 +124,8 @@ void Connection::accept()
 
 		// Read size of the first packet
 		boost::asio::async_read(socket,
-		                        boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
-		                        std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+								boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
+								std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
 	} catch (boost::system::system_error& e) {
 		std::cout << "[Network error - Connection::accept] " << e.what() << std::endl;
 		close(FORCE_CLOSE);
@@ -132,6 +134,42 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
+	if (!receivedServerName) {
+		uint8_t* msgBuffer = msg.getBuffer();
+		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+
+		if (receivedServerNameFirst == false && !(((char)msgBuffer[0] == serverName[0]) && ((char)msgBuffer[1] == serverName[1]))) {
+			receivedServerName = true;
+			receivedServerNameFirst = true;
+		} else {
+			if (!receivedServerNameFirst) {
+				receivedServerNameFirst = true;
+			}
+
+			if ((((char)msgBuffer[0] == serverName[serverName.length()-2]) && ((char)msgBuffer[1] == serverName[serverName.length()-1])) || (((char)msgBuffer[0] == serverName[serverName.length()-1]) && (msgBuffer[1] == 0x0A)) ) {
+				receivedServerName = true;
+			}
+
+			try {
+				readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
+				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
+												std::placeholders::_1));
+
+			// Wait to the next packet
+			boost::asio::async_read(socket,
+									boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
+									std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+			} catch (boost::system::system_error& e) {
+				std::cout << "[Network error - Connection::parsePacket] " << e.what() << std::endl;
+				close(FORCE_CLOSE);
+			}
+			return;
+		}
+	}
+
+	receivedServerName = false;
+	receivedServerNameFirst = false;
+  
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 

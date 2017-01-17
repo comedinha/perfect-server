@@ -134,6 +134,9 @@ class Connection : public std::enable_shared_from_this<Connection>
 
 		bool connectionState;
 		bool receivedFirst;
+
+		bool receivedServerName;
+		bool receivedServerNameFirst;
 };
 
 #endif
