@@ -37,7 +37,7 @@ class Modules final : public BaseEvents
 		void clear() final;
 
 
-		typedef std::map<uint8_t, Module*> ModulesList;
+		using ModulesList = std::map<uint8_t, Module*>;
 		ModulesList recvbyteList;
 
 		LuaScriptInterface scriptInterface;

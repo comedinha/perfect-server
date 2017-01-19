@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@
 
 class ProtocolGame;
 class ProtocolSpectator;
-typedef std::shared_ptr<ProtocolGame> ProtocolGame_ptr;
-typedef std::shared_ptr<ProtocolSpectator> ProtocolSpectator_ptr;
+using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
+using ProtocolSpectator_ptr = std::shared_ptr<ProtocolSpectator>;
 
 class ProtocolSpectator final : public ProtocolGameBase
 {

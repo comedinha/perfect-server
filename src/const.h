@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -576,7 +576,7 @@ enum ReloadTypes_t {
 	RELOAD_TYPE_NPCS = 6,
 	RELOAD_TYPE_RAIDS = 7,
 	RELOAD_TYPE_SPELLS = 8,
-	RELOAD_TYPE_TALKCTIONS = 9,
+	RELOAD_TYPE_TALKACTIONS = 9,
 	RELOAD_TYPE_ITEMS = 10,
 	RELOAD_TYPE_WEAPONS = 11,
 	RELOAD_TYPE_QUESTS = 12,

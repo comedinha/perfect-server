@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -434,7 +434,7 @@ void ProtocolSpectator::onLiveCastStop()
 bool ProtocolSpectator::parseCoomand(const std::string& text)
 {
 	if (text[0] == '!') {
-		StringVec t = explodeString(text.substr(1, text.length()), " ", 1);
+		StringVector t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
 			toLowerCaseString(t[0]);
 			std::string command = t[0];

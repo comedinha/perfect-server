@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -404,7 +404,7 @@ enum ReturnValue {
 	RETURNVALUE_YOUNEEDAMAGICITEMTOCASTSPELL,
 	RETURNVALUE_CANNOTCONJUREITEMHERE,
 	RETURNVALUE_YOUNEEDTOSPLITYOURSPEARS,
-	RETURNVALUE_NAMEISTOOAMBIGIOUS,
+	RETURNVALUE_NAMEISTOOAMBIGUOUS,
 	RETURNVALUE_CANONLYUSEONESHIELD,
 	RETURNVALUE_NOPARTYMEMBERSINRANGE,
 	RETURNVALUE_YOUARENOTTHEOWNER,
@@ -573,8 +573,8 @@ struct CombatDamage
 	}
 };
 
-typedef std::list<MarketOffer> MarketOfferList;
-typedef std::list<HistoryMarketOffer> HistoryMarketOfferList;
-typedef std::list<ShopInfo> ShopInfoList;
+using MarketOfferList = std::list<MarketOffer>;
+using HistoryMarketOfferList = std::list<HistoryMarketOffer>;
+using ShopInfoList = std::list<ShopInfo>;
 
 #endif

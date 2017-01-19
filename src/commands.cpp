@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,21 +31,111 @@
 
 extern Game g_game;
 
-s_defcommands Commands::defined_commands[] = {
+namespace {
+
+void forceRaid(Player& player, const std::string& param)
+{
+	Raid* raid = g_game.raids.getRaidByName(param);
+	if (!raid || !raid->isLoaded()) {
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "No such raid exists.");
+		return;
+	}
+
+	if (g_game.raids.getRunning()) {
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Another raid is already being executed.");
+		return;
+	}
+
+	g_game.raids.setRunning(raid);
+
+	RaidEvent* event = raid->getNextRaidEvent();
+	if (!event) {
+		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "The raid does not contain any data.");
+		return;
+	}
+
+	raid->setState(RAIDSTATE_EXECUTING);
+
+	uint32_t ticks = event->getDelay();
+	if (ticks > 0) {
+		g_scheduler.addEvent(createSchedulerTask(ticks, std::bind(&Raid::executeRaidEvent, raid, event)));
+	} else {
+		g_dispatcher.addTask(createTask(std::bind(&Raid::executeRaidEvent, raid, event)));
+	}
+
+	player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Raid started.");
+}
+
+void sellHouse(Player& player, const std::string& param)
+{
+	Player* tradePartner = g_game.getPlayerByName(param);
+	if (!tradePartner || tradePartner == &player) {
+		player.sendCancelMessage("Trade player not found.");
+		return;
+	}
+
+	if (!Position::areInRange<2, 2, 0>(tradePartner->getPosition(), player.getPosition())) {
+		player.sendCancelMessage("Trade player is too far away.");
+		return;
+	}
+
+	if (!tradePartner->isPremium()) {
+		player.sendCancelMessage("Trade player does not have a premium account.");
+		return;
+	}
+
+	HouseTile* houseTile = dynamic_cast<HouseTile*>(player.getTile());
+	if (!houseTile) {
+		player.sendCancelMessage("You must stand in your house to initiate the trade.");
+		return;
+	}
+
+	House* house = houseTile->getHouse();
+	if (!house || house->getOwner() != player.getGUID()) {
+		player.sendCancelMessage("You don't own this house.");
+		return;
+	}
+
+	if (g_game.map.houses.getHouseByPlayerId(tradePartner->getGUID())) {
+		player.sendCancelMessage("Trade player already owns a house.");
+		return;
+	}
+
+	if (IOLoginData::hasBiddedOnHouse(tradePartner->getGUID())) {
+		player.sendCancelMessage("Trade player is currently the highest bidder of an auctioned house.");
+		return;
+	}
+
+	Item* transferItem = house->getTransferItem();
+	if (!transferItem) {
+		player.sendCancelMessage("You can not trade this house.");
+		return;
+	}
+
+	transferItem->getParent()->setParent(&player);
+
+	if (!g_game.internalStartTrade(&player, tradePartner, transferItem)) {
+		house->resetTransferItem();
+	}
+}
+
+std::map<std::string, CommandFunction> defined_commands = {
 	// TODO: move all commands to talkactions
 
 	//admin commands
-	{"/raid", &Commands::forceRaid},
+	{"/raid", forceRaid},
 
 	// player commands
-	{"!sellhouse", &Commands::sellHouse}
+	{"!sellhouse", sellHouse}
 };
+
+}
 
 Commands::Commands()
 {
 	// set up command map
 	for (auto& command : defined_commands) {
-		commandMap[command.name] = new Command(command.f, 1, ACCOUNT_TYPE_GOD, true);
+		commandMap[command.first] = new Command(command.second, 1, ACCOUNT_TYPE_GOD, true);
 	}
 }
 
@@ -147,8 +237,8 @@ bool Commands::exeCommand(Player& player, const std::string& cmd)
 	}
 
 	//execute command
-	CommandFunc cfunc = command->f;
-	(this->*cfunc)(player, str_param);
+	CommandFunction cfunc = command->f;
+	cfunc(player, str_param);
 
 	if (command->log) {
 		player.sendTextMessage(MESSAGE_GAMEMASTER_BROADCAST, cmd);
@@ -167,90 +257,4 @@ bool Commands::exeCommand(Player& player, const std::string& cmd)
 		}
 	}
 	return true;
-}
-
-void Commands::sellHouse(Player& player, const std::string& param)
-{
-	Player* tradePartner = g_game.getPlayerByName(param);
-	if (!tradePartner || tradePartner == &player) {
-		player.sendCancelMessage("Trade player not found.");
-		return;
-	}
-
-	if (!Position::areInRange<2, 2, 0>(tradePartner->getPosition(), player.getPosition())) {
-		player.sendCancelMessage("Trade player is too far away.");
-		return;
-	}
-
-	if (!tradePartner->isPremium()) {
-		player.sendCancelMessage("Trade player does not have a premium account.");
-		return;
-	}
-
-	HouseTile* houseTile = dynamic_cast<HouseTile*>(player.getTile());
-	if (!houseTile) {
-		player.sendCancelMessage("You must stand in your house to initiate the trade.");
-		return;
-	}
-
-	House* house = houseTile->getHouse();
-	if (!house || house->getOwner() != player.getGUID()) {
-		player.sendCancelMessage("You don't own this house.");
-		return;
-	}
-
-	if (g_game.map.houses.getHouseByPlayerId(tradePartner->getGUID())) {
-		player.sendCancelMessage("Trade player already owns a house.");
-		return;
-	}
-
-	if (IOLoginData::hasBiddedOnHouse(tradePartner->getGUID())) {
-		player.sendCancelMessage("Trade player is currently the highest bidder of an auctioned house.");
-		return;
-	}
-
-	Item* transferItem = house->getTransferItem();
-	if (!transferItem) {
-		player.sendCancelMessage("You can not trade this house.");
-		return;
-	}
-
-	transferItem->getParent()->setParent(&player);
-
-	if (!g_game.internalStartTrade(&player, tradePartner, transferItem)) {
-		house->resetTransferItem();
-	}
-}
-
-void Commands::forceRaid(Player& player, const std::string& param)
-{
-	Raid* raid = g_game.raids.getRaidByName(param);
-	if (!raid || !raid->isLoaded()) {
-		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "No such raid exists.");
-		return;
-	}
-
-	if (g_game.raids.getRunning()) {
-		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Another raid is already being executed.");
-		return;
-	}
-
-	g_game.raids.setRunning(raid);
-
-	RaidEvent* event = raid->getNextRaidEvent();
-	if (!event) {
-		player.sendTextMessage(MESSAGE_PRIVATE_FROM, "The raid does not contain any data.");
-		return;
-	}
-
-	raid->setState(RAIDSTATE_EXECUTING);
-
-	uint32_t ticks = event->getDelay();
-	if (ticks > 0) {
-		g_scheduler.addEvent(createSchedulerTask(ticks, std::bind(&Raid::executeRaidEvent, raid, event)));
-	} else {
-		g_dispatcher.addTask(createTask(std::bind(&Raid::executeRaidEvent, raid, event)));
-	}
-
-	player.sendTextMessage(MESSAGE_PRIVATE_FROM, "Raid started.");
 }

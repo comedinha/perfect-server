@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ void IOMapSerialize::loadHouseItems(Map* map)
 
 	std::ostringstream query;
 	query << "SELECT `data` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`tile_store`";
-	DBResult_ptr result = Database::getInstance()->storeQuery(query.str());
+	DBResult_ptr result = Database::getInstance().storeQuery(query.str());
 	if (!result) {
 		return;
 	}
@@ -71,7 +71,7 @@ void IOMapSerialize::loadHouseItems(Map* map)
 bool IOMapSerialize::saveHouseItems()
 {
 	int64_t start = OTSYS_TIME();
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 	std::ostringstream query;
 
 	//Start the transaction
@@ -83,7 +83,7 @@ bool IOMapSerialize::saveHouseItems()
 	//clear old tile data
 	std::ostringstream clearoldtile;
 	clearoldtile << "DELETE FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`tile_store`";
-	if (!db->executeQuery(clearoldtile.str())) {
+	if (!db.executeQuery(clearoldtile.str())) {
 		return false;
 	}
 
@@ -101,7 +101,7 @@ bool IOMapSerialize::saveHouseItems()
 			size_t attributesSize;
 			const char* attributes = stream.getStream(attributesSize);
 			if (attributesSize > 0) {
-				query << house->getId() << ',' << db->escapeBlob(attributes, attributesSize);
+				query << house->getId() << ',' << db.escapeBlob(attributes, attributesSize);
 				if (!stmt.addRow(query)) {
 					return false;
 				}
@@ -124,7 +124,7 @@ bool IOMapSerialize::saveHouseItems()
 bool IOMapSerialize::saveHouse(const House* house)
 {
 	int64_t start = OTSYS_TIME();
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 	std::ostringstream query;
 
 	//Start the transaction
@@ -136,7 +136,7 @@ bool IOMapSerialize::saveHouse(const House* house)
 	//clear old tile data
 	std::ostringstream clearoldtile;
 	clearoldtile << "DELETE FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`tile_store` WHERE `house_id` = " << house->getId();
-	if (!db->executeQuery(clearoldtile.str())) {
+	if (!db.executeQuery(clearoldtile.str())) {
 		return false;
 	}
 
@@ -151,7 +151,7 @@ bool IOMapSerialize::saveHouse(const House* house)
 		size_t attributesSize;
 		const char* attributes = stream.getStream(attributesSize);
 		if (attributesSize > 0) {
-			query << house->getId() << ',' << db->escapeBlob(attributes, attributesSize);
+			query << house->getId() << ',' << db.escapeBlob(attributes, attributesSize);
 			if (!stmt.addRow(query)) {
 				return false;
 			}
@@ -327,11 +327,11 @@ void IOMapSerialize::saveTile(PropWriteStream& stream, const Tile* tile)
 
 bool IOMapSerialize::loadHouseInfo()
 {
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 
 	std::ostringstream query;
 	query << "SELECT `id`, `owner`, `paid`, `warnings` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses`";
-	DBResult_ptr result = db->storeQuery(query.str());
+	DBResult_ptr result = db.storeQuery(query.str());
 	if (!result) {
 		return false;
 	}
@@ -347,7 +347,7 @@ bool IOMapSerialize::loadHouseInfo()
 
 	std::ostringstream houselistid;
 	houselistid << "SELECT `house_id`, `listid`, `list` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`house_lists`";
-	result = db->storeQuery(houselistid.str());
+	result = db.storeQuery(houselistid.str());
 	if (result) {
 		do {
 			House* house = g_game.map.houses.getHouse(result->getNumber<uint32_t>("house_id"));
@@ -361,7 +361,7 @@ bool IOMapSerialize::loadHouseInfo()
 
 bool IOMapSerialize::saveHouseInfo()
 {
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 
 	DBTransaction transaction;
 	if (!transaction.begin()) {
@@ -370,7 +370,7 @@ bool IOMapSerialize::saveHouseInfo()
 
 	std::ostringstream deletehouses;
 	deletehouses << "DELETE FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`house_lists`";
-	if (!db->executeQuery(deletehouses.str())) {
+	if (!db.executeQuery(deletehouses.str())) {
 		return false;
 	}
 
@@ -378,16 +378,16 @@ bool IOMapSerialize::saveHouseInfo()
 	for (const auto& it : g_game.map.houses.getHouses()) {
 		House* house = it.second;
 		query << "SELECT `id` FROM `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` WHERE `id` = " << house->getId();
-		DBResult_ptr result = db->storeQuery(query.str());
+		DBResult_ptr result = db.storeQuery(query.str());
 		if (result) {
 			query.str(std::string());
-			query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` SET `owner` = " << house->getOwner() << ", `paid` = " << house->getPaidUntil() << ", `warnings` = " << house->getPayRentWarnings() << ", `name` = " << db->escapeString(house->getName()) << ", `town_id` = " << house->getTownId() << ", `rent` = " << house->getRent() << ", `size` = " << house->getTiles().size() << ", `beds` = " << house->getBedCount() << " WHERE `id` = " << house->getId();
+			query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` SET `owner` = " << house->getOwner() << ", `paid` = " << house->getPaidUntil() << ", `warnings` = " << house->getPayRentWarnings() << ", `name` = " << db.escapeString(house->getName()) << ", `town_id` = " << house->getTownId() << ", `rent` = " << house->getRent() << ", `size` = " << house->getTiles().size() << ", `beds` = " << house->getBedCount() << " WHERE `id` = " << house->getId();
 		} else {
 			query.str(std::string());
-			query << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` (`id`, `owner`, `paid`, `warnings`, `name`, `town_id`, `rent`, `size`, `beds`) VALUES (" << house->getId() << ',' << house->getOwner() << ',' << house->getPaidUntil() << ',' << house->getPayRentWarnings() << ',' << db->escapeString(house->getName()) << ',' << house->getTownId() << ',' << house->getRent() << ',' << house->getTiles().size() << ',' << house->getBedCount() << ')';
+			query << "INSERT INTO `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` (`id`, `owner`, `paid`, `warnings`, `name`, `town_id`, `rent`, `size`, `beds`) VALUES (" << house->getId() << ',' << house->getOwner() << ',' << house->getPaidUntil() << ',' << house->getPayRentWarnings() << ',' << db.escapeString(house->getName()) << ',' << house->getTownId() << ',' << house->getRent() << ',' << house->getTiles().size() << ',' << house->getBedCount() << ')';
 		}
 
-		db->executeQuery(query.str());
+		db.executeQuery(query.str());
 		query.str(std::string());
 	}
 
@@ -400,7 +400,7 @@ bool IOMapSerialize::saveHouseInfo()
 
 		std::string listText;
 		if (house->getAccessList(GUEST_LIST, listText) && !listText.empty()) {
-			query << house->getId() << ',' << GUEST_LIST << ',' << db->escapeString(listText);
+			query << house->getId() << ',' << GUEST_LIST << ',' << db.escapeString(listText);
 			if (!stmt.addRow(query)) {
 				return false;
 			}
@@ -409,7 +409,7 @@ bool IOMapSerialize::saveHouseInfo()
 		}
 
 		if (house->getAccessList(SUBOWNER_LIST, listText) && !listText.empty()) {
-			query << house->getId() << ',' << SUBOWNER_LIST << ',' << db->escapeString(listText);
+			query << house->getId() << ',' << SUBOWNER_LIST << ',' << db.escapeString(listText);
 			if (!stmt.addRow(query)) {
 				return false;
 			}
@@ -419,7 +419,7 @@ bool IOMapSerialize::saveHouseInfo()
 
 		for (Door* door : house->getDoors()) {
 			if (door->getAccessList(listText) && !listText.empty()) {
-				query << house->getId() << ',' << door->getDoorId() << ',' << db->escapeString(listText);
+				query << house->getId() << ',' << door->getDoorId() << ',' << db.escapeString(listText);
 				if (!stmt.addRow(query)) {
 					return false;
 				}

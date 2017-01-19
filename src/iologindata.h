@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "player.h"
 #include "database.h"
 
-typedef std::list<std::pair<int32_t, Item*>> ItemBlockList;
+using ItemBlockList = std::list<std::pair<int32_t, Item*>>;
 
 class IOLoginData
 {
@@ -34,6 +34,7 @@ class IOLoginData
 
 		static bool loginserverAuthentication(const std::string& name, const std::string& password, Account& account);
 		static bool loadCasts(Casts& casts);
+		static std::string getMotd();
 		static bool loadWorlds(World& world);
 		static uint32_t getWorldId(uint32_t playerId);
 		static bool loadRecords(Records& records);
@@ -68,7 +69,7 @@ class IOLoginData
 		static void removePremiumDays(uint32_t accountId, int32_t removeDays);
 
 	protected:
-		typedef std::map<uint32_t, std::pair<Item*, uint32_t>> ItemMap;
+		using ItemMap = std::map<uint32_t, std::pair<Item*, uint32_t>>;
 
 		static void loadItems(ItemMap& itemMap, DBResult_ptr result);
 		static bool saveItems(const Player* player, const ItemBlockList& itemList, DBInsert& query_insert, PropWriteStream& stream);
