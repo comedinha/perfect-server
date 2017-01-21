@@ -591,6 +591,10 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 					return RETURNVALUE_PLAYERISPZLOCKEDLEAVEPVPZONE;
 				}
 
+				if (hasFlag(TILESTATE_NOPVPZONE) || hasFlag(TILESTATE_PROTECTIONZONE)) {
+						return RETURNVALUE_PLAYERISPZLOCKED;
+				}
+
 				if ((!playerTile->hasFlag(TILESTATE_NOPVPZONE) && hasFlag(TILESTATE_NOPVPZONE)) ||
 					(!playerTile->hasFlag(TILESTATE_PROTECTIONZONE) && hasFlag(TILESTATE_PROTECTIONZONE))) {
 					// player is trying to enter a non-pvp/protection zone while being pz-locked
