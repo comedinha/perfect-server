@@ -84,7 +84,7 @@ void Teleport::addThing(int32_t, Thing* thing)
 	if (Creature* creature = thing->getCreature()) {
 		const Player* player = creature->getPlayer();
 		Position origPos = creature->getPosition();
-		if (player && player->isPzLocked()) {
+		if (player && player->isPzLocked() && player->hasCondition(CONDITION_INFIGHT)) {
 			if (destTile->hasFlag(TILESTATE_NOPVPZONE) || destTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
 				destPos = origPos;
 			}
