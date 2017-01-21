@@ -86,8 +86,9 @@ void Teleport::addThing(int32_t, Thing* thing)
 		Position origPos = creature->getPosition();
 		if (player && player->isPzLocked() && player->hasCondition(CONDITION_INFIGHT)) {
 			if (destTile->hasFlag(TILESTATE_NOPVPZONE) || destTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
-				Tile* origTile = g_game.map.getTile(origPos);
-				g_game.map.moveCreature(*creature, *origTile);
+				Position lastPos = creature->getLastPosition();
+				Tile* lastTile = g_game.map.getTile(lastPos);
+				g_game.map.moveCreature(*creature, *lastTile);
 				return;
 			}
 		}
