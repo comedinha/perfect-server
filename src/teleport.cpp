@@ -86,7 +86,8 @@ void Teleport::addThing(int32_t, Thing* thing)
 		Position origPos = creature->getPosition();
 		if (player && player->isPzLocked() && player->hasCondition(CONDITION_INFIGHT)) {
 			if (destTile->hasFlag(TILESTATE_NOPVPZONE) || destTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
-				destPos = origPos;
+				g_game.map.moveCreature(*creature, *origPos);
+				return;
 			}
 		}
 		g_game.internalCreatureTurn(creature, origPos.x > destPos.x ? DIRECTION_WEST : DIRECTION_EAST);
