@@ -84,7 +84,7 @@ void Teleport::addThing(int32_t, Thing* thing)
 	if (Creature* creature = thing->getCreature()) {
 		const Player* player = creature->getPlayer();
 		Position origPos = creature->getPosition();
-		if (player && player->isPzLocked() && destTile->hasFlag(TILESTATE_NOPVPZONE)) {
+		if (player && player->isPzLocked() && player->hasCondition(CONDITION_INFIGHT) && destTile->hasFlag(TILESTATE_NOPVPZONE)) {
 			destPos = origPos;
 		}
 		g_game.internalCreatureTurn(creature, origPos.x > destPos.x ? DIRECTION_WEST : DIRECTION_EAST);
