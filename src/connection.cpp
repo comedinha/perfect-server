@@ -148,6 +148,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 			if ((((char)msgBuffer[0] == serverName[serverName.length()-2]) && ((char)msgBuffer[1] == serverName[serverName.length()-1])) || (((char)msgBuffer[0] == serverName[serverName.length()-1]) && (msgBuffer[1] == 0x0A)) ) {
 				receivedServerName = true;
+				protocol->onRecvServerMessage();
 			}
 
 			try {
