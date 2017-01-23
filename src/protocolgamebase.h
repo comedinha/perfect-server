@@ -67,7 +67,7 @@ class ProtocolGameBase : public Protocol {
 		explicit ProtocolGameBase(Connection_ptr connection) : Protocol(connection) {}
 
 		virtual void writeToOutputBuffer(const NetworkMessage& msg, bool broadcast = true) = 0;
-		virtual void onRecvServerMessage() final;
+		void onRecvServerMessage();
 		void onConnect() final;
 
 		void checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& removedKnown);
