@@ -37,6 +37,7 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		virtual void onSendMessage(const OutputMessage_ptr& msg) const;
 		void onRecvMessage(NetworkMessage& msg);
 		virtual void onRecvFirstMessage(NetworkMessage& msg) = 0;
+		virtual void onRecvServerMessage() {}
 		virtual void onConnect() {}
 
 		bool isConnectionExpired() const {
