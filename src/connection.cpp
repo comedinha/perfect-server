@@ -151,7 +151,9 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		}
 
 		if (receivedName) {
+			std::cout << "Tentando entrar" << std::endl;
 			if ((char)msgBuffer[1] == lastChar[0]) {
+				std::cout << "Era pra entrar" << std::endl;
 				receivedLastChar = true;
 				protocol->onRecvServerMessage();
 			}
