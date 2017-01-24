@@ -138,7 +138,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string nulo = "";
 		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 
-		if (receivedServerNameFirst == false && !((char)msgBuffer[1] == nulo[0])) {
+		if (receivedServerNameFirst == false && (char)msgBuffer[1] == nulo[0]) {
 			std::cout << (char)msgBuffer[0] << "==" << serverName[0] << std::endl;
 			std::cout << (char)msgBuffer[1] << "==" << serverName[1] << std::endl;
 			std::cout << "Conexão normal" << std::endl;
