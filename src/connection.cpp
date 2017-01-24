@@ -132,7 +132,7 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedServerName) {
+	if (receivedServerName) {
 		uint8_t* msgBuffer = msg.getBuffer();
 		std::string toConnect = "";
 		std::string lastChar = "\n";
