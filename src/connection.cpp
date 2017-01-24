@@ -134,13 +134,16 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		uint8_t* msgBuffer = msg.getBuffer();
+		std::string zChar = "Z";
 		std::string noChar = "";
 		std::string lastChar = "\n";
 
 		std::cout << "[" << msgBuffer[1] << "] " << (char)msgBuffer[0] << " and [" << msgBuffer[1] << "] " << (char)msgBuffer[1] << std::endl;
-		//if (!receivedName && !(char)msgBuffer[1] == noChar[0]) {
-		//	receivedName = true;
-		//}
+		if (!receivedName && !(char)msgBuffer[0] == zChar[0] && !(char)msgBuffer[1]) {
+			receivedName = true;
+		} else if (!receivedName && !(char)msgBuffer[1] == noChar[0]) {
+			receivedName = true;
+		}
 
 		if (receivedName) {
 			if ((char)msgBuffer[1] == lastChar[0]) {
