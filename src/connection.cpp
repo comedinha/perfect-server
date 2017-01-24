@@ -158,22 +158,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 				protocol->onRecvServerMessage();
 			}
 
-			if (!receivedLastChar) {
-				try {
-					readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
-					readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
-													std::placeholders::_1));
-
-				// Wait to the next packet
-				boost::asio::async_read(socket,
-										boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
-										std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
-				} catch (boost::system::system_error& e) {
-					std::cout << "[Network error - Connection::parsePacket] " << e.what() << std::endl;
-					close(FORCE_CLOSE);
-				}
-				return;
-			}
+			accept();
+			return;
 		}
 	}
 
