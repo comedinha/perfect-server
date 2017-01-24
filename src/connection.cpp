@@ -143,8 +143,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			if (IOLoginData::loadWorlds(world)) {
 				uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
 				for (uint8_t i = 0; i < size; i++) {
-					worldName = world.name[i];
-					if (!(char)msgBuffer[0] == world.name[i][0] && !(char)msgBuffer[1] == world.name[i][1]) {
+					if ((char)msgBuffer[0] == world.name[i][0] && (char)msgBuffer[1] == world.name[i][1]) {
 						receivedName = true;
 					}
 				}
