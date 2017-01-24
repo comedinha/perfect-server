@@ -137,7 +137,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string toConnect = "";
 		std::string lastChar = "\n";
 
-		if (!(char)msgBuffer[0] == toConnect[0] && !(char)msgBuffer[1] == toConnect[0]) {
+		if (!(char)msgBuffer[0] == toConnect[0] || !(char)msgBuffer[1] == toConnect[0]) {
 			std::cout << (char)msgBuffer[0] << std::endl;
 			std::cout << (char)msgBuffer[1] << std::endl;
 			if ((char)msgBuffer[1] == lastChar[0]) {
