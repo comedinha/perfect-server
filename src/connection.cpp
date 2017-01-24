@@ -151,7 +151,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			}
 
 			std::cout << "Start 2" << std::endl;
-			if ((char)msgBuffer[1] == teste) {
+			if ((char)msgBuffer[1] == teste[0]) {
+				std::cout << (char)msgBuffer[1] << "==" << teste[0] << std::endl;
 				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-2] << std::endl;
 				std::cout << (char)msgBuffer[1] << "==" << serverName[serverName.length()-1] << std::endl;
 				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-1] << std::endl;
