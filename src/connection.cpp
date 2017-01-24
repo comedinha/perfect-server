@@ -21,7 +21,6 @@
 
 #include "configmanager.h"
 #include "connection.h"
-#include "iologindata.h"
 #include "outputmessage.h"
 #include "protocol.h"
 #include "protocolgame.h"
@@ -135,25 +134,15 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		uint8_t* msgBuffer = msg.getBuffer();
+		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 		std::string lastChar = "\n";
 
-		if (!receivedName) {
-			World world;
-			if (IOLoginData::loadWorlds(world)) {
-				uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), world.id.size());
-				for (uint8_t i = 0; i < size; i++) {
-					std::cout << "[" << (char)msgBuffer[0] << "] " << world.name[i][0] << " [" << (char)msgBuffer[1] << "] " << world.name[i][1] << std::endl;
-					if ((char)msgBuffer[0] == world.name[i][0] && (char)msgBuffer[1] == world.name[i][1]) {
-						receivedName = true;
-					}
-				}
-			}
+		if (!receivedName && (char)msgBuffer[0] == serverName[0] && (char)msgBuffer[1] == serverName[1]) {
+			receivedName = true;
 		}
 
 		if (receivedName) {
-			std::cout << "Tentando entrar" << std::endl;
 			if ((char)msgBuffer[1] == lastChar[0]) {
-				std::cout << "Era pra entrar" << std::endl;
 				receivedLastChar = true;
 				protocol->onRecvServerMessage();
 			}
