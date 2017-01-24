@@ -81,7 +81,8 @@ class Connection : public std::enable_shared_from_this<Connection>
 			socket(io_service) {
 			connectionState = CONNECTION_STATE_OPEN;
 			receivedFirst = false;
-			receivedServerName = false;
+			receivedName = false;
+			receivedLastChar = false;
 			packetsSent = 0;
 			timeConnected = time(nullptr);
 		}
@@ -136,7 +137,8 @@ class Connection : public std::enable_shared_from_this<Connection>
 		bool connectionState;
 		bool receivedFirst;
 
-		bool receivedServerName;
+		bool receivedName;
+		bool receivedLastChar;
 };
 
 #endif

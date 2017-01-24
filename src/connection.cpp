@@ -132,17 +132,17 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedServerName) {
+	if (!receivedLastChar) {
 		uint8_t* msgBuffer = msg.getBuffer();
-		std::string toConnect = "";
 		std::string lastChar = "\n";
 
-		std::cout << msgBuffer[1] << "==" << (char)msgBuffer[1] << std::endl;
-		if (msgBuffer[1]) {
-			std::cout << (char)msgBuffer[0] << std::endl;
-			std::cout << (char)msgBuffer[1] << std::endl;
+		if (!receivedName && msgBuffer[1] && msgBuffer[2]) {
+			receivedName = true;
+		}
+
+		if (receivedName) {
 			if ((char)msgBuffer[1] == lastChar[0]) {
-				receivedServerName = true;
+				receivedLastChar = true;
 				protocol->onRecvServerMessage();
 			}
 
@@ -163,8 +163,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		}
 	}
 
-	if (!receivedServerName) {
-		receivedServerName = true;
+	if (!receivedLastChar) {
+		receivedLastChar = true;
 	}
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
