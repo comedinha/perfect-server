@@ -136,7 +136,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		uint8_t* msgBuffer = msg.getBuffer();
 		std::string lastChar = "\n";
 
-		std::cout << (char)msgBuffer[0] << std::endl;
+		std::cout << (char)msgBuffer[1] << std::endl;
 		if (!receivedName && msgBuffer[0] && msgBuffer[1]) {
 			receivedName = true;
 		}
