@@ -21,6 +21,7 @@
 
 #include "configmanager.h"
 #include "connection.h"
+#include "iologindata.h"
 #include "outputmessage.h"
 #include "protocol.h"
 #include "protocolgame.h"
