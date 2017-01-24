@@ -134,37 +134,16 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedServerName) {
 		uint8_t* msgBuffer = msg.getBuffer();
-		std::string lfinal = "\n";
-		std::string nulo = "";
-		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+		std::string toConnect = "";
+		std::string lastChar = "\n";
 
-		if (receivedServerNameFirst == false && (char)msgBuffer[1] == nulo[0]) {
-			std::cout << (char)msgBuffer[0] << "==" << serverName[0] << std::endl;
-			std::cout << (char)msgBuffer[1] << "==" << serverName[1] << std::endl;
-			std::cout << "Conexão normal" << std::endl;
-			receivedServerName = true;
-			receivedServerNameFirst = true;
-		} else {
-			std::cout << "Start" << std::endl;
-			if (!receivedServerNameFirst) {
-				std::cout << "receivedServerNameFirst" << std::endl;
-				receivedServerNameFirst = true;
-			}
-
-			std::cout << "Start 2" << std::endl;
-			if ((char)msgBuffer[1] == lfinal[0]) {
-				std::cout << (char)msgBuffer[1] << "==" << lfinal[0] << std::endl;
-				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-2] << std::endl;
-				std::cout << (char)msgBuffer[1] << "==" << serverName[serverName.length()-1] << std::endl;
-				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-1] << std::endl;
-				std::cout << "receivedServerName" << std::endl;
+		if !((char)msgBuffer[1] == toConnect[0]) {
+			if ((char)msgBuffer[1] == lastChar[0]) {
 				receivedServerName = true;
 				protocol->onRecvServerMessage();
 			}
 
-			std::cout << "Try" << std::endl;
 			try {
-				std::cout << "Start Try" << std::endl;
 				readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
 												std::placeholders::_1));
@@ -179,6 +158,10 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			}
 			return;
 		}
+	}
+
+	if (!receivedServerName) {
+		receivedServerName = true;
 	}
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
