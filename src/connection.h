@@ -82,7 +82,6 @@ class Connection : public std::enable_shared_from_this<Connection>
 			connectionState = CONNECTION_STATE_OPEN;
 			receivedFirst = false;
 			receivedServerName = false;
-			receivedServerNameFirst = false;
 			packetsSent = 0;
 			timeConnected = time(nullptr);
 		}
@@ -138,7 +137,6 @@ class Connection : public std::enable_shared_from_this<Connection>
 		bool receivedFirst;
 
 		bool receivedServerName;
-		bool receivedServerNameFirst;
 };
 
 #endif
