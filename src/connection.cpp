@@ -140,7 +140,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		if (!(char)msgBuffer[1] == toConnect[0]) {
 			if ((char)msgBuffer[1] == lastChar[0]) {
 				receivedServerName = true;
-				protocol->onConnect();
+				protocol->onRecvServerMessage();
 			}
 
 			try {
