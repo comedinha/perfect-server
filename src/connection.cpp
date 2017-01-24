@@ -134,10 +134,11 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedServerName) {
 		uint8_t* msgBuffer = msg.getBuffer();
-		std::string teste = "\n";
+		std::string lfinal = "\n";
+		std::string nulo = "";
 		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 
-		if (receivedServerNameFirst == false && !((char)msgBuffer[1] == "")) {
+		if (receivedServerNameFirst == false && !((char)msgBuffer[1] == nulo)) {
 			std::cout << (char)msgBuffer[0] << "==" << serverName[0] << std::endl;
 			std::cout << (char)msgBuffer[1] << "==" << serverName[1] << std::endl;
 			std::cout << "Conexão normal" << std::endl;
@@ -151,8 +152,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			}
 
 			std::cout << "Start 2" << std::endl;
-			if ((char)msgBuffer[1] == teste[0]) {
-				std::cout << (char)msgBuffer[1] << "==" << teste[0] << std::endl;
+			if ((char)msgBuffer[1] == lfinal[0]) {
+				std::cout << (char)msgBuffer[1] << "==" << lfinal[0] << std::endl;
 				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-2] << std::endl;
 				std::cout << (char)msgBuffer[1] << "==" << serverName[serverName.length()-1] << std::endl;
 				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-1] << std::endl;
