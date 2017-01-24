@@ -138,9 +138,9 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string lastChar = "\n";
 
 		std::cout << (char)msgBuffer[0] << " and " << (char)msgBuffer[1] << std::endl;
-		//if (!receivedName && !(char)msgBuffer[0] == noChar[0] && !(char)msgBuffer[1] == noChar[0]) {
-		//	receivedName = true;
-		//}
+		if (!receivedName && !(char)msgBuffer[1] == noChar[0]) {
+			receivedName = true;
+		}
 
 		if (receivedName) {
 			if ((char)msgBuffer[1] == lastChar[0]) {
