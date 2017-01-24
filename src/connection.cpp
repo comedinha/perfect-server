@@ -115,8 +115,6 @@ void Connection::accept(Protocol_ptr protocol)
 
 void Connection::accept()
 {
-	receivedServerName = false;
-	receivedServerNameFirst = false;
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
@@ -175,9 +173,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		}
 	}
 
-	receivedServerName = false;
-	receivedServerNameFirst = false;
-  
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 
