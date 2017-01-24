@@ -134,12 +134,15 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		uint8_t* msgBuffer = msg.getBuffer();
-		std::string serverName = msg.getString();
 		std::string lastChar = "\n";
 
-		std::cout << serverName << std::endl;
+		std::cout << (char)msgBuffer[0] << std::endl;
+		if (!receivedName && msgBuffer[0] && msgBuffer[1]) {
+			receivedName = true;
+		}
+
 		if (receivedName) {
-			if ((char)msgBuffer[1] == lastChar[0]) {
+			if ((char)msgBuffer[0] == lastChar[0]) {
 				receivedLastChar = true;
 				protocol->onRecvServerMessage();
 			}
