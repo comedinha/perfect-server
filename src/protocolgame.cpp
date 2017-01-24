@@ -1295,6 +1295,14 @@ void ProtocolGame::sendCloseShop()
 void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
 {
 	NetworkMessage msg;
+	msg.addByte(0xED);
+	msg.addByte(0x00);
+	msg.add<uint64_t>(player->getBankBalance());
+
+	msg.addByte(0xED);
+	msg.addByte(0x01);
+	msg.add<uint64_t>(player->getMoney());
+
 	msg.addByte(0x7B);
 	msg.add<uint64_t>(player->getMoney() + player->getBankBalance());
 
@@ -1383,6 +1391,10 @@ void ProtocolGame::sendMarketEnter(uint32_t depotId)
 	msg.add<uint32_t>(player->getCoinsBalance());
 	msg.add<uint32_t>(player->getCoinsBalance());
 	*/
+
+	msg.addByte(0xED);
+	msg.addByte(0x00);
+	msg.add<uint64_t>(player->getBankBalance());
 	
 	msg.addByte(0xF6);
 
