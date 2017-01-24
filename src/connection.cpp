@@ -137,7 +137,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string noChar = "";
 		std::string lastChar = "\n";
 
-		std::cout << (char)msgBuffer[msg.getLength()] << " and " << (char)msgBuffer[1] << std::endl;
+		std::cout << (char)(msg.getLength() - msg.getBufferPosition()) << " and " << (char)msgBuffer[1] << std::endl;
 		//if (!receivedName && !(char)msgBuffer[1] == noChar[0]) {
 		//	receivedName = true;
 		//}
