@@ -137,6 +137,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 
 		if (receivedServerNameFirst == false && !(((char)msgBuffer[0] == serverName[0]) && ((char)msgBuffer[1] == serverName[1]))) {
+			std::cout << (char)msgBuffer[0] << "==" << serverName[0] << std::endl;
+			std::cout << (char)msgBuffer[1] << "==" << serverName[1] << std::endl;
 			std::cout << "Conexão normal" << std::endl;
 			receivedServerName = true;
 			receivedServerNameFirst = true;
@@ -149,6 +151,9 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 			std::cout << "Start 2" << std::endl;
 			if ((((char)msgBuffer[0] == serverName[serverName.length()-2]) && ((char)msgBuffer[1] == serverName[serverName.length()-1])) || (((char)msgBuffer[0] == serverName[serverName.length()-1]) && (msgBuffer[1] == 0x0A)) ) {
+				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-2] << std::endl;
+				std::cout << (char)msgBuffer[1] << "==" << serverName[serverName.length()-1] << std::endl;
+				std::cout << (char)msgBuffer[0] << "==" << serverName[serverName.length()-1] << std::endl;
 				std::cout << "receivedServerName" << std::endl;
 				receivedServerName = true;
 				protocol->onRecvServerMessage();
@@ -156,7 +161,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 			std::cout << "Try" << std::endl;
 			try {
-				std::cout << "Endl" << std::endl;
+				std::cout << "Start Try" << std::endl;
 				readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
 												std::placeholders::_1));
