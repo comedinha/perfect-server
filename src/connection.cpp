@@ -160,10 +160,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		}
 	}
 
-	if (!receivedServerName) {
-		receivedServerName = true;
-	}
-
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 
