@@ -137,9 +137,10 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		std::string toConnect = "";
 		std::string lastChar = "\n";
 
-		if (!(char)msgBuffer[1] == lastChar[0]) {
-			if ((char)msgBuffer[1] == toConnect[0]) {
+		if (!(char)msgBuffer[1] == toConnect[0]) {
+			if ((char)msgBuffer[1] == lastChar[0]) {
 				receivedServerName = true;
+				protocol->onRecvServerMessage();
 			}
 
 			try {
