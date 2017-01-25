@@ -295,11 +295,24 @@ void IOLoginData::updateOnlineStatus(uint32_t guid, bool login)
 
 	std::ostringstream query;
 	if (login) {
-		query << "INSERT INTO `players_online` (`player_id`, `world_id`) VALUES (" << guid << ", " << getWorldId(guid) << ");";
+		query << "INSERT INTO `players_online` (`player_id`, `account_id`, `world_id`) VALUES (" << guid << ", " << getPlayerAccountId(guid) << ", " << getWorldId(guid) << ");";
 	} else {
 		query << "DELETE FROM `players_online` WHERE `player_id` = " << guid;
 	}
 	Database::getInstance().executeQuery(query.str());
+}
+
+bool IOLoginData::getPlayersByAccount(uint32_t accountId)
+{
+	Database& db = Database::getInstance();
+
+	std::ostringstream query;
+	query << "SELECT `player_id` FROM `players_online` WHERE `id` = " << accountId;
+	DBResult_ptr result = db.storeQuery(query.str());
+	if (!result) {
+		return false;
+	}
+	return true;
 }
 
 bool IOLoginData::getPlayers(Playerson& playerson)

@@ -525,22 +525,6 @@ ReturnValue Game::getPlayerByNameWildcard(const std::string& s, Player*& player)
 	return RETURNVALUE_NOERROR;
 }
 
-bool Game::getPlayerByAccount(uint32_t acc)
-{
-	Playerson playerson;
-	bool onePlayer = true;
-	if (IOLoginData::getPlayers(playerson)) {
-		uint32_t size = std::min<size_t>(std::numeric_limits<uint32_t>::max(), playerson.id.size());
-		for (uint32_t i = 0; i < size; i++) {
-			if (IOLoginData::getPlayerAccountId(playerson.id[i]) == acc) {
-				onePlayer = false;
-				break;
-			}
-		}
-	}
-	return onePlayer;
-}
-
 bool Game::internalPlaceCreature(Creature* creature, const Position& pos, bool extendedPos /*=false*/, bool forced /*= false*/)
 {
 	if (creature->getParent() != nullptr) {
