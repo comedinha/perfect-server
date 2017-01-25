@@ -7371,9 +7371,9 @@ int LuaScriptInterface::luaCreatureRemove(lua_State* L)
 
 	Player* player = creature->getPlayer();
 	if (player) {
-		player->kickPlayer(true);
+		player->kickPlayer(true, true);
 	} else {
-		g_game.removeCreature(creature);
+		g_game.removeCreature(creature, true);
 	}
 
 	*creaturePtr = nullptr;
