@@ -157,7 +157,6 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 {
 	bool foundTile;
 	bool placeInPZ;
-	bool tryBug = false;
 
 	Tile* tile = getTile(centerPos.x, centerPos.y, centerPos.z);
 	if (tile) {
@@ -206,22 +205,12 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 					if (!tile->hasFlag(TILESTATE_TELEPORT)) {
 						foundTile = true;
 						break;
-					} else {
-						tryBug = true;
 					}
 				}
 			}
 		}
 
 		if (!foundTile) {
-			if (tryBug) {
-				Player* targetPlayer = creature->getPlayer();
-				if (targetPlayer) {
-					std::ostringstream ss;
-					ss << "O jogador '" << targetPlayer->getName() << "' esta tentando bugar nosso servidor!";
-					g_game.broadcastMessage(ss.str(), MESSAGE_GAMEMASTER_BROADCAST);
-				}
-			}
 			return false;
 		}
 	}
