@@ -179,7 +179,7 @@ class Player final : public Creature, public Cylinder
 
 		void removeList() final;
 		void addList() final;
-		void kickPlayer(bool displayEffect);
+		void kickPlayer(bool displayEffect, bool forceLogout);
 
 		static uint64_t getExpForLevel(int32_t lv) {
 			lv--;
