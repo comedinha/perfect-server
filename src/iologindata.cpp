@@ -307,7 +307,7 @@ bool IOLoginData::getPlayersByAccount(uint32_t accountId)
 	Database& db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `player_id` FROM `players_online` WHERE `id` = " << accountId;
+	query << "SELECT `player_id` FROM `players_online` WHERE `account_id` = " << accountId;
 	DBResult_ptr result = db.storeQuery(query.str());
 	if (!result) {
 		return false;
