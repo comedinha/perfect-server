@@ -310,9 +310,9 @@ bool IOLoginData::getPlayersByAccount(uint32_t accountId)
 	query << "SELECT `player_id` FROM `players_online` WHERE `account_id` = " << accountId;
 	DBResult_ptr result = db.storeQuery(query.str());
 	if (!result) {
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool IOLoginData::getPlayers(Playerson& playerson)
