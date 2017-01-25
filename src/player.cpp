@@ -976,9 +976,9 @@ void Player::sendPing()
 	if (noPongTime >= 60000 && canLogout()) {
 		if (g_creatureEvents->playerLogout(this)) {
 			if (client) {
-				client->logout(true, true);
+				client->logout(true, false);
 			} else {
-				g_game.removeCreature(this, true);
+				g_game.removeCreature(this, false);
 			}
 		}
 	}
@@ -2265,7 +2265,7 @@ void Player::kickPlayer(bool displayEffect)
 {
 	g_creatureEvents->playerLogout(this);
 	if (client) {
-		client->logout(displayEffect, true);
+		client->logout(displayEffect, false);
 	} else {
 		g_game.removeCreature(this);
 	}
