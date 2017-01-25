@@ -5080,14 +5080,14 @@ void Game::sendGuildMotd(uint32_t playerId)
 	}
 }
 
-void Game::kickPlayer(uint32_t playerId, bool displayEffect)
+void Game::kickPlayer(uint32_t playerId, bool displayEffect, bool forceLogout)
 {
 	Player* player = getPlayerByID(playerId);
 	if (!player) {
 		return;
 	}
 
-	player->kickPlayer(displayEffect);
+	player->kickPlayer(displayEffect, forceLogout);
 }
 
 void Game::playerDebugAssert(uint32_t playerId, const std::string& assertLine, const std::string& date, const std::string& description, const std::string& comment)
