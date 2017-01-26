@@ -135,7 +135,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 	if (!receivedLastChar) {
 		uint8_t* msgBuffer = msg.getBuffer();
 		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-		std::string lastChar = "\n";
+		std::string lastChar = "\0";
 
 		if (!receivedName && (char)msgBuffer[0] == serverName[0] && (char)msgBuffer[1] == serverName[1]) {
 			receivedName = true;
