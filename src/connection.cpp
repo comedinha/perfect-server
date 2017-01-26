@@ -134,13 +134,17 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
+	uint16_t size = msg.getLengthHeader();
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+			uint8_t* msgBuffer = msg.getBuffer();
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+			int count = 0;
+			for (count = 0; count < size; count++)
+				std::cout << (char)msgBuffer[count] << endl;
 			msg.skipBytes((serverName.length() + 1));
 			return;
 
-			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
 
@@ -190,7 +194,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		packetsSent = 0;
 	}
 
-	uint16_t size = msg.getLengthHeader();
 	if (size == 0 || size >= NETWORKMESSAGE_MAXSIZE - 16) {
 
 	}
