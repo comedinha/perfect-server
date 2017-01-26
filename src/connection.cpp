@@ -136,8 +136,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			msg.skipBytes(1);
-			
+			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+			uint8_t count = 0;
 			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
@@ -149,6 +149,10 @@ void Connection::parseHeader(const boost::system::error_code& error)
 					receivedLastChar = true;
 				}
 			}*/
+
+			while (count++ < serverName.length()) {
+				msg.skipBytes(1);
+			}
 
 			if (receivedName) {
 				if ((char)msgBuffer[1] == lastChar[0]) {
