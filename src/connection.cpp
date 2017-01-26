@@ -134,28 +134,27 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedLastChar) {
-		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			uint8_t* msgBuffer = msg.getBuffer();
-			std::string nullChar = "";
-			std::string lastChar = "\n";
+	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+		uint8_t* msgBuffer = msg.getBuffer();
+		std::string nullChar = "";
+		std::string lastChar = "\n";
 
-			if (!receivedName) {
-				if (!(char)msgBuffer[1] == nullChar[0]) {
-					receivedName = true;
-				} else {
-					receivedLastChar = true;
-				}
-			}
-
-			if (receivedName) {
-				if ((char)msgBuffer[1] == lastChar[0]) {
-					receivedLastChar = true;
-				}
+		if (!receivedName) {
+			if (!(char)msgBuffer[1] == nullChar[0]) {
+				receivedName = true;
 
 				accept();
 				return;
+			} else {
+				receivedLastChar = true;
 			}
+		} else {
+			if ((char)msgBuffer[1] == lastChar[0]) {
+				receivedLastChar = true;
+			}
+
+			accept();
+			return;
 		}
 	}
 
