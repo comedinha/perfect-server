@@ -135,6 +135,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+			std::cout << "Test" << std::endl;
 			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
