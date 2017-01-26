@@ -136,10 +136,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-			std::cout << "Length: " << serverName.length() << std::endl;
-
-			std::cout << "Bytes: " << count << std::endl;
 			msg.skipBytes(6);
 			return;
 
