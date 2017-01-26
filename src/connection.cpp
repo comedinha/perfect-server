@@ -151,7 +151,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			if (receivedName) {
 				if ((char)msgBuffer[1] == lastChar[0]) {
 					receivedLastChar = true;
-					g_dispatcher.addTask(createTask(std::bind(&Protocol::onConnect, protocol)));
 				}
 
 				accept();
