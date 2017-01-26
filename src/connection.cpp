@@ -116,9 +116,6 @@ void Connection::accept()
 {
 	if (connectionState == CONNECTION_STATE_PENDING) {
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
-		std::cout << "Stage 2" << std::endl;
-	} else {
-		std::cout << "Stage " << connectionState << std::endl;
 	}
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
@@ -139,18 +136,22 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::cout << "Test" << std::endl;
+			uint8_t recvbyte = msg.getByte();
+			if (recvbyte == 0x1F) {
+				std::cout << "test" << std::endl;
+			}
+			
 			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
 
-			if (!receivedName) {
+			/*if (!receivedName) {
 				if (!(char)msgBuffer[1] == nullChar[0]) {
 					receivedName = true;
 				} else {
 					receivedLastChar = true;
 				}
-			}
+			}*/
 
 			if (receivedName) {
 				if ((char)msgBuffer[1] == lastChar[0]) {
@@ -176,7 +177,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
-		std::cout << "Stage 4" << std::endl;
 	}
 
 	uint32_t timePassed = std::max<uint32_t>(1, (time(nullptr) - timeConnected) + 1);
