@@ -136,7 +136,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			msg.skipBytes(6);
+			msg.skipBytes(7);
 			return;
 
 			uint8_t* msgBuffer = msg.getBuffer();
