@@ -135,18 +135,19 @@ void Connection::accept()
 void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
-		std::cout << "Test 1" << std::endl;
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::cout << "Test 2" << std::endl;
 			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
 
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 			std::cout << "Length: " << serverName.length() << std::endl;
-			int count = 0;
-			while ((char)msgBuffer[count] == lastChar[0])
+			int count = 1;
+			while ((char)msgBuffer[count] == lastChar[0]) {
+				std::cout << (char)msgBuffer[count];
 				count++;
+			}
+			std::endl;
 			std::cout << "Bytes: " << count << std::endl;
 			msg.skipBytes(serverName.length());
 			return;
