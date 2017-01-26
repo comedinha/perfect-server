@@ -116,9 +116,6 @@ void Connection::accept()
 {
 	if (connectionState == CONNECTION_STATE_PENDING) {
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
-	} else if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-		msg.skipBytes((serverName.length() + 1) * 4);
 	}
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
@@ -139,8 +136,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			return;
-
 			uint8_t* msgBuffer = msg.getBuffer();
 			std::string nullChar = "";
 			std::string lastChar = "\n";
