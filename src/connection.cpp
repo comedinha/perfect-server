@@ -146,7 +146,9 @@ void Connection::parseHeader(const boost::system::error_code& error)
 				} else {
 					receivedLastChar = true;
 				}
-			} else {
+			}
+
+			if (receivedName) {
 				if ((char)msgBuffer[1] == lastChar[0]) {
 					receivedLastChar = true;
 				}
