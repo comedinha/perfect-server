@@ -137,7 +137,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 	if (!receivedLastChar) {
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-			msg.skipBytes((serverName.length() + 1) * 4);
+			msg.skipBytes((serverName.length() + 1) * 6);
 			return;
 
 			uint8_t* msgBuffer = msg.getBuffer();
