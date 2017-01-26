@@ -107,6 +107,7 @@ void Connection::accept(Protocol_ptr protocol)
 	this->protocol = protocol;
 	g_dispatcher.addTask(createTask(std::bind(&Protocol::onConnect, protocol)));
 	connectionState = CONNECTION_STATE_CONNECTING_STAGE2;
+	std::cout << "Stage 3" << std::endl;
 
 	accept();
 }
@@ -115,6 +116,9 @@ void Connection::accept()
 {
 	if (connectionState == CONNECTION_STATE_PENDING) {
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
+		std::cout << "Stage 2" << std::endl;
+	} else {
+		std::cout << "Stage " << connectionState << std::endl;
 	}
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
@@ -168,6 +172,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
+		std::cout << "Stage 1" << std::endl;
 	}
 
 	uint32_t timePassed = std::max<uint32_t>(1, (time(nullptr) - timeConnected) + 1);
