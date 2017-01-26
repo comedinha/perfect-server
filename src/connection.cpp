@@ -68,6 +68,10 @@ void Connection::close(bool force)
 	ConnectionManager::getInstance().releaseConnection(shared_from_this());
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
+	if (connectionState != CONNECTION_STATE_PENDING) {
+		return;
+	}
+
 	connectionState = CONNECTION_STATE_DISCONNECTED;
 
 	if (protocol) {
