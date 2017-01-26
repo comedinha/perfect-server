@@ -132,29 +132,7 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedLastChar) {
-		uint8_t* msgBuffer = msg.getBuffer();
-		std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-		std::string lastChar = "\0";
-
-		if (!receivedName && (char)msgBuffer[0] == serverName[0] && (char)msgBuffer[1] == serverName[1]) {
-			receivedName = true;
-		}
-
-		if (receivedName) {
-			if ((char)msgBuffer[1] == lastChar[0]) {
-				receivedLastChar = true;
-				protocol->onRecvServerMessage();
-			}
-
-			accept();
-			return;
-		}
-	}
-
-	if (!receivedLastChar) {
-		receivedLastChar = true;
-	}
+	protocol->onRecvServerMessage();
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
