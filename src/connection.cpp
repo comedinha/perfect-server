@@ -146,6 +146,8 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 			if (!receivedName && !(char)msgBuffer[1] == nullChar[0]) {
 				receivedName = true;
+			} else {
+				receivedLastChar = true;
 			}
 
 			if (receivedName) {
@@ -170,7 +172,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		return;
 	}
 
-	if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
 		std::cout << "Stage 1" << std::endl;
 	}
