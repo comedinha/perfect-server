@@ -68,9 +68,6 @@ void Connection::close(bool force)
 	ConnectionManager::getInstance().releaseConnection(shared_from_this());
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
-	if (connectionState != CONNECTION_STATE_GAME) {
-		return;
-	}
 	connectionState = CONNECTION_STATE_DISCONNECTED;
 
 	if (protocol) {
@@ -270,7 +267,7 @@ void Connection::parsePacket(const boost::system::error_code& error)
 void Connection::send(const OutputMessage_ptr& msg)
 {
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
-	if (connectionState != CONNECTION_STATE_GAME) {
+	if (connectionState == CONNECTION_STATE_DISCONNECTED) {
 		return;
 	}
 
