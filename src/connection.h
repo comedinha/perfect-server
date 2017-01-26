@@ -67,8 +67,11 @@ class Connection : public std::enable_shared_from_this<Connection>
 		enum { read_timeout = 30 };
 
 		enum ConnectionState_t {
-			CONNECTION_STATE_OPEN,
-			CONNECTION_STATE_CLOSED,
+			CONNECTION_STATE_DISCONNECTED,
+			CONNECTION_STATE_CONNECTING_STAGE1,
+			CONNECTION_STATE_CONNECTING_STAGE2,
+			CONNECTION_STATE_GAME,
+			CONNECTION_STATE_PENDING,
 		};
 
 		enum { FORCE_CLOSE = true };
@@ -79,7 +82,7 @@ class Connection : public std::enable_shared_from_this<Connection>
 			writeTimer(io_service),
 			service_port(std::move(service_port)),
 			socket(io_service) {
-			connectionState = CONNECTION_STATE_OPEN;
+			connectionState = CONNECTION_STATE_PENDING;
 			receivedFirst = false;
 			receivedName = false;
 			receivedLastChar = false;

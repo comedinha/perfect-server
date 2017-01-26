@@ -68,10 +68,10 @@ void Connection::close(bool force)
 	ConnectionManager::getInstance().releaseConnection(shared_from_this());
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
-	if (connectionState != CONNECTION_STATE_OPEN) {
+	if (connectionState != CONNECTION_STATE_GAME) {
 		return;
 	}
-	connectionState = CONNECTION_STATE_CLOSED;
+	connectionState = CONNECTION_STATE_DISCONNECTED;
 
 	if (protocol) {
 		g_dispatcher.addTask(
@@ -109,12 +109,16 @@ void Connection::accept(Protocol_ptr protocol)
 {
 	this->protocol = protocol;
 	g_dispatcher.addTask(createTask(std::bind(&Protocol::onConnect, protocol)));
+	connectionState = CONNECTION_STATE_CONNECTING_STAGE2;
 
 	accept();
 }
 
 void Connection::accept()
 {
+	if (connectionState == CONNECTION_STATE_PENDING) {
+		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
+	}
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
@@ -132,7 +136,27 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	protocol->onRecvServerMessage();
+	if (!receivedLastChar) {
+		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+			uint8_t* msgBuffer = msg.getBuffer();
+			std::string nullChar = "";
+			std::string lastChar = "\n";
+
+			if (!receivedName && !(char)msgBuffer[1] == nullChar) {
+				receivedName = true;
+			}
+
+			if (receivedName) {
+				if ((char)msgBuffer[1] == lastChar[0]) {
+					receivedLastChar = true;
+					protocol->onRecvServerMessage();
+				}
+
+				accept();
+				return;
+			}
+		}
+	}
 
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
@@ -140,10 +164,11 @@ void Connection::parseHeader(const boost::system::error_code& error)
 	if (error) {
 		close(FORCE_CLOSE);
 		return;
-	} else if (connectionState != CONNECTION_STATE_OPEN) {
+	} else if (connectionState == CONNECTION_STATE_DISCONNECTED) {
 		return;
 	}
 
+	connectionState = CONNECTION_STATE_GAME;
 	uint32_t timePassed = std::max<uint32_t>(1, (time(nullptr) - timeConnected) + 1);
 	if ((++packetsSent / timePassed) > static_cast<uint32_t>(g_config.getNumber(ConfigManager::MAX_PACKETS_PER_SECOND))) {
 		std::cout << convertIPToString(getIP()) << " disconnected for exceeding packet per second limit." << std::endl;
@@ -185,7 +210,7 @@ void Connection::parsePacket(const boost::system::error_code& error)
 	if (error) {
 		close(FORCE_CLOSE);
 		return;
-	} else if (connectionState != CONNECTION_STATE_OPEN) {
+	} else if (connectionState == CONNECTION_STATE_DISCONNECTED) {
 		return;
 	}
 
@@ -242,7 +267,7 @@ void Connection::parsePacket(const boost::system::error_code& error)
 void Connection::send(const OutputMessage_ptr& msg)
 {
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
-	if (connectionState != CONNECTION_STATE_OPEN) {
+	if (connectionState != CONNECTION_STATE_GAME) {
 		return;
 	}
 
@@ -325,7 +350,7 @@ void Connection::onWriteOperation(const boost::system::error_code& error)
 
 	if (!messageQueue.empty()) {
 		internalSend(messageQueue.front());
-	} else if (connectionState == CONNECTION_STATE_CLOSED) {
+	} else if (connectionState == CONNECTION_STATE_DISCONNECTED) {
 		closeSocket();
 	}
 }
