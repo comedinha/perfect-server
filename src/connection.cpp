@@ -141,7 +141,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 			int count = 0;
 			for (count = 0; count < size; count++)
-				std::cout << (char)msgBuffer[count] << endl;
+				std::cout << (char)msgBuffer[count] << std::endl;
 			msg.skipBytes((serverName.length() + 1));
 			return;
 
