@@ -174,7 +174,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
-		std::cout << "Stage 1" << std::endl;
+		std::cout << "Stage 4" << std::endl;
 	}
 
 	uint32_t timePassed = std::max<uint32_t>(1, (time(nullptr) - timeConnected) + 1);
