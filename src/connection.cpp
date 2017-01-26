@@ -148,7 +148,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 				count++;
 			}
 			std::cout << "Bytes: " << count << std::endl;
-			msg.skipBytes(serverName.length());
+			msg.skipBytes(2);
 			return;
 
 			if (!receivedName) {
