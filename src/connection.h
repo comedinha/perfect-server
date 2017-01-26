@@ -66,12 +66,12 @@ class Connection : public std::enable_shared_from_this<Connection>
 		enum { write_timeout = 30 };
 		enum { read_timeout = 30 };
 
-		enum ConnectionState_t {
+		enum ConnectionState_t : int8_t {
 			CONNECTION_STATE_DISCONNECTED,
 			CONNECTION_STATE_CONNECTING_STAGE1,
 			CONNECTION_STATE_CONNECTING_STAGE2,
 			CONNECTION_STATE_GAME,
-			CONNECTION_STATE_PENDING,
+			CONNECTION_STATE_PENDING
 		};
 
 		enum { FORCE_CLOSE = true };
@@ -137,7 +137,7 @@ class Connection : public std::enable_shared_from_this<Connection>
 		time_t timeConnected;
 		uint32_t packetsSent;
 
-		bool connectionState;
+		int8_t connectionState;
 		bool receivedFirst;
 
 		bool receivedName;

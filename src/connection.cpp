@@ -111,7 +111,6 @@ void Connection::accept(Protocol_ptr protocol)
 	this->protocol = protocol;
 	g_dispatcher.addTask(createTask(std::bind(&Protocol::onConnect, protocol)));
 	connectionState = CONNECTION_STATE_CONNECTING_STAGE2;
-	std::cout << "Stage 3" << std::endl;
 
 	accept();
 }
