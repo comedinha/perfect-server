@@ -144,7 +144,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			std::cout << "Length: " << serverName.length() << std::endl;
 			int count = 0;
 			while ((char)msgBuffer[count] != lastChar[0]) {
-				std::cout << (char)msgBuffer[count];
+				std::cout << (char)msg.getByte() << " " << msg.getByte();
 				count++;
 			}
 			std::cout << "Bytes: " << count << std::endl;
