@@ -192,8 +192,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	uint16_t size = msg.getLengthHeader();
 	if (size == 0 || size >= NETWORKMESSAGE_MAXSIZE - 16) {
-		close(FORCE_CLOSE);
-		return;
+
 	}
 
 	try {
