@@ -124,8 +124,9 @@ void Connection::accept()
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			// Skip size of the server name packet
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+
+			// Skip size of the server name packet
 			boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), serverName.length() + 1));
 			if (!msg.GetByte() == 0x0A) {
 				boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), -(serverName.length() + 1)));
