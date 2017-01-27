@@ -116,15 +116,22 @@ void Connection::accept()
 {
 	if (connectionState == CONNECTION_STATE_PENDING) {
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
-	} else if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-		std::cout << (char)msg.getByte() << std::endl;
-		msg.getPreviousByte();
 	}
+
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
+		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+			// Read size of the server name packet
+			boost::asio::streambuf name;
+			boost::asio::read_until(socket, name, "\n");
+			std::istream is(&name);
+			std::string line;
+			std::getline(is, line);
+			std::cout << line << std::endl;
+		}
 		// Read size of the first packet
 		boost::asio::async_read(socket,
 								boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
@@ -137,7 +144,7 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		uint8_t* msgBuffer = msg.getBuffer();
 		std::string nullChar = "";
 		std::string lastChar = "\n";
