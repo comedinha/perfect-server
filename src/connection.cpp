@@ -127,6 +127,9 @@ void Connection::accept()
 			// Skip size of the server name packet
 			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 			boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), serverName.length() + 1));
+			if (!msg.getBuffer() == 0x0A) {
+				boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), -(serverName.length() + 1)));
+			}
 		}
 		// Read size of the first packet
 		boost::asio::async_read(socket,
