@@ -136,11 +136,9 @@ void Connection::parseHeader(const boost::system::error_code& error)
 {
 	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		uint8_t* msgBuffer = msg.getBuffer();
-		std::string nullChar = "";
-		std::string lastChar = "\n";
 
 		if (!receivedName) {
-			if (!(char)msgBuffer[1] == nullChar[0]) {
+			if (!msgBuffer[1] == 0x00) {
 				receivedName = true;
 
 				accept();
@@ -153,7 +151,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 				readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
-				if ((char)msgBuffer[0] == lastChar[0]) {
+				if (msgBuffer[0] == 0x0A) {
 					receivedLastChar = true;
 					boost::asio::async_read(socket,
 									boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
