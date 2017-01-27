@@ -159,7 +159,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		return;
 	}
 
-	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+	if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
 	}
 
