@@ -126,7 +126,7 @@ class ProtocolGameBase : public Protocol {
 
 		uint32_t eventConnect = 0;
 		uint32_t challengeTimestamp = 0;
-		uint16_t version = CLIENT_VERSION_MIN;
+		uint16_t version = PROTOCOL_VERSION_MIN;
 
 		uint8_t challengeRandom = 0;
 

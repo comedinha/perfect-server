@@ -117,21 +117,11 @@ void Connection::accept()
 	if (connectionState == CONNECTION_STATE_PENDING) {
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
 	}
-
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
-		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
-
-			// Skip size of the server name packet
-			boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), serverName.length() + 1));
-			if (!msg.getByte() == 0x0A) {
-				boost::asio::read(socket, boost::asio::buffer(msg.getBuffer(), -(serverName.length() + 1)));
-			}
-		}
 		// Read size of the first packet
 		boost::asio::async_read(socket,
 								boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
@@ -144,6 +134,39 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
+	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+		uint8_t* msgBuffer = msg.getBuffer();
+		std::string nullChar = "";
+		std::string lastChar = "\n";
+
+		if (!receivedName) {
+			if (!(char)msgBuffer[1] == nullChar[0]) {
+				receivedName = true;
+
+				accept();
+				return;
+			} else {
+				receivedLastChar = true;
+			}
+		} else {
+			readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
+			readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
+
+			if ((char)msgBuffer[0] == lastChar[0]) {
+				receivedLastChar = true;
+				boost::asio::async_read(socket,
+								boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
+								std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+			} else {
+				// Read size of the server name packet
+				boost::asio::async_read(socket,
+										boost::asio::buffer(msg.getBuffer(), 1),
+										std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+			}
+			return;
+		}
+	}
+
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 
@@ -154,7 +177,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		return;
 	}
 
-	if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		connectionState = CONNECTION_STATE_GAME;
 	}
 
@@ -172,6 +195,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	uint16_t size = msg.getLengthHeader();
 	if (size == 0 || size >= NETWORKMESSAGE_MAXSIZE - 16) {
+		std::cout << "Error" << std::endl;
 		close(FORCE_CLOSE);
 		return;
 	}
