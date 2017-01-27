@@ -130,7 +130,7 @@ void Connection::accept()
 			if (!(char)msgBuffer[1] == nullChar[0]) {
 				// Read size of the server name packet
 				boost::asio::streambuf name;
-				boost::asio::async_read_until(socket, name, "\n");
+				boost::asio::read_until(socket, name, "\n");
 				std::istream is(&name);
 				std::string line;
 				std::getline(is, line);
