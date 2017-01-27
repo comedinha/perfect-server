@@ -124,13 +124,18 @@ void Connection::accept()
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			// Read size of the server name packet
-			boost::asio::streambuf name;
-			boost::asio::async_read_until(socket, name, "\n");
-			std::istream is(&name);
-			std::string line;
-			std::getline(is, line);
-			std::cout << line << std::endl;
+			uint8_t* msgBuffer = msg.getBuffer();
+			std::string nullChar = "";
+
+			if (!(char)msgBuffer[1] == nullChar[0]) {
+				// Read size of the server name packet
+				boost::asio::streambuf name;
+				boost::asio::async_read_until(socket, name, "\n");
+				std::istream is(&name);
+				std::string line;
+				std::getline(is, line);
+				std::cout << line << std::endl;
+			}
 		}
 		// Read size of the first packet
 		boost::asio::async_read(socket,
@@ -144,30 +149,6 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-		uint8_t* msgBuffer = msg.getBuffer();
-		std::string nullChar = "";
-		std::string lastChar = "\n";
-
-		if (!receivedName) {
-			if (!(char)msgBuffer[1] == nullChar[0]) {
-				receivedName = true;
-
-				accept();
-				return;
-			} else {
-				receivedLastChar = true;
-			}
-		} else {
-			if ((char)msgBuffer[0] == lastChar[0] || (char)msgBuffer[1] == lastChar[0]) {
-				receivedLastChar = true;
-			}
-
-			accept();
-			return;
-		}
-	}
-
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 
