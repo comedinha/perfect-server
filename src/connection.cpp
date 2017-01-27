@@ -118,6 +118,7 @@ void Connection::accept()
 		connectionState = CONNECTION_STATE_CONNECTING_STAGE1;
 	} else if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
 		std::cout << (char)msg.getByte() << std::endl;
+		msg.getPreviousByte();
 	}
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	try {
