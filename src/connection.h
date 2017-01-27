@@ -83,9 +83,7 @@ class Connection : public std::enable_shared_from_this<Connection>
 			service_port(std::move(service_port)),
 			socket(io_service) {
 			connectionState = CONNECTION_STATE_PENDING;
-			receivedFirst = false;
-			receivedName = false;
-			receivedLastChar = false;
+			receivedFirst = false;;
 			packetsSent = 0;
 			timeConnected = time(nullptr);
 		}
@@ -139,9 +137,6 @@ class Connection : public std::enable_shared_from_this<Connection>
 
 		int8_t connectionState;
 		bool receivedFirst;
-
-		bool receivedName;
-		bool receivedLastChar;
 };
 
 #endif

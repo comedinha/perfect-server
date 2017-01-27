@@ -124,18 +124,13 @@ void Connection::accept()
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 		if (connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			uint8_t* msgBuffer = msg.getBuffer();
-			std::string nullChar = "";
-
-			if (!(char)msgBuffer[1] == nullChar[0]) {
-				// Read size of the server name packet
-				boost::asio::streambuf name;
-				boost::asio::read_until(socket, name, "\n");
-				std::istream is(&name);
-				std::string line;
-				std::getline(is, line);
-				std::cout << line << std::endl;
-			}
+			// Read size of the server name packet
+			boost::asio::streambuf name;
+			boost::asio::read_until(socket, name, "\n");
+			std::istream is(&name);
+			std::string line;
+			std::getline(is, line);
+			std::cout << line << std::endl;
 		}
 		// Read size of the first packet
 		boost::asio::async_read(socket,
@@ -177,7 +172,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 
 	uint16_t size = msg.getLengthHeader();
 	if (size == 0 || size >= NETWORKMESSAGE_MAXSIZE - 16) {
-		std::cout << "Error" << std::endl;
 		close(FORCE_CLOSE);
 		return;
 	}
