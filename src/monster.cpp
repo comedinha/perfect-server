@@ -937,13 +937,9 @@ void Monster::onThinkDefense(uint32_t interval)
 			Monster* summon = Monster::createMonster(summonBlock.name);
 			if (summon) {
 				const Position& summonPos = getPosition();
-				summon->setDropLoot(false);
-				summon->setLossSkill(false);
-				summon->setMaster(this);
+				addSummon(summon);
 				if (!g_game.placeCreature(summon, summonPos, false, summonBlock.force)) {
-					summon->setDropLoot(false);
-					summon->setLossSkill(true);
-					summon->setMaster(nullptr);
+					removeSummon(summon);
 				} else {
 					g_game.addMagicEffect(getPosition(), CONST_ME_MAGIC_BLUE);
 					g_game.addMagicEffect(summon->getPosition(), CONST_ME_TELEPORT);
@@ -1935,12 +1931,12 @@ bool Monster::convinceCreature(Creature* creature)
 		} else if (getMaster() == creature) {
 			return false;
 		}
+
+		Creature* oldMaster = getMaster();
+		oldMaster->removeSummon(this);
 	}
-	creature->setMaster(this);
-	setDropLoot(false);
-	setLossSkill(false);
-	setFollowCreature(nullptr);
-	setAttackedCreature(nullptr);
+
+	creature->addSummon(this);
 
 	//destroy summons
 	for (Creature* summon : summons) {
