@@ -122,10 +122,17 @@ void Connection::accept()
 		readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
-		// Read size of the first packet
-		boost::asio::async_read(socket,
-								boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
-								std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+		if (!receivedLastChar && receivedName && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+			// Read size of the first packet
+			boost::asio::async_read(socket,
+									boost::asio::buffer(msg.getBuffer(), 1),
+									std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+		} else {
+			// Read size of the first packet
+			boost::asio::async_read(socket,
+									boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
+									std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+		}
 	} catch (boost::system::system_error& e) {
 		std::cout << "[Network error - Connection::accept] " << e.what() << std::endl;
 		close(FORCE_CLOSE);
@@ -134,53 +141,6 @@ void Connection::accept()
 
 void Connection::parseHeader(const boost::system::error_code& error)
 {
-	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-		uint8_t* msgBuffer = msg.getBuffer();
-
-		if (!receivedName) {
-			if (!msgBuffer[1] == 0x00) {
-				receivedName = true;
-
-				try {
-					readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
-					readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
-
-					// Read size of the server name packet
-					boost::asio::async_read(socket,
-											boost::asio::buffer(msg.getBuffer(), 1),
-											std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
-				} catch (boost::system::system_error& e) {
-					std::cout << "[Network error - Connection::parseHeader] " << e.what() << std::endl;
-					close(FORCE_CLOSE);
-				}
-				return;
-			} else {
-				receivedLastChar = true;
-			}
-		} else {
-			try {
-				readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
-				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
-
-				if (msgBuffer[0] == 0x0A) {
-					receivedLastChar = true;
-					boost::asio::async_read(socket,
-									boost::asio::buffer(msg.getBuffer(), NetworkMessage::HEADER_LENGTH),
-									std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
-				} else {
-					// Read size of the server name packet
-					boost::asio::async_read(socket,
-											boost::asio::buffer(msg.getBuffer(), 1),
-											std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
-				}
-			} catch (boost::system::system_error& e) {
-				std::cout << "[Network error - Connection::parseHeader] " << e.what() << std::endl;
-				close(FORCE_CLOSE);
-			}
-			return;
-		}
-	}
-
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	readTimer.cancel();
 
@@ -189,6 +149,25 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		return;
 	} else if (connectionState == CONNECTION_STATE_DISCONNECTED) {
 		return;
+	}
+
+	if (!receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
+		uint8_t* msgBuffer = msg.getBuffer();
+
+		if (!receivedName && msgBuffer[1] == 0x00) {
+			receivedLastChar = true;
+		} else {
+			if (!receivedName) {
+				receivedName = true;
+			}
+
+			if (msgBuffer[0] == 0x0A) {
+				receivedLastChar = true;
+			}
+
+			accept();
+			return;
+		}
 	}
 
 	if (receivedLastChar && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
