@@ -1936,7 +1936,7 @@ bool Monster::convinceCreature(Creature* creature)
 			return false;
 		}
 	}
-	setMaster(creature);
+	creature->setMaster(this);
 	setDropLoot(false);
 	setLossSkill(false);
 	setFollowCreature(nullptr);
