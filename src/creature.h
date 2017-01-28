@@ -285,7 +285,9 @@ class Creature : virtual public Thing
 		virtual BlockType_t blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
 		                             bool checkDefense = false, bool checkArmor = false, bool field = false);
 
-		void setMaster(Creature* creature);
+		void setMaster(Creature* creature) {
+			master = creature;
+		}
 		bool isSummon() const {
 			return master != nullptr;
 		}
@@ -293,6 +295,8 @@ class Creature : virtual public Thing
 			return master;
 		}
 
+		void addSummon(Creature* creature);
+		void removeSummon(Creature* creature);
 		const std::list<Creature*>& getSummons() const {
 			return summons;
 		}
