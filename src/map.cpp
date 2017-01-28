@@ -359,7 +359,7 @@ void Map::getSpectatorsInternal(SpectatorHashSet& spectators, const Position& ce
 
 void Map::getSpectators(SpectatorHashSet& spectators, const Position& centerPos, bool multifloor /*= false*/, bool onlyPlayers /*= false*/, int32_t minRangeX /*= 0*/, int32_t maxRangeX /*= 0*/, int32_t minRangeY /*= 0*/, int32_t maxRangeY /*= 0*/)
 {
-	if (centerPos.z >= MAP_MAX_LAYERS) {
+	if (!centerPos || centerPos.z >= MAP_MAX_LAYERS) {
 		return;
 	}
 
