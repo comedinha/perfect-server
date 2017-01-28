@@ -141,7 +141,18 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			if (!msgBuffer[1] == 0x00) {
 				receivedName = true;
 
-				accept();
+				try {
+					readTimer.expires_from_now(boost::posix_time::seconds(Connection::read_timeout));
+					readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
+
+					// Read size of the server name packet
+					boost::asio::async_read(socket,
+											boost::asio::buffer(msg.getBuffer(), 1),
+											std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+				} catch (boost::system::system_error& e) {
+					std::cout << "[Network error - Connection::parseHeader] " << e.what() << std::endl;
+					close(FORCE_CLOSE);
+				}
 				return;
 			} else {
 				receivedLastChar = true;
