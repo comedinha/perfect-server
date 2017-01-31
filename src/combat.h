@@ -152,10 +152,10 @@ class MatrixArea
 			return cols;
 		}
 
-		inline const bool* operator[](uint32_t i) const {
+		const bool* operator[](uint32_t i) const {
 			return data_[i];
 		}
-		inline bool* operator[](uint32_t i) {
+		bool* operator[](uint32_t i) {
 			return data_[i];
 		}
 

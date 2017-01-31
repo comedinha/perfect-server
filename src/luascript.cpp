@@ -975,9 +975,6 @@ void LuaScriptInterface::registerFunctions()
 	//doChallengeCreature(cid, target)
 	lua_register(luaState, "doChallengeCreature", LuaScriptInterface::luaDoChallengeCreature);
 
-	//isInArray(array, value)
-	lua_register(luaState, "isInArray", LuaScriptInterface::luaIsInArray);
-
 	//addEvent(callback, delay, ...)
 	lua_register(luaState, "addEvent", LuaScriptInterface::luaAddEvent);
 
@@ -3429,27 +3426,6 @@ int LuaScriptInterface::luaGetDepotId(lua_State* L)
 	}
 
 	lua_pushnumber(L, depotLocker->getDepotId());
-	return 1;
-}
-
-int LuaScriptInterface::luaIsInArray(lua_State* L)
-{
-	//isInArray(array, value)
-	if (!isTable(L, 1)) {
-		pushBoolean(L, false);
-		return 1;
-	}
-
-	lua_pushnil(L);
-	while (lua_next(L, 1)) {
-		if (lua_equal(L, 2, -1) != 0) {
-			pushBoolean(L, true);
-			return 1;
-		}
-		lua_pop(L, 1);
-	}
-
-	pushBoolean(L, false);
 	return 1;
 }
 
@@ -6917,9 +6893,8 @@ int LuaScriptInterface::luaCreatureSetMaster(lua_State* L)
 		return 1;
 	}
 
-	Creature* master = getCreature(L, 2);
-	if (master) {
-		if (getBoolean(L, 3, true)) {
+	if (Creature* master = getCreature(L, 2)) {
+		if (getBoolean(L, 3, false)) {
 			if (Monster* summon = creature->getMonster()) {
 				if (Creature* oldMaster = summon->getMaster()) {
 					oldMaster->removeSummon(summon);
