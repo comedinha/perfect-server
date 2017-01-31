@@ -4381,6 +4381,8 @@ bool Game::combatChangeMana(Creature* attacker, Creature* target, int32_t manaCh
 
 		std::stringstream ss;
 
+		std::string damageString = std::to_string(manaLoss);
+
 		std::string spectatorMessage;
 
 		TextMessage message;
