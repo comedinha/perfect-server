@@ -145,7 +145,7 @@ void ProtocolStatus::sendStatusString()
 	map.append_attribute("height") = std::to_string(mapHeight).c_str();
 
 	pugi::xml_node motd = tsqp.append_child("motd");
-	motd.text() = IOLoginData::getMotd();
+	motd.text() = IOLoginData::getMotd().c_str();
 
 	std::ostringstream ss;
 	doc.save(ss, "", pugi::format_raw);
