@@ -23,6 +23,7 @@
 
 #include "configmanager.h"
 #include "game.h"
+#include "iologindata.h"
 
 #if LUA_VERSION_NUM >= 502
 #undef lua_strlen
