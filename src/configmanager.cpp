@@ -196,7 +196,7 @@ bool ConfigManager::load()
 bool ConfigManager::reload()
 {
 	bool result = load();
-	if (transformToSHA1(getString(IOLoginData::getMotd())) != g_game.getMotdHash()) {
+	if (transformToSHA1(IOLoginData::getMotd()) != g_game.getMotdHash()) {
 		g_game.incrementMotdNum();
 	}
 	return result;
