@@ -4839,7 +4839,7 @@ void Game::loadMotdNum()
 	result = db.storeQuery(motdhash.str());
 	if (result) {
 		motdHash = result->getString("value");
-		if (motdHash != transformToSHA1(g_config.getString(ConfigManager::MOTD))) {
+		if (motdHash != transformToSHA1(g_config.getString(IOLoginData::getMotd()))) {
 			++motdNum;
 		}
 	} else {
@@ -4858,7 +4858,7 @@ void Game::saveMotdNum() const
 	db.executeQuery(query.str());
 
 	query.str(std::string());
-	query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` SET `value` = '" << transformToSHA1(g_config.getString(ConfigManager::MOTD)) << "' WHERE `config` = 'motd_hash'";
+	query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`server_config` SET `value` = '" << transformToSHA1(g_config.getString(IOLoginData::getMotd())) << "' WHERE `config` = 'motd_hash'";
 	db.executeQuery(query.str());
 }
 
