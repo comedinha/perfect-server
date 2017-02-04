@@ -150,7 +150,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		if (!receivedName && msgBuffer[1] == 0x00) {
 			receivedLastChar = true;
 		} else {
-			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME) + "\n";
+			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
 			receivedLastChar = true;
 
 			try {
