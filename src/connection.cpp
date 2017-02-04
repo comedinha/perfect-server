@@ -158,7 +158,7 @@ void Connection::parseHeader(const boost::system::error_code& error)
 				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 				boost::asio::async_read(socket,
-									boost::asio::buffer(msg.getBuffer(), serverName.length() + NetworkMessage::HEADER_LENGTH),
+									boost::asio::buffer(msg.getBuffer(), serverName.length() + 1),
 									std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
 				} catch (boost::system::system_error& e) {
 					std::cout << "[Network error - Connection::reciveName] " << e.what() << std::endl;
