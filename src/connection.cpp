@@ -123,13 +123,12 @@ void Connection::accept()
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 		if (!receivedLastChar && receivedName && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME);
+			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME) + "\n";
 
-			if (serverNameTime < serverName.length() + 3) {
-				// Read size of the first packet
-				boost::asio::async_read(socket,
-										boost::asio::buffer(msg.getBuffer(), 1),
-										std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
+			if (serverNameTime < serverName.length() + 1) {
+				std::cout << "[Network error - Connection::accept] " << convertIPToString(getIP()) << " Try new connection" << std::endl;
+				close(FORCE_CLOSE);
+				return;
 			} else {
 				std::cout << "[Network error - Connection::accept] " << convertIPToString(getIP()) << " Possible crash bug tried" << std::endl;
 				close(FORCE_CLOSE);
