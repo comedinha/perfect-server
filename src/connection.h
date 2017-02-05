@@ -141,7 +141,7 @@ class Connection : public std::enable_shared_from_this<Connection>
 		int8_t connectionState;
 		bool receivedFirst;
 
-		int8_t serverNameTime;
+		uint32_t serverNameTime;
 		bool receivedName;
 		bool receivedLastChar;
 };
