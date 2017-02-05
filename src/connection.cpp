@@ -173,7 +173,6 @@ void Connection::parseHeader(const boost::system::error_code& error)
 			receivedLastChar = true;
 		} else {
 			++serverNameTime;
-			std::cout << serverNameTime << std::endl;
 			if (!receivedName) {
 				receivedName = true;
 			}
