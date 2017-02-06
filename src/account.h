@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,52 +24,14 @@
 
 struct Account {
 	std::vector<std::string> characters;
-	std::vector<uint16_t> world;
 	std::string name;
 	std::string key;
 	time_t lastDay = 0;
 	uint32_t id = 0;
 	uint16_t premiumDays = 0;
-	uint64_t coins = 0;
 	AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
 
 	Account() = default;
-};
-
-struct World {
-	std::vector<uint16_t> id;
-	std::vector<std::string> name;
-	std::vector<std::string> ip;
-	std::vector<uint16_t> port;
-	std::vector<uint16_t> previewer;
-
-	World() = default;
-};
-
-struct Casts {
-	std::vector<uint16_t> id;
-	std::vector<std::string> name;
-	std::vector<uint16_t> password;
-	std::vector<std::string> description;
-	std::vector<uint16_t> spectators;
-	std::vector<uint16_t> worldid;
-
-	Casts() = default;
-};
-
-struct Records {
-	std::vector<uint16_t> id;
-	std::vector<std::string> name;
-	std::vector<uint16_t> worldid;
-
-	Records() = default;
-};
-
-struct Playerson {
-	std::vector<uint32_t> id;
-	std::vector<uint16_t> world;
-
-	Playerson() = default;
 };
 
 #endif

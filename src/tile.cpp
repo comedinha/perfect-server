@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 #include "creature.h"
 #include "combat.h"
 #include "game.h"
-#include "configmanager.h"
 #include "mailbox.h"
 #include "monster.h"
 #include "movement.h"
@@ -34,8 +33,6 @@
 #include "trashholder.h"
 
 extern Game g_game;
-extern ConfigManager g_config;
-extern Monsters g_monsters;
 extern MoveEvents* g_moveEvents;
 
 StaticTile real_nullptr_tile(0xFFFF, 0xFFFF, 0xFF);
@@ -387,18 +384,18 @@ void Tile::onAddTileItem(Item* item)
 
 	const Position& cylinderMapPos = getPosition();
 
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, cylinderMapPos, true);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, cylinderMapPos, true);
 
 	//send to client
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		if (Player* tmpPlayer = spectator->getPlayer()) {
 			tmpPlayer->sendAddTileItem(this, cylinderMapPos, item);
 		}
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->onAddTileItem(this, cylinderMapPos);
 	}
 }
@@ -425,23 +422,23 @@ void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newIte
 
 	const Position& cylinderMapPos = getPosition();
 
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, cylinderMapPos, true);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, cylinderMapPos, true);
 
 	//send to client
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		if (Player* tmpPlayer = spectator->getPlayer()) {
 			tmpPlayer->sendUpdateTileItem(this, cylinderMapPos, newItem);
 		}
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->onUpdateTileItem(this, cylinderMapPos, oldItem, oldType, newItem, newType);
 	}
 }
 
-void Tile::onRemoveTileItem(const SpectatorHashSet& spectators, const std::vector<int32_t>& oldStackPosVector, Item* item)
+void Tile::onRemoveTileItem(const SpectatorVec& list, const std::vector<int32_t>& oldStackPosVector, Item* item)
 {
 	if (item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) {
 		auto it = g_game.browseFields.find(this);
@@ -457,24 +454,24 @@ void Tile::onRemoveTileItem(const SpectatorHashSet& spectators, const std::vecto
 
 	//send to client
 	size_t i = 0;
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		if (Player* tmpPlayer = spectator->getPlayer()) {
 			tmpPlayer->sendRemoveTileThing(cylinderMapPos, oldStackPosVector[i++]);
 		}
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->onRemoveTileItem(this, cylinderMapPos, iType, item);
 	}
 }
 
-void Tile::onUpdateTile(const SpectatorHashSet& spectators)
+void Tile::onUpdateTile(const SpectatorVec& list)
 {
 	const Position& cylinderMapPos = getPosition();
 
 	//send to clients
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->sendUpdateTile(this, cylinderMapPos);
 	}
 }
@@ -490,7 +487,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
-		if (creature->isMoveLocked() || ground == nullptr) {
+		if (ground == nullptr) {
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
@@ -539,24 +536,20 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			MagicField* field = getFieldItem();
 			if (field && !field->isBlocking()) {
 				CombatType_t combatType = field->getCombatType();
+
+				//There is 3 options for a monster to enter a magic field
+				//1) Monster is immune
 				if (!monster->isImmune(combatType)) {
-					if (combatType == COMBAT_NONE) {
-						return RETURNVALUE_NOTPOSSIBLE;
-					}
+					//1) Monster is "strong" enough to handle the damage
+					//2) Monster is already afflicated by this type of condition
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, flags)) {
-						MonsterType* mType = g_monsters.getMonsterType(monster->getName());
-						int32_t elementMod = 0;
-						auto it = mType->info.elementMap.find(combatType);
-						if (it != mType->info.elementMap.end()) {
-							elementMod = it->second;
-						}
-						if (!(elementMod >= 50 || monster->passMagicField(combatType) || monster->isAttacked())) {
+						if ((!monster->hasCondition(Combat::DamageToConditionType(combatType)) ||
+							!monster->canPushItems()) &&
+							!monster->hadRecentBattle()) {
 							return RETURNVALUE_NOTPOSSIBLE;
 						}
 					} else {
-						if (!(monster->isAttacked())) {
-							return RETURNVALUE_NOTPOSSIBLE;
-						}
+						return RETURNVALUE_NOTPOSSIBLE;
 					}
 				}
 			}
@@ -589,10 +582,6 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 				} else if (!hasFlag(TILESTATE_PVPZONE)) {
 					// player is trying to leave a pvp zone while being pz-locked
 					return RETURNVALUE_PLAYERISPZLOCKEDLEAVEPVPZONE;
-				}
-
-				if (hasFlag(TILESTATE_NOPVPZONE) || hasFlag(TILESTATE_PROTECTIONZONE)) {
-						return RETURNVALUE_PLAYERISPZLOCKED;
 				}
 
 				if ((!playerTile->hasFlag(TILESTATE_NOPVPZONE) && hasFlag(TILESTATE_NOPVPZONE)) ||
@@ -634,7 +623,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 		}
 	} else if (const Item* item = thing.getItem()) {
 		const TileItemVector* items = getItemList();
-		if (items && items->size() >= 0x3E8) {
+		if (items && items->size() >= 100) {
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
@@ -683,10 +672,6 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 			if (items) {
 				for (const Item* tileItem : *items) {
 					const ItemType& iiType = Item::items[tileItem->getID()];
-					if (iiType.id == ITEM_MAGICWALL_NOPVP || iiType.id == ITEM_WILDGROWTH_NOPVP) {
-						return RETURNVALUE_NOTENOUGHROOM;
-					}
-
 					if (!iiType.blockSolid) {
 						continue;
 					}
@@ -855,7 +840,7 @@ void Tile::addThing(int32_t, Thing* thing)
 		}
 
 		TileItemVector* items = getItemList();
-		if (items && items->size() >= 0xFFFF) {
+		if (items && items->size() >= 100) {
 			return /*RETURNVALUE_NOTPOSSIBLE*/;
 		}
 
@@ -1070,9 +1055,9 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 		ground->setParent(nullptr);
 		ground = nullptr;
 
-		SpectatorHashSet spectators;
-		g_game.map.getSpectators(spectators, getPosition(), true);
-		onRemoveTileItem(spectators, std::vector<int32_t>(spectators.size(), 0), item);
+		SpectatorVec list;
+		g_game.map.getSpectators(list, getPosition(), true);
+		onRemoveTileItem(list, std::vector<int32_t>(list.size(), 0), item);
 		return;
 	}
 
@@ -1090,9 +1075,9 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 
 		std::vector<int32_t> oldStackPosVector;
 
-		SpectatorHashSet spectators;
-		g_game.map.getSpectators(spectators, getPosition(), true);
-		for (Creature* spectator : spectators) {
+		SpectatorVec list;
+		g_game.map.getSpectators(list, getPosition(), true);
+		for (Creature* spectator : list) {
 			if (Player* tmpPlayer = spectator->getPlayer()) {
 				oldStackPosVector.push_back(getStackposOfItem(tmpPlayer, item));
 			}
@@ -1100,7 +1085,7 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 
 		item->setParent(nullptr);
 		items->erase(it);
-		onRemoveTileItem(spectators, oldStackPosVector, item);
+		onRemoveTileItem(list, oldStackPosVector, item);
 	} else {
 		auto it = std::find(items->getBeginDownItem(), items->getEndDownItem(), item);
 		if (it == items->getEndDownItem()) {
@@ -1114,9 +1099,9 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 		} else {
 			std::vector<int32_t> oldStackPosVector;
 
-			SpectatorHashSet spectators;
-			g_game.map.getSpectators(spectators, getPosition(), true);
-			for (Creature* spectator : spectators) {
+			SpectatorVec list;
+			g_game.map.getSpectators(list, getPosition(), true);
+			for (Creature* spectator : list) {
 				if (Player* tmpPlayer = spectator->getPlayer()) {
 					oldStackPosVector.push_back(getStackposOfItem(tmpPlayer, item));
 				}
@@ -1125,7 +1110,7 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 			item->setParent(nullptr);
 			items->erase(it);
 			items->addDownItemCount(-1);
-			onRemoveTileItem(spectators, oldStackPosVector, item);
+			onRemoveTileItem(list, oldStackPosVector, item);
 		}
 	}
 }
@@ -1357,9 +1342,9 @@ Thing* Tile::getThing(size_t index) const
 
 void Tile::postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t index, cylinderlink_t link /*= LINK_OWNER*/)
 {
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, getPosition(), true, true);
-	for (Creature* spectator : spectators) {
+	SpectatorVec list;
+	g_game.map.getSpectators(list, getPosition(), true, true);
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->postAddNotification(thing, oldParent, index, LINK_NEAR);
 	}
 
@@ -1412,14 +1397,14 @@ void Tile::postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t 
 
 void Tile::postRemoveNotification(Thing* thing, const Cylinder* newParent, int32_t index, cylinderlink_t)
 {
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, getPosition(), true, true);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, getPosition(), true, true);
 
 	if (getThingCount() > 8) {
-		onUpdateTile(spectators);
+		onUpdateTile(list);
 	}
 
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->postRemoveNotification(thing, newParent, index, LINK_NEAR);
 	}
 
@@ -1465,7 +1450,7 @@ void Tile::internalAddThing(uint32_t, Thing* thing)
 		}
 
 		TileItemVector* items = makeItemList();
-		if (items->size() >= 0xFFFF) {
+		if (items->size() >= 100) {
 			return /*RETURNVALUE_NOTPOSSIBLE*/;
 		}
 

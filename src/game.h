@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ class Game
 		Game& operator=(const Game&) = delete;
 
 		void start(ServiceManager* manager);
-
+		int64_t lastUseTime = 0;
 		void forceAddCondition(uint32_t creatureId, Condition* condition);
 		void forceRemoveCondition(uint32_t creatureId, ConditionType_t type);
 
@@ -179,9 +179,16 @@ class Game
 		  * Returns a player based on a string name identifier, with support for the "~" wildcard.
 		  * \param s is the name identifier, with or without wildcard
 		  * \param player will point to the found player (if any)
-		  * \return "RETURNVALUE_PLAYERWITHTHISNAMEISNOTONLINE" or "RETURNVALUE_NAMEISTOOAMBIGUOUS"
+		  * \return "RETURNVALUE_PLAYERWITHTHISNAMEISNOTONLINE" or "RETURNVALUE_NAMEISTOOAMBIGIOUS"
 		  */
 		ReturnValue getPlayerByNameWildcard(const std::string& s, Player*& player);
+
+		/**
+		  * Returns a player based on an account number identifier
+		  * \param acc is the account identifier
+		  * \returns A Pointer to the player
+		  */
+		Player* getPlayerByAccount(uint32_t acc);
 
 		/* Place Creature on the map without sending out events to the surrounding.
 		  * \param creature Creature to place on the map
@@ -300,14 +307,15 @@ class Game
 		  * \param type Type of message
 		  * \param text The text to say
 		  */
-		bool internalCreatureSay(Creature* creature, MessageClasses type, const std::string& text,
-		                         bool ghostMode, SpectatorHashSet* spectatorsPtr = nullptr, const Position* pos = nullptr);
+		bool internalCreatureSay(Creature* creature, SpeakClasses type, const std::string& text,
+		                         bool ghostMode, SpectatorVec* listPtr = nullptr, const Position* pos = nullptr);
 
 		void loadPlayersRecord();
 		void checkPlayersRecord();
 
 		void sendGuildMotd(uint32_t playerId);
-		void kickPlayer(uint32_t playerId, bool displayEffect, bool forceLogout);
+		void kickPlayer(uint32_t playerId, bool displayEffect);
+		void playerReportBug(uint32_t playerId, const std::string& message, const Position& position, uint8_t category);
 		void playerDebugAssert(uint32_t playerId, const std::string& assertLine, const std::string& date, const std::string& description, const std::string& comment);
 		void playerAnswerModalWindow(uint32_t playerId, uint32_t modalWindowId, uint8_t button, uint8_t choice);
 
@@ -324,6 +332,7 @@ class Game
 		void playerMoveItemByPlayerID(uint32_t playerId, const Position& fromPos, uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count);
 		void playerMoveItem(Player* player, const Position& fromPos,
 		                    uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count, Item* item, Cylinder* toCylinder);
+		void playerEquipItem(uint32_t playerId, uint16_t spriteId);
 		void playerMove(uint32_t playerId, Direction direction);
 		void playerCreatePrivateChannel(uint32_t playerId);
 		void playerChannelInvite(uint32_t playerId, const std::string& name);
@@ -345,7 +354,6 @@ class Game
 		void playerMoveUpContainer(uint32_t playerId, uint8_t cid);
 		void playerUpdateContainer(uint32_t playerId, uint8_t cid);
 		void playerRotateItem(uint32_t playerId, const Position& pos, uint8_t stackPos, const uint16_t spriteId);
-		void playerWrapItem(uint32_t playerId, const Position& pos, uint8_t stackPos, const uint16_t spriteId);
 		void playerWriteItem(uint32_t playerId, uint32_t windowTextId, const std::string& text);
 		void playerBrowseField(uint32_t playerId, const Position& pos);
 		void playerSeekInContainer(uint32_t playerId, uint8_t containerId, uint16_t index);
@@ -374,7 +382,7 @@ class Game
 		void playerRequestOutfit(uint32_t playerId);
 		void playerShowQuestLog(uint32_t playerId);
 		void playerShowQuestLine(uint32_t playerId, uint16_t questId);
-		void playerSay(uint32_t playerId, uint16_t channelId, MessageClasses type,
+		void playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 		               const std::string& receiver, const std::string& text);
 		void playerChangeOutfit(uint32_t playerId, Outfit_t outfit);
 		void playerInviteToParty(uint32_t playerId, uint32_t invitedId);
@@ -420,7 +428,6 @@ class Game
 		GameState_t getGameState() const;
 		void setGameState(GameState_t newState);
 		void saveGameState();
-		void saveGameStateHouses();
 
 		//Events
 		void checkCreatureWalk(uint32_t creatureId);
@@ -433,16 +440,16 @@ class Game
 
 		void combatGetTypeInfo(CombatType_t combatType, Creature* target, TextColor_t& color, uint8_t& effect);
 
-		bool combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage);
+		bool combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage, bool isEvent = false);
 		bool combatChangeMana(Creature* attacker, Creature* target, int32_t manaChange, CombatOrigin origin);
 
 		//animation help functions
 		void addCreatureHealth(const Creature* target);
-		static void addCreatureHealth(const SpectatorHashSet& spectators, const Creature* target);
+		static void addCreatureHealth(const SpectatorVec& list, const Creature* target);
 		void addMagicEffect(const Position& pos, uint8_t effect);
-		static void addMagicEffect(const SpectatorHashSet& spectators, const Position& pos, uint8_t effect);
+		static void addMagicEffect(const SpectatorVec& list, const Position& pos, uint8_t effect);
 		void addDistanceEffect(const Position& fromPos, const Position& toPos, uint8_t effect);
-		static void addDistanceEffect(const SpectatorHashSet& spectators, const Position& fromPos, const Position& toPos, uint8_t effect);
+		static void addDistanceEffect(const SpectatorVec& list, const Position& fromPos, const Position& toPos, uint8_t effect);
 
 		void addCommandTag(char tag);
 		void resetCommandTag();
@@ -495,11 +502,6 @@ class Game
 			commands.reload();
 		}
 
-		bool reload(ReloadTypes_t reloadType);
-
-		bool hasEffect(uint8_t effectId);
-		bool hasDistanceEffect(uint8_t effectId);
-
 		Groups groups;
 		Map map;
 		Mounts mounts;
@@ -508,10 +510,10 @@ class Game
 
 	protected:
 		bool playerSayCommand(Player* player, const std::string& text);
-		bool playerSaySpell(Player* player, MessageClasses type, const std::string& text);
+		bool playerSaySpell(Player* player, SpeakClasses type, const std::string& text);
 		void playerWhisper(Player* player, const std::string& text);
 		bool playerYell(Player* player, const std::string& text);
-		bool playerSpeakTo(Player* player, MessageClasses type, const std::string& receiver, const std::string& text);
+		bool playerSpeakTo(Player* player, SpeakClasses type, const std::string& receiver, const std::string& text);
 		void playerSpeakToNpc(Player* player, const std::string& text);
 
 		void checkDecay();
@@ -568,7 +570,7 @@ class Game
 
 		std::string motdHash;
 		uint32_t motdNum = 0;
-		uint32_t bid = 0;
+
 		uint32_t lastStageLevel = 0;
 		bool stagesEnabled = false;
 		bool useLastStageLevel = false;

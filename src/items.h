@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,8 @@ enum ItemTypes_t {
 	ITEM_TYPE_KEY,
 	ITEM_TYPE_RUNE,
 	ITEM_TYPE_REWARDCHEST,
-	ITEM_TYPE_LAST,
+	ITEM_TYPE_CARPET,
+	ITEM_TYPE_LAST
 };
 
 struct Abilities {
@@ -81,9 +82,6 @@ struct Abilities {
 
 	//damage abilities modifiers
 	int16_t absorbPercent[COMBAT_COUNT] = { 0 };
-
-	//relfect abilities modifires
-	int16_t reflectPercent[COMBAT_COUNT] = { 0 };
 
 	//elemental damage
 	uint16_t elementDamage = 0;
@@ -138,6 +136,9 @@ class ItemType
 		}
 		bool isRewardChest() const {
 			return (type == ITEM_TYPE_REWARDCHEST);
+		}
+		bool isCarpet() const {
+			return (type == ITEM_TYPE_CARPET);
 		}
 		bool isMailbox() const {
 			return (type == ITEM_TYPE_MAILBOX);
@@ -201,18 +202,17 @@ class ItemType
 		uint32_t wieldInfo = 0;
 		uint32_t minReqLevel = 0;
 		uint32_t minReqMagicLevel = 0;
-		uint32_t minReqSkillLevel = 0;
 		uint32_t charges = 0;
 		int32_t maxHitChance = -1;
 		int32_t decayTo = -1;
 		int32_t attack = 0;
 		int32_t defense = 0;
 		int32_t extraDefense = 0;
+		int32_t imbuingSlots = 0;
 		int32_t armor = 0;
 		int32_t rotateTo = 0;
 		int32_t runeMagLevel = 0;
 		int32_t runeLevel = 0;
-		int32_t wrapTo = 0;
 
 		CombatType_t combatType = COMBAT_NONE;
 
@@ -257,8 +257,6 @@ class ItemType
 		bool replaceable = true;
 		bool pickupable = false;
 		bool rotatable = false;
-		bool wrappable = false;
-		bool unwrappable = false;
 		bool useable = false;
 		bool moveable = false;
 		bool alwaysOnTop = false;
@@ -276,7 +274,7 @@ class ItemType
 class Items
 {
 	public:
-		using NameMap = std::unordered_multimap<std::string, uint16_t>;
+		using nameMap = std::unordered_multimap<std::string, uint16_t>;
 
 		Items();
 
@@ -305,14 +303,18 @@ class Items
 		bool loadFromXml();
 		void parseItemNode(const pugi::xml_node& itemNode, uint16_t id);
 
-		size_t size() const {
+		void buildInventoryList();
+ 		const std::vector<uint16_t>& getInventory() const { return inventory; }
+
+		inline size_t size() const {
 			return items.size();
 		}
 
-		NameMap nameToItems;
+		nameMap nameToItems;
 
 	protected:
 		std::map<uint16_t, uint16_t> reverseItemMap;
 		std::vector<ItemType> items;
+		std::vector<uint16_t> inventory;
 };
 #endif

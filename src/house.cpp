@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 #include "house.h"
 #include "iologindata.h"
-#include "iomapserialize.h"
 #include "game.h"
 #include "configmanager.h"
 #include "bed.h"
@@ -42,11 +41,11 @@ void House::addTile(HouseTile* tile)
 void House::setOwner(uint32_t guid, bool updateDatabase/* = true*/, Player* player/* = nullptr*/)
 {
 	if (updateDatabase && owner != guid) {
-		Database& db = Database::getInstance();
+		Database* db = Database::getInstance();
 
 		std::ostringstream query;
-		query << "UPDATE `" << g_config.getString(ConfigManager::MYSQL_WORLD_DB) << "`.`houses` SET `owner` = " << guid << ", `bid` = 0, `bid_end` = 0, `last_bid` = 0, `highest_bidder` = 0  WHERE `id` = " << id;
-		db.executeQuery(query.str());
+		query << "UPDATE `houses` SET `owner` = " << guid << ", `bid` = 0, `bid_end` = 0, `last_bid` = 0, `highest_bidder` = 0  WHERE `id` = " << id;
+		db->executeQuery(query.str());
 	}
 
 	if (isLoaded && owner == guid) {
@@ -215,7 +214,6 @@ bool House::transferToDepot() const
 		}
 
 		transferToDepot(&tmpPlayer);
-		IOMapSerialize::saveHouse(this);
 		IOLoginData::savePlayer(&tmpPlayer);
 	}
 	return true;
@@ -228,22 +226,6 @@ bool House::transferToDepot(Player* player) const
 	}
 
 	ItemList moveItemList;
-	for (HouseTile* tile : houseTiles) {
-		if (const TileItemVector* items = tile->getItemList()) {
-			for (Item* item : *items) {
-				if (item->isWrappable() && !item->isPickupable()) {
-					Container* container = item->getContainer();
-					if (container) {
-						for (Item* containerItem : container->getItemList()) {
-							moveItemList.push_back(containerItem);
-						}
-					}
-					wrapItems(item);
-				}
-			}
-		}
-	}
-
 	for (HouseTile* tile : houseTiles) {
 		if (const TileItemVector* items = tile->getItemList()) {
 			for (Item* item : *items) {
@@ -263,19 +245,6 @@ bool House::transferToDepot(Player* player) const
 
 	for (Item* item : moveItemList) {
 		g_game.internalMoveItem(item->getParent(), player->getInbox(), INDEX_WHEREEVER, item, item->getItemCount(), nullptr, FLAG_NOLIMIT);
-	}
-	return true;
-}
-
-bool House::wrapItems(Item* item) const
-{
-	if (!item || !item->isWrappable() || item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
-		return false;
-	}
-
-	uint16_t newId = Item::items[item->getID()].wrapTo;
-	if (newId != 0) {
-		g_game.transformItem(item, newId);
 	}
 	return true;
 }
@@ -417,10 +386,6 @@ bool House::executeTransfer(HouseTransferItem* item, Player* newOwner)
 		return false;
 	}
 
-	if (getPayRentWarnings() > 0) {
-		return false;
-	}
-
 	setOwner(newOwner->getGUID());
 	transferItem = nullptr;
 	return true;
@@ -544,7 +509,7 @@ void AccessList::getList(std::string& list) const
 	list = this->list;
 }
 
-Door::Door(uint16_t type) : Item(type) {}
+Door::Door(uint16_t type) :	Item(type) {}
 
 Attr_ReadValue Door::readAttr(AttrTypes_t attr, PropStream& propStream)
 {
@@ -696,7 +661,7 @@ void Houses::payHouses(RentPeriod_t rentPeriod) const
 		Player player(nullptr);
 		if (!IOLoginData::loadPlayerById(&player, ownerId)) {
 			// Player doesn't exist, reset house owner
-			house->setOwner(0, true);
+			house->setOwner(0);
 			continue;
 		}
 

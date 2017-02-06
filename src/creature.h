@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +28,8 @@
 #include "enums.h"
 #include "creatureevent.h"
 
-using ConditionList = std::list<Condition*>;
-using CreatureEventList = std::list<CreatureEvent*>;
+typedef std::list<Condition*> ConditionList;
+typedef std::list<CreatureEvent*> CreatureEventList;
 
 enum slots_t : uint8_t {
 	CONST_SLOT_WHEREEVER = 0,
@@ -172,13 +172,6 @@ class Creature : virtual public Thing
 		}
 		void setHiddenHealth(bool b) {
 			hiddenHealth = b;
-		}
-
-		bool isMoveLocked() const {
-			return moveLocked;
-		}
-		void setMoveLocked(bool locked) {
-			moveLocked = locked;
 		}
 
 		int32_t getThrowRange() const final {
@@ -331,8 +324,6 @@ class Creature : virtual public Thing
 		virtual bool isImmune(ConditionType_t type) const;
 		virtual bool isImmune(CombatType_t type) const;
 		virtual bool isSuppress(ConditionType_t type) const;
-		virtual bool passMagicField(CombatType_t type) const;
-		virtual bool isAttacked() const;
 		virtual uint32_t getDamageImmunities() const {
 			return 0;
 		}
@@ -342,10 +333,6 @@ class Creature : virtual public Thing
 		virtual uint32_t getConditionSuppressions() const {
 			return 0;
 		}
-		virtual uint32_t getPassMagicField() const {
-			return 0;
-		}
-
 		virtual bool isAttackable() const {
 			return true;
 		}
@@ -379,7 +366,6 @@ class Creature : virtual public Thing
 		virtual void onAttacked();
 		virtual void onAttackedCreatureDrainHealth(Creature* target, int32_t points);
 		virtual void onTargetCreatureGainHealth(Creature*, int32_t) {}
-		void onAttackedCreatureKilled(Creature* target);
 		virtual bool onKilledCreature(Creature* target, bool lastHit = true);
 		virtual void onGainExperience(uint64_t gainExp, Creature* target);
 		virtual void onAttackedCreatureBlockHit(BlockType_t) {}
@@ -410,10 +396,10 @@ class Creature : virtual public Thing
 		virtual void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
 		                            const Tile* oldTile, const Position& oldPos, bool teleport);
 
-		virtual void onAttackedCreatureDisappear(bool, const Creature* creature) {}
-		virtual void onFollowCreatureDisappear(bool, const Creature* creature) {}
+		virtual void onAttackedCreatureDisappear(bool) {}
+		virtual void onFollowCreatureDisappear(bool) {}
 
-		virtual void onCreatureSay(Creature*, MessageClasses, const std::string&) {}
+		virtual void onCreatureSay(Creature*, SpeakClasses, const std::string&) {}
 
 		virtual void onCreatureConvinced(const Creature*, const Creature*) {}
 		virtual void onPlacedCreature() {}
@@ -444,7 +430,7 @@ class Creature : virtual public Thing
 			position = tile->getPosition();
 		}
 
-		const Position& getPosition() const final {
+		inline const Position& getPosition() const final {
 			return position;
 		}
 
@@ -460,7 +446,7 @@ class Creature : virtual public Thing
 		const Position& getLastPosition() const {
 			return lastPosition;
 		}
-		void setLastPosition(const Position& newLastPos) {
+		void setLastPosition(Position newLastPos) {
 			lastPosition = newLastPos;
 		}
 
@@ -497,7 +483,7 @@ class Creature : virtual public Thing
 
 		Position position;
 
-		using CountMap = std::map<uint32_t, CountBlock_t>;
+		typedef std::map<uint32_t, CountBlock_t> CountMap;
 		CountMap damageMap;
 
 		std::list<Creature*> summons;
@@ -540,7 +526,6 @@ class Creature : virtual public Thing
 		bool isInternalRemoved = false;
 		bool isMapLoaded = false;
 		bool isUpdatingPath = false;
-		bool isAttackedCheck = false;
 		bool creatureCheck = false;
 		bool inCheckCreaturesVector = false;
 		bool skillLoss = true;
@@ -549,7 +534,6 @@ class Creature : virtual public Thing
 		bool hasFollowPath = false;
 		bool forceUpdateFollowPath = false;
 		bool hiddenHealth = false;
-		bool moveLocked = false;
 
 		//creature script events
 		bool hasEventRegistered(CreatureEventType_t event) const {

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -111,17 +111,8 @@ enum MagicEffectClasses : uint8_t {
 	CONST_ME_LIGHTNING = 171,
 	CONST_ME_RAGIAZ_BONE_CAPSULE = 172,
 	CONST_ME_CRITICAL_HIT = 173,
-	// 174 are empty
-	CONST_ME_FISH_JUMP = 175,
-	CONST_ME_WAVE_BLUE = 176,
-	CONST_ME_WAVE_ORANGE = 177,
-	CONST_ME_WAVE_GREEN = 178,
-	CONST_ME_WAVE_RED = 179,
-	CONST_ME_WAVE_BLACK = 180,
-	CONST_ME_WAVE_YELLOW = 181,
-	CONST_ME_MAGIC_YELLOW = 182,
 
-	CONST_ME_LAST = CONST_ME_MAGIC_YELLOW,
+	CONST_ME_LAST = CONST_ME_CRITICAL_HIT,
 };
 
 enum ShootType_t : uint8_t {
@@ -181,57 +172,53 @@ enum ShootType_t : uint8_t {
 	CONST_ANI_GLOOTHSPEAR = 53,
 	CONST_ANI_SIMPLEARROW = 54,
 
-	CONST_ANI_LAST = CONST_ANI_SIMPLEARROW,
-
 	// for internal use, don't send to client
 	CONST_ANI_WEAPONTYPE = 0xFE, // 254
 };
 
+enum SpeakClasses : uint8_t {
+	TALKTYPE_SAY = 1,
+	TALKTYPE_WHISPER = 2,
+	TALKTYPE_YELL = 3,
+	TALKTYPE_PRIVATE_FROM = 4,
+	TALKTYPE_PRIVATE_TO = 5,
+	TALKTYPE_CHANNEL_Y = 7,
+	TALKTYPE_CHANNEL_O = 8,
+	TALKTYPE_PRIVATE_NP = 10,
+	TALKTYPE_PRIVATE_PN = 12,
+	TALKTYPE_BROADCAST = 13,
+	TALKTYPE_CHANNEL_R1 = 14, //red - #c text
+	TALKTYPE_PRIVATE_RED_FROM = 15, //@name@text
+	TALKTYPE_PRIVATE_RED_TO = 16, //@name@text
+	TALKTYPE_MONSTER_SAY = 36,
+	TALKTYPE_MONSTER_YELL = 37,
+
+	TALKTYPE_CHANNEL_R2 = 0xFF, //#d
+};
+
 enum MessageClasses : uint8_t {
-	MESSAGE_SAY = 1,
-	MESSAGE_WHISPER = 2,
-	MESSAGE_YELL = 3,
-	MESSAGE_PRIVATE_FROM = 4,
-	MESSAGE_PRIVATE_TO = 5,
-	MESSAGE_CHANNEL_MANAGEMENT = 6,
-	MESSAGE_CHANNEL = 7,
-	MESSAGE_CHANNEL_HIGHLIGHT = 8,
-	MESSAGE_SPELL = 9,
-	MESSAGE_NPC_FROM_START_BLOCK = 10,
-	MESSAGE_NPC_FROM = 11,
-	MESSAGE_NPC_TO = 12,
-	MESSAGE_GAMEMASTER_BROADCAST = 13,
-	MESSAGE_GAMEMASTER_CHANNEL = 14,
-	MESSAGE_GAMEMASTER_PRIVATE_FROM = 15,
-	MESSAGE_GAMEMASTER_PRIVATE_TO = 16,
-	MESSAGE_LOGIN = 17,
-	MESSAGE_ADMIN = 18,
-	MESSAGE_GAME = 19,
+	MESSAGE_STATUS_CONSOLE_BLUE = 4, /*FIXME Blue message in the console*/
+
+	MESSAGE_STATUS_CONSOLE_RED = 13, /*Red message in the console*/
+
+	MESSAGE_STATUS_DEFAULT = 17, /*White message at the bottom of the game window and in the console*/
+	MESSAGE_STATUS_WARNING = 18, /*Red message in game window and in the console*/
+	MESSAGE_EVENT_ADVANCE = 19, /*White message in game window and in the console*/
 	MESSAGE_GAME_HIGHLIGHT = 20,
-	MESSAGE_FAILURE = 21,
-	MESSAGE_LOOK = 22,
-	MESSAGE_DAMAGE_DEALED = 23,
+	MESSAGE_STATUS_SMALL = 21, /*White message at the bottom of the game window"*/
+	MESSAGE_INFO_DESCR = 22, /*Green message in game window and in the console*/
+	MESSAGE_DAMAGE_DEALT = 23,
 	MESSAGE_DAMAGE_RECEIVED = 24,
-	MESSAGE_HEAL = 25,
-	MESSAGE_EXP = 26,
+	MESSAGE_HEALED = 25,
+	MESSAGE_EXPERIENCE = 26,
 	MESSAGE_DAMAGE_OTHERS = 27,
-	MESSAGE_HEAL_OTHERS = 28,
-	MESSAGE_EXP_OTHERS = 29,
-	MESSAGE_STATUS = 30,
+	MESSAGE_HEALED_OTHERS = 28,
+	MESSAGE_EXPERIENCE_OTHERS = 29,
+	MESSAGE_EVENT_DEFAULT = 30, /*White message at the bottom of the game window and in the console*/
 	MESSAGE_LOOT = 31,
-	MESSAGE_TRADE_NPC = 32,
-	MESSAGE_GUILD = 33,
-	MESSAGE_PARTY_MANAGEMENT = 34,
-	MESSAGE_PARTY = 35,
-	MESSAGE_BARK_LOW = 36,
-	MESSAGE_BARK_LOUD = 37,
-	MESSAGE_REPORT = 38,
-	MESSAGE_HOTKEY_USE = 39,
-	MESSAGE_TUTORIAL_HINT = 40,
-	MESSAGE_THANKYOU = 41,
-	MESSAGE_MARKET = 42,
-	MESSAGE_MANA = 43,
-	MESSAGE_BEYOND_LAST = 44,
+
+	MESSAGE_EVENT_ORANGE = 36, /*Orange message in the console*/
+	MESSAGE_STATUS_CONSOLE_ORANGE = 37,  /*Orange message in the console*/
 };
 
 enum FluidColors_t : uint8_t {
@@ -332,7 +319,7 @@ const uint8_t fluidMap[] = {
 };
 
 enum SquareColor_t : uint8_t {
-	SQ_COLOR_BLACK = 0
+	SQ_COLOR_BLACK = 0,
 };
 
 enum TextColor_t : uint8_t {
@@ -345,7 +332,6 @@ enum TextColor_t : uint8_t {
 	TEXTCOLOR_SKYBLUE = 143,
 	TEXTCOLOR_PURPLE = 155,
 	TEXTCOLOR_RED = 180,
-	TEXTCOLOR_MAYARED = 194,
 	TEXTCOLOR_ORANGE = 198,
 	TEXTCOLOR_YELLOW = 210,
 	TEXTCOLOR_WHITE_EXP = 215,
@@ -401,12 +387,10 @@ enum WeaponAction_t : uint8_t {
 };
 
 enum WieldInfo_t {
-	WIELDINFO_NONE = 0 << 0,
 	WIELDINFO_LEVEL = 1 << 0,
 	WIELDINFO_MAGLV = 1 << 1,
-	WIELDINFO_SKILL = 1 << 2,
-	WIELDINFO_VOCREQ = 1 << 3,
-	WIELDINFO_PREMIUM = 1 << 4,
+	WIELDINFO_VOCREQ = 1 << 2,
+	WIELDINFO_PREMIUM = 1 << 3,
 };
 
 enum Skulls_t : uint8_t {
@@ -445,7 +429,7 @@ enum GuildEmblems_t : uint8_t {
 
 enum item_t : uint16_t {
 	ITEM_BROWSEFIELD = 460, // for internal use
-
+	
 	ITEM_DEPOT_NULL = 25452, // for internal use
 
 	ITEM_DEPOT_I = 25453,
@@ -464,7 +448,6 @@ enum item_t : uint16_t {
 	ITEM_DEPOT_XIV = 25466,
 	ITEM_DEPOT_XV = 25467,
 	ITEM_DEPOT_XVI = 25468,
-	ITEM_DEPOT_XVII = 25469,
 
 	ITEM_FIREFIELD_PVP_FULL = 1487,
 	ITEM_FIREFIELD_PVP_MEDIUM = 1488,
@@ -472,10 +455,7 @@ enum item_t : uint16_t {
 	ITEM_FIREFIELD_PERSISTENT_FULL = 1492,
 	ITEM_FIREFIELD_PERSISTENT_MEDIUM = 1493,
 	ITEM_FIREFIELD_PERSISTENT_SMALL = 1494,
-
-	ITEM_FIREFIELD_NOPVP_FULL = 1500,
-	ITEM_FIREFIELD_NOPVP_MEDIUM = 1501,
-	ITEM_FIREFIELD_NOPVP_SMALL = 1502,
+	ITEM_FIREFIELD_NOPVP = 1500,
 
 	ITEM_POISONFIELD_PVP = 1490,
 	ITEM_POISONFIELD_PERSISTENT = 1496,
@@ -488,12 +468,10 @@ enum item_t : uint16_t {
 	ITEM_MAGICWALL = 1497,
 	ITEM_MAGICWALL_PERSISTENT = 1498,
 	ITEM_MAGICWALL_SAFE = 11098,
-	ITEM_MAGICWALL_NOPVP = 20669,
 
 	ITEM_WILDGROWTH = 1499,
 	ITEM_WILDGROWTH_PERSISTENT = 2721,
 	ITEM_WILDGROWTH_SAFE = 11099,
-	ITEM_WILDGROWTH_NOPVP = 20670,
 
 	ITEM_BAG = 1987,
 
@@ -508,7 +486,9 @@ enum item_t : uint16_t {
 	ITEM_LOCKER1 = 2589,
 	ITEM_INBOX = 14404,
 	ITEM_MARKET = 14405,
+	ITEM_TIBIACOIN = 24774,
 	ITEM_STORE_INBOX = 26052,
+	ITEM_GOLD_POUCH = 26377,
 
 	ITEM_MALE_CORPSE = 3058,
 	ITEM_FEMALE_CORPSE = 3065,
@@ -567,35 +547,13 @@ enum PlayerFlags : uint64_t {
 	PlayerFlag_IsAlwaysPremium = static_cast<uint64_t>(1) << 37,
 };
 
-enum ReloadTypes_t {
-	RELOAD_TYPE_ACTIONS = 1,
-	RELOAD_TYPE_CONFIG = 2,
-	RELOAD_TYPE_CREATURESCRIPTS = 3,
-	RELOAD_TYPE_MONSTERS = 4,
-	RELOAD_TYPE_MOVEMENTS = 5,
-	RELOAD_TYPE_NPCS = 6,
-	RELOAD_TYPE_RAIDS = 7,
-	RELOAD_TYPE_SPELLS = 8,
-	RELOAD_TYPE_TALKACTIONS = 9,
-	RELOAD_TYPE_ITEMS = 10,
-	RELOAD_TYPE_WEAPONS = 11,
-	RELOAD_TYPE_QUESTS = 12,
-	RELOAD_TYPE_MOUNTS = 13,
-	RELOAD_TYPE_GLOBALEVENTS = 14,
-	RELOAD_TYPE_EVENTS = 15,
-	RELOAD_TYPE_CHAT = 16,
-	RELOAD_TYPE_GLOBAL = 17,
-	RELOAD_TYPE_COMMANDS = 18,
-	RELOAD_TYPE_MODULES = 19,
-};
-
 static constexpr int32_t CHANNEL_GUILD = 0x00;
 static constexpr int32_t CHANNEL_PARTY = 0x01;
 static constexpr int32_t CHANNEL_PRIVATE = 0xFFFF;
 
-static constexpr auto CHANNEL_CAST = 40;
+static constexpr int32_t CHANNEL_CAST = 40;
+const std::string LIVE_CAST_CHAT_NAME = "Live Cast Chat";
 
-static constexpr auto LIVE_CAST_CHAT_NAME = "Spectator Chat";
 
 //Reserved player storage key ranges;
 //[10000000 - 20000000];

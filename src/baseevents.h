@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ class Event
 {
 	public:
 		explicit Event(LuaScriptInterface* interface);
+		explicit Event(const Event* copy);
 		virtual ~Event() = default;
 
 		virtual bool configureEvent(const pugi::xml_node& node) = 0;
@@ -51,7 +52,7 @@ class Event
 class BaseEvents
 {
 	public:
-		constexpr BaseEvents() = default;
+ 		constexpr BaseEvents() = default;
 		virtual ~BaseEvents() = default;
 
 		bool loadFromXml();
@@ -82,6 +83,8 @@ class CallBack
 		LuaScriptInterface* scriptInterface = nullptr;
 
 		bool loaded = false;
+
+		std::string callbackName;
 };
 
 #endif

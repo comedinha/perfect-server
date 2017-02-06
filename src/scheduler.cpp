@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ void Scheduler::threadMain()
 
 uint32_t Scheduler::addEvent(SchedulerTask* task)
 {
-	bool do_signal;
+	bool do_signal = false;
 	eventLock.lock();
 
 	if (getState() == THREAD_STATE_RUNNING) {
@@ -132,7 +132,3 @@ void Scheduler::shutdown()
 	eventSignal.notify_one();
 }
 
-SchedulerTask* createSchedulerTask(uint32_t delay, std::function<void (void)> f)
-{
-	return new SchedulerTask(delay, std::move(f));
-}

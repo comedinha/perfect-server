@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ void printXMLError(const std::string& where, const std::string& fileName, const 
 	std::cout << '^' << std::endl;
 }
 
-static uint32_t circularShift(int bits, uint32_t value)
+inline static uint32_t circularShift(int bits, uint32_t value)
 {
 	return (value << bits) | (value >> (32 - bits));
 }
@@ -271,9 +271,9 @@ std::string asUpperCaseString(std::string source)
 	return source;
 }
 
-StringVector explodeString(const std::string& inString, const std::string& separator, int32_t limit/* = -1*/)
+StringVec explodeString(const std::string& inString, const std::string& separator, int32_t limit/* = -1*/)
 {
-	StringVector returnVector;
+	StringVec returnVector;
 	std::string::size_type start = 0, end = 0;
 
 	while (--limit != -1 && (end = inString.find(separator, start)) != std::string::npos) {
@@ -285,9 +285,9 @@ StringVector explodeString(const std::string& inString, const std::string& separ
 	return returnVector;
 }
 
-IntegerVector vectorAtoi(const StringVector& stringVector)
+IntegerVec vectorAtoi(const StringVec& stringVector)
 {
-	IntegerVector returnVector;
+	IntegerVec returnVector;
 	for (const auto& string : stringVector) {
 		returnVector.push_back(std::stoi(string));
 	}
@@ -589,14 +589,6 @@ MagicEffectNames magicEffectNames = {
 	{"lightning",		CONST_ME_LIGHTNING },
 	{"ragiazbonecapsule",		CONST_ME_RAGIAZ_BONE_CAPSULE},
 	{"criticalhit",		CONST_ME_CRITICAL_HIT},
-	{"fishjump",		CONST_ME_FISH_JUMP},
-	{"waveblue",		CONST_ME_WAVE_BLUE},
-	{"waveorange",		CONST_ME_WAVE_ORANGE},
-	{"wavegreen",		CONST_ME_WAVE_GREEN},
-	{"wavered",			CONST_ME_WAVE_RED},
-	{"waveblack",		CONST_ME_WAVE_BLACK},
-	{"waveyellow",		CONST_ME_WAVE_YELLOW},
-	{"magicyellow",		CONST_ME_MAGIC_YELLOW},
 };
 
 ShootTypeNames shootTypeNames = {
@@ -1020,7 +1012,7 @@ const char* getReturnMessage(ReturnValue value)
 	switch (value) {
 		case RETURNVALUE_REWARDCHESTISEMPTY:
 			return "The chest is currently empty. You did not take part in any battles in the last seven days or already claimed your reward.";
-
+		
 		case RETURNVALUE_DESTINATIONOUTOFREACH:
 			return "Destination is out of reach.";
 
@@ -1199,39 +1191,7 @@ const char* getReturnMessage(ReturnValue value)
 		case RETURNVALUE_YOUARENOTTHEOWNER:
 			return "You are not the owner.";
 
-		case RETURNVALUE_NOSUCHRAIDEXISTS:
-			return "No such raid exists.";
-
-		case RETURNVALUE_ANOTHERRAIDISALREADYEXECUTING:
-			return "Another raid is already executing.";
-
-		case RETURNVALUE_NOTENOUGHFISTLEVEL:
-			return "You do not have enough fist level";
-
-		case RETURNVALUE_NOTENOUGHCLUBLEVEL:
-			return "You do not have enough club level";
-
-		case RETURNVALUE_NOTENOUGHSWORDLEVEL:
-			return "You do not have enough sword level";
-
-		case RETURNVALUE_NOTENOUGHAXELEVEL:
-			return "You do not have enough axe level";
-
-		case RETURNVALUE_NOTENOUGHDISTANCELEVEL:
-			return "You do not have enough distance level";
-
-		case RETURNVALUE_NOTENOUGHSHIELDLEVEL:
-			return "You do not have enough shielding level";
-
-		case RETURNVALUE_NOTENOUGHFISHLEVEL:
-			return "You do not have enough fishing level";
-
 		default: // RETURNVALUE_NOTPOSSIBLE, etc
 			return "Sorry, not possible.";
 	}
-}
-
-int64_t OTSYS_TIME()
-{
-	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }

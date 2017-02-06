@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,9 +37,23 @@ class Connection;
 class Quest;
 class ProtocolGame;
 class ProtocolSpectator;
-using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
+typedef std::shared_ptr<ProtocolGame> ProtocolGame_ptr;
 
 extern Game g_game;
+
+struct TextMessage
+{
+	MessageClasses type = MESSAGE_STATUS_DEFAULT;
+	std::string text;
+	Position position;
+	struct {
+		int32_t value = 0;
+		TextColor_t color;
+	} primary, secondary;
+
+	TextMessage() = default;
+	TextMessage(MessageClasses type, std::string text) : type(type), text(std::move(text)) {}
+};
 
 class ProtocolGame final : public ProtocolGameBase
 {
@@ -48,7 +62,8 @@ class ProtocolGame final : public ProtocolGameBase
 			return "gameworld protocol";
 		}
 
-		explicit ProtocolGame(Connection_ptr connection) : ProtocolGameBase(connection) {}
+		explicit ProtocolGame(Connection_ptr connection):
+ 			ProtocolGameBase(connection) {}
 
 		void login(const std::string& name, uint32_t accnumber, OperatingSystem_t operatingSystem);
 		void logout(bool displayEffect, bool forced);
@@ -61,31 +76,27 @@ class ProtocolGame final : public ProtocolGameBase
 			return knownCreatureSet;
 		}
 
-		bool startRecord();
-		bool stopRecord();
-		std::vector<NetworkMessage> protocolRecords;
-
 		typedef std::unordered_map<Player*, ProtocolGame_ptr> LiveCastsMap;
 		typedef std::vector<ProtocolSpectator_ptr> CastSpectatorVec;
 
 		/** \brief Adds a spectator from the spectators vector.
-		*  \param spectatorClient pointer to the \ref ProtocolSpectator object representing the spectator
-		*/
+		 *  \param spectatorClient pointer to the \ref ProtocolSpectator object representing the spectator
+		 */
 		void addSpectator(ProtocolSpectator_ptr spectatorClient);
 
 		/** \brief Removes a spectator from the spectators vector.
-		*  \param spectatorClient pointer to the \ref ProtocolSpectator object representing the spectator
-		*/
+		 *  \param spectatorClient pointer to the \ref ProtocolSpectator object representing the spectator
+		 */
 		void removeSpectator(ProtocolSpectator_ptr spectatorClient);
 
 		/** \brief Starts the live cast.
-		*  \param password live cast password(optional)
-		*  \returns bool type indicating whether starting the cast was successful
+		 *  \param password live cast password(optional)
+		 *  \returns bool type indicating whether starting the cast was successful
 		*/
 		bool startLiveCast(const std::string& password = "");
 
 		/** \brief Stops the live cast and disconnects all spectators.
-		*  \returns bool type indicating whether stopping the cast was successful
+		 *  \returns bool type indicating whether stopping the cast was successful
 		*/
 		bool stopLiveCast();
 
@@ -103,29 +114,30 @@ class ProtocolGame final : public ProtocolGameBase
 
 		std::mutex liveCastLock;
 
+		void toggleChatLiveCast(bool enable);
 		/** \brief Adds a new live cast to the list of available casts
-		*/
+		 */
 		void registerLiveCast();
 
 		/** \brief Removes a live cast from the list of available casts
-		*/
+		 */
 		void unregisterLiveCast();
 
 		/** \brief Update live cast info in the database.
-		*  \param player pointer to the casting \ref Player object
-		*  \param client pointer to the caster's \ref ProtocolGame object
-		*/
+		 *  \param player pointer to the casting \ref Player object
+		 *  \param client pointer to the caster's \ref ProtocolGame object
+		 */
 		void updateLiveCastInfo();
 
 		/** \brief Clears all live casts. Used to make sure there aro no live cast db rows left should a crash occur.
-		*  \warning Only supposed to be called once.
-		*/
+		 *  \warning Only supposed to be called once.
+		 */
 		static void clearLiveCastInfo();
 
 		/** \brief Finds the caster's \ref ProtocolGame object
-		*  \param player pointer to the casting \ref Player object
-		*  \returns A pointer to the \ref ProtocolGame of the caster
-		*/
+		 *  \param player pointer to the casting \ref Player object
+		 *  \returns A pointer to the \ref ProtocolGame of the caster
+		 */
 		static ProtocolGame_ptr getLiveCast(Player* player) {
 			const auto it = liveCasts.find(player);
 			return it != liveCasts.end() ? it->second : nullptr;
@@ -143,33 +155,42 @@ class ProtocolGame final : public ProtocolGameBase
 			return !liveCastPassword.empty();
 		}
 
+		bool isChatEnabled() const {
+			return castChatEnabled;
+		}
+
 		static const LiveCastsMap& getLiveCasts() {
 			return liveCasts;
 		}
 
+		bool existSpecByName(std::string& name) {
+			for (auto& spectator : spectators) {
+				if (name == spectator->getName()) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		/** \brief Allows spectators to send text messages to the caster
-		*   and then get broadcast to the rest of the spectators
-		*  \param text string containing the text message
-		*/
-		void broadcastSpectatorMessage(const std::string& name, const std::string& text, MessageClasses type) {
+		 *   and then get broadcast to the rest of the spectators
+		 *  \param text string containing the text message
+		 */
+		void broadcastSpectatorMessage(const std::string& name, const std::string& text) {
 			if (player) {
-				sendChannelMessage(name, text, type, CHANNEL_CAST);
+				sendChannelMessage(name, text, TALKTYPE_CHANNEL_Y, CHANNEL_CAST);
+			}
+		}
+
+		void broadcastMessage(const std::string& name, const std::string& text) {
+			if (player) {
+				sendChannelMessage(name, text, TALKTYPE_CHANNEL_O, CHANNEL_CAST);
 			}
 		}
 
 		static uint8_t getMaxLiveCastCount() {
 			return std::numeric_limits<int8_t>::max();
-		}
-
-		const bool isSpectatorMuted(uint32_t spectatorId) {
-			return std::find(muteList.begin(), muteList.end(), spectatorId) != muteList.end();
-		}
-
-		std::shared_ptr<ProtocolSpectator> getSpectatorByName(const std::string& name);
-
-		bool isIpBan(uint32_t ip) {
-			auto it = banMap.find(ip);
-			return it != banMap.end();
 		}
 
 	private:
@@ -197,7 +218,9 @@ class ProtocolGame final : public ProtocolGameBase
 		void parseFightModes(NetworkMessage& msg);
 		void parseAttack(NetworkMessage& msg);
 		void parseFollow(NetworkMessage& msg);
+		void parseEquipObject(NetworkMessage& msg);
 
+		void parseBugReport(NetworkMessage& msg);
 		void parseDebugAssert(NetworkMessage& msg);
 
 		void parseThrow(NetworkMessage& msg);
@@ -246,35 +269,30 @@ class ProtocolGame final : public ProtocolGameBase
 		void parseEditVip(NetworkMessage& msg);
 
 		void parseRotateItem(NetworkMessage& msg);
-		void parseWrapItem(NetworkMessage& msg);
 
 		//Channel tabs
 		void parseChannelInvite(NetworkMessage& msg);
 		void parseChannelExclude(NetworkMessage& msg);
 		void parseOpenChannel(NetworkMessage& msg);
 		void parseOpenPrivateChannel(NetworkMessage& msg);
-		virtual void parseCloseChannel(NetworkMessage& msg);
+		void parseCloseChannel(NetworkMessage& msg);
 
 		//Send functions
-		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
-		void sendClosePrivate(uint16_t channelId);
-		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
-		void sendChannelsDialog();
-		void sendOpenPrivateChannel(const std::string& receiver);
 		void sendIcons(uint16_t icons);
 		void sendFYIBox(const std::string& message);
-
 		void sendDistanceShoot(const Position& from, const Position& to, uint8_t type);
 		void sendCreatureHealth(const Creature* creature);
+		// Skull Time
 		void sendCreatureTurn(const Creature* creature, uint32_t stackpos);
+		void sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos = nullptr);
 
 		void sendQuestLog();
 		void sendQuestLine(const Quest* quest);
 
 		void sendChangeSpeed(const Creature* creature, uint32_t speed);
-		void sendCancelTarget(uint32_t creatureId, OperatingSystem_t operatingSystem);
 		void sendCancelTarget();
 		void sendCreatureOutfit(const Creature* creature, const Outfit_t& outfit);
+		void sendTextMessage(const TextMessage& message);
 		void sendReLoginWindow(uint8_t unfairFightReduction);
 
 		void sendTutorial(uint8_t tutorialId);
@@ -288,6 +306,9 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendShop(Npc* npc, const ShopInfoList& itemList);
 		void sendCloseShop();
+		void sendCoinBalance();
+		void updateCoinBalance();
+		void sendResourceBalance(uint64_t money, uint64_t bank);
 		void sendSaleItemList(const std::list<ShopInfo>& shop);
 		void sendMarketEnter(uint32_t depotId);
 		void sendMarketLeave();
@@ -302,20 +323,16 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendTextWindow(uint32_t windowTextId, Item* item, uint16_t maxlen, bool canWrite);
 		void sendTextWindow(uint32_t windowTextId, uint32_t itemId, const std::string& text);
-		void sendHouseWindow(uint32_t listId, uint32_t windowTextId, const std::string& text);
+		void sendHouseWindow(uint32_t windowTextId, const std::string& text);
 		void sendOutfitWindow();
 
 		void sendUpdatedVIPStatus(uint32_t guid, VipStatus_t newStatus);
 
 		void sendFightModes();
 
-		void sendCreatureSquare(const Creature* creature, SquareColor_t color, uint8_t length);
-
-		void sendSpellCooldown(uint8_t spellId, uint32_t time);
-		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
+		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
 
 		//tiles
-
 		void sendAddTileItem(const Position& pos, uint32_t stackpos, const Item* item);
 		void sendUpdateTileItem(const Position& pos, uint32_t stackpos, const Item* item);
 		void sendRemoveTileThing(const Position& pos, uint32_t stackpos);
@@ -330,10 +347,11 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendCloseContainer(uint8_t cid);
 
+		//inventory
+		void sendItems();
+
 		//messages
 		void sendModalWindow(const ModalWindow& modalWindow);
-
-		//Help functions
 
 		void MoveUpCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
 		void MoveDownCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
@@ -358,10 +376,8 @@ class ProtocolGame final : public ProtocolGameBase
 		}
 
 		static LiveCastsMap liveCasts; ///< Stores all available casts.
-		
-		std::atomic<bool> isCaster { false }; ///< Determines if this \ref ProtocolGame object is casting
-		// just to name spectators with a number
-		uint32_t spectatorsCount;
+
+		std::atomic<bool> isCaster {false}; ///< Determines if this \ref ProtocolGame object is casting
 
 		/// list of spectators \warning This variable should only be accessed after locking \ref liveCastLock
 		CastSpectatorVec spectators;
@@ -371,13 +387,8 @@ class ProtocolGame final : public ProtocolGameBase
 
 		/// Password used to access the live cast
 		std::string liveCastPassword;
-		void checkCommand(const std::string& text);
 
-		std::vector<uint32_t> muteList;
-
-		std::unordered_map<uint32_t, std::string> banMap;
-
-		void sendInventory();
+		bool castChatEnabled = true;
 };
 
 #endif

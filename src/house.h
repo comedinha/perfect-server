@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,8 +109,8 @@ enum AccessHouseLevel_t {
 	HOUSE_OWNER = 3,
 };
 
-using HouseTileList = std::list<HouseTile*>;
-using HouseBedItemList = std::list<BedItem*>;
+typedef std::list<HouseTile*> HouseTileList;
+typedef std::list<BedItem*> HouseBedItemList;
 
 class HouseTransferItem final : public Item
 {
@@ -227,7 +227,6 @@ class House
 	private:
 		bool transferToDepot() const;
 		bool transferToDepot(Player* player) const;
-		bool wrapItems(Item* item) const;
 
 		AccessList guestList;
 		AccessList subOwnerList;
@@ -256,7 +255,7 @@ class House
 		bool isLoaded = false;
 };
 
-using HouseMap = std::map<uint32_t, House*>;
+typedef std::map<uint32_t, House*> HouseMap;
 
 enum RentPeriod_t {
 	RENTPERIOD_DAILY,

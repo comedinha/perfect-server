@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,8 @@ enum itemAttrTypes : uint32_t {
 	ITEM_ATTRIBUTE_CHARGES = 1 << 20,
 	ITEM_ATTRIBUTE_FLUIDTYPE = 1 << 21,
 	ITEM_ATTRIBUTE_DOORID = 1 << 22,
+	ITEM_ATTRIBUTE_SPECIAL = 1 << 23,
+	ITEM_ATTRIBUTE_IMBUINGSLOTS = 1 << 24,
 };
 
 enum VipStatus_t : uint8_t {
@@ -91,7 +93,6 @@ enum ChannelEvent_t : uint8_t {
 	CHANNELEVENT_LEAVE = 1,
 	CHANNELEVENT_INVITE = 2,
 	CHANNELEVENT_EXCLUDE = 3,
-	CHANNELEVENT_PENDING = 3,
 };
 
 enum CreatureType_t : uint8_t {
@@ -408,15 +409,6 @@ enum ReturnValue {
 	RETURNVALUE_CANONLYUSEONESHIELD,
 	RETURNVALUE_NOPARTYMEMBERSINRANGE,
 	RETURNVALUE_YOUARENOTTHEOWNER,
-	RETURNVALUE_NOSUCHRAIDEXISTS,
-	RETURNVALUE_ANOTHERRAIDISALREADYEXECUTING,
-	RETURNVALUE_NOTENOUGHFISTLEVEL,
-	RETURNVALUE_NOTENOUGHCLUBLEVEL,
-	RETURNVALUE_NOTENOUGHSWORDLEVEL,
-	RETURNVALUE_NOTENOUGHAXELEVEL,
-	RETURNVALUE_NOTENOUGHDISTANCELEVEL,
-	RETURNVALUE_NOTENOUGHSHIELDLEVEL,
-	RETURNVALUE_NOTENOUGHFISHLEVEL,
 	RETURNVALUE_REWARDCHESTISEMPTY,
 };
 
@@ -575,8 +567,8 @@ struct CombatDamage
 	}
 };
 
-using MarketOfferList = std::list<MarketOffer>;
-using HistoryMarketOfferList = std::list<HistoryMarketOffer>;
-using ShopInfoList = std::list<ShopInfo>;
+typedef std::list<MarketOffer> MarketOfferList;
+typedef std::list<HistoryMarketOffer> HistoryMarketOfferList;
+typedef std::list<ShopInfo> ShopInfoList;
 
 #endif

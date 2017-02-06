@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,11 @@
 extern Game g_game;
 
 Container::Container(uint16_t type) :
-	Container(type, items[type].maxItems) {}
+	Container(type, items[type].maxItems) {
+		if (getID() == ITEM_GOLD_POUCH) {
+			pagination = true;
+		}
+	}
 
 Container::Container(uint16_t type, uint16_t size, bool unlocked /*= true*/, bool pagination /*= false*/) :
 	Item(type),
@@ -40,7 +44,7 @@ Container::Container(Tile* tile) : Container(ITEM_BROWSEFIELD, 30, false, true)
 	TileItemVector* itemVector = tile->getItemList();
 	if (itemVector) {
 		for (Item* item : *itemVector) {
-			if ((item->getContainer() || item->hasProperty(CONST_PROP_MOVEABLE)) && !item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
+			if (item->getContainer() || item->hasProperty(CONST_PROP_MOVEABLE)) {
 				itemlist.push_front(item);
 				item->setParent(this);
 			}
@@ -215,48 +219,48 @@ bool Container::isHoldingItem(const Item* item) const
 
 void Container::onAddContainerItem(Item* item)
 {
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, getPosition(), false, true, 2, 2, 2, 2);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, getPosition(), false, true, 2, 2, 2, 2);
 
 	//send to client
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->sendAddContainerItem(this, item);
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->onAddContainerItem(item);
 	}
 }
 
 void Container::onUpdateContainerItem(uint32_t index, Item* oldItem, Item* newItem)
 {
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, getPosition(), false, true, 2, 2, 2, 2);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, getPosition(), false, true, 2, 2, 2, 2);
 
 	//send to client
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->sendUpdateContainerItem(this, index, newItem);
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->onUpdateContainerItem(this, oldItem, newItem);
 	}
 }
 
 void Container::onRemoveContainerItem(uint32_t index, Item* item)
 {
-	SpectatorHashSet spectators;
-	g_game.map.getSpectators(spectators, getPosition(), false, true, 2, 2, 2, 2);
+	SpectatorVec list;
+	g_game.map.getSpectators(list, getPosition(), false, true, 2, 2, 2, 2);
 
 	//send change to client
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->sendRemoveContainerItem(this, index);
 	}
 
 	//event methods
-	for (Creature* spectator : spectators) {
+	for (Creature* spectator : list) {
 		spectator->getPlayer()->onRemoveContainerItem(this, item);
 	}
 }

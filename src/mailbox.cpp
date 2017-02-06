@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,8 +91,7 @@ void Mailbox::postRemoveNotification(Thing* thing, const Cylinder* newParent, in
 bool Mailbox::sendItem(Item* item) const
 {
 	std::string receiver;
-	std::string sender;
-	if (!getReceiver(item, receiver, sender)) {
+	if (!getReceiver(item, receiver)) {
 		return false;
 	}
 
@@ -106,29 +105,13 @@ bool Mailbox::sendItem(Item* item) const
 		if (g_game.internalMoveItem(item->getParent(), player->getInbox(), INDEX_WHEREEVER,
 		                            item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
 			g_game.transformItem(item, item->getID() + 1);
-			player->onReceiveMail();
+			player->onReceiveMail(false);
 			return true;
 		}
 	} else {
 		Player tmpPlayer(nullptr);
 		if (!IOLoginData::loadPlayerByName(&tmpPlayer, receiver)) {
 			return false;
-		}
-
-		Player* tmpPlayerSender = g_game.getPlayerByName(sender);
-		if (tmpPlayerSender) {
-			if (tmpPlayer.getWorldId() != tmpPlayerSender->getWorldId()) {
-				return false;
-			}
-		} else {
-			Player tmpSenderPlayer(nullptr);
-			if (!IOLoginData::loadPlayerByName(&tmpSenderPlayer, sender)) {
-				return false;
-			}
-
-			if (tmpPlayer.getWorldId() != tmpSenderPlayer.getWorldId()) {
-				return false;
-			}
 		}
 
 		if (g_game.internalMoveItem(item->getParent(), tmpPlayer.getInbox(), INDEX_WHEREEVER,
@@ -141,12 +124,12 @@ bool Mailbox::sendItem(Item* item) const
 	return false;
 }
 
-bool Mailbox::getReceiver(Item* item, std::string& name, std::string& person) const
+bool Mailbox::getReceiver(Item* item, std::string& name) const
 {
 	const Container* container = item->getContainer();
 	if (container) {
 		for (Item* containerItem : container->getItemList()) {
-			if (containerItem->getID() == ITEM_LABEL && getReceiver(containerItem, name, person)) {
+			if (containerItem->getID() == ITEM_LABEL && getReceiver(containerItem, name)) {
 				return true;
 			}
 		}
@@ -158,7 +141,6 @@ bool Mailbox::getReceiver(Item* item, std::string& name, std::string& person) co
 		return false;
 	}
 
-	person = item->getWriter();
 	name = getFirstLine(text);
 	trimString(name);
 	return true;

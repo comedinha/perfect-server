@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,17 +25,17 @@
 #include "networkmessage.h"
 
 class Protocol;
-using Protocol_ptr = std::shared_ptr<Protocol>;
+typedef std::shared_ptr<Protocol> Protocol_ptr;
 class OutputMessage;
-using OutputMessage_ptr = std::shared_ptr<OutputMessage>;
+typedef std::shared_ptr<OutputMessage> OutputMessage_ptr;
 class Connection;
-using Connection_ptr = std::shared_ptr<Connection>;
-using ConnectionWeak_ptr = std::weak_ptr<Connection>;
+typedef std::shared_ptr<Connection> Connection_ptr;
+typedef std::weak_ptr<Connection> ConnectionWeak_ptr;
 class ServiceBase;
-using Service_ptr = std::shared_ptr<ServiceBase>;
+typedef std::shared_ptr<ServiceBase> Service_ptr;
 class ServicePort;
-using ServicePort_ptr = std::shared_ptr<ServicePort>;
-using ConstServicePort_ptr = std::shared_ptr<const ServicePort>;
+typedef std::shared_ptr<ServicePort> ServicePort_ptr;
+typedef std::shared_ptr<const ServicePort> ConstServicePort_ptr;
 
 class ConnectionManager
 {
@@ -66,12 +66,9 @@ class Connection : public std::enable_shared_from_this<Connection>
 		enum { write_timeout = 30 };
 		enum { read_timeout = 30 };
 
-		enum ConnectionState_t : int8_t {
-			CONNECTION_STATE_DISCONNECTED,
-			CONNECTION_STATE_CONNECTING_STAGE1,
-			CONNECTION_STATE_CONNECTING_STAGE2,
-			CONNECTION_STATE_GAME,
-			CONNECTION_STATE_PENDING
+		enum ConnectionState_t {
+			CONNECTION_STATE_OPEN,
+			CONNECTION_STATE_CLOSED,
 		};
 
 		enum { FORCE_CLOSE = true };
@@ -82,13 +79,10 @@ class Connection : public std::enable_shared_from_this<Connection>
 			writeTimer(io_service),
 			service_port(std::move(service_port)),
 			socket(io_service) {
-			connectionState = CONNECTION_STATE_PENDING;
+			connectionState = CONNECTION_STATE_OPEN;
+			receivedFirst = false;
 			packetsSent = 0;
 			timeConnected = time(nullptr);
-			receivedFirst = false;
-			serverNameTime = 0;
-			receivedName = false;
-			receivedLastChar = false;
 		}
 		~Connection();
 
@@ -120,8 +114,9 @@ class Connection : public std::enable_shared_from_this<Connection>
 		friend class ServicePort;
 
 		NetworkMessage msg;
+		
 		void broadcastMessage(OutputMessage_ptr msg);
-		void dispatchBroadcastMessage(const OutputMessage_ptr& msg);
+ 		void dispatchBroadcastMessage(const OutputMessage_ptr& msg);
 
 		boost::asio::deadline_timer readTimer;
 		boost::asio::deadline_timer writeTimer;
@@ -138,12 +133,8 @@ class Connection : public std::enable_shared_from_this<Connection>
 		time_t timeConnected;
 		uint32_t packetsSent;
 
-		int8_t connectionState;
+		bool connectionState;
 		bool receivedFirst;
-
-		uint32_t serverNameTime;
-		bool receivedName;
-		bool receivedLastChar;
 };
 
 #endif

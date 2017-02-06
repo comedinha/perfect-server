@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include "creature.h"
 #include "luascript.h"
+#include <unordered_set>
 
 #include <set>
 
@@ -79,7 +80,7 @@ class NpcEventsHandler
 		void onCreatureAppear(Creature* creature);
 		void onCreatureDisappear(Creature* creature);
 		void onCreatureMove(Creature* creature, const Position& oldPos, const Position& newPos);
-		void onCreatureSay(Creature* creature, MessageClasses, const std::string& text);
+		void onCreatureSay(Creature* creature, SpeakClasses, const std::string& text);
 		void onPlayerTrade(Player* player, int32_t callback, uint16_t itemId, uint8_t count, uint8_t amount, bool ignore = false, bool inBackpacks = false);
 		void onPlayerCloseChannel(Player* player);
 		void onPlayerEndTrade(Player* player);
@@ -193,7 +194,7 @@ class Npc final : public Creature
 		void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
 		                            const Tile* oldTile, const Position& oldPos, bool teleport) final;
 
-		void onCreatureSay(Creature* creature, MessageClasses type, const std::string& text) final;
+		void onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text) final;
 		void onThink(uint32_t interval) final;
 		std::string getDescription(int32_t lookDistance) const final;
 
@@ -209,7 +210,10 @@ class Npc final : public Creature
 		bool getNextStep(Direction& dir, uint32_t& flags) final;
 
 		void setIdle(bool idle);
-		void updateIdleStatus();
+ 		void updateIdleStatus();
+ 		bool getIdleStatus() const {
+ 			return isIdle;
+ 		}
 
 		bool canWalkTo(const Position& fromPos, Direction dir) const;
 		bool getRandomStep(Direction& dir) const;
@@ -224,7 +228,7 @@ class Npc final : public Creature
 		std::map<std::string, std::string> parameters;
 
 		std::set<Player*> shopPlayerSet;
-		std::set<Player*> spectators;
+		std::unordered_set<Player*> spectators;
 
 		std::string name;
 		std::string filename;

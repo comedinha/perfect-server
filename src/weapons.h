@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,9 +91,6 @@ class Weapon : public Event
 		uint32_t getReqMagLv() const {
 			return magLevel;
 		}
-		uint32_t getReqSkillLv() const {
-			return skillLevel;
-		}
 		bool isPremium() const {
 			return premium;
 		}
@@ -119,7 +116,6 @@ class Weapon : public Event
 
 		uint32_t level = 0;
 		uint32_t magLevel = 0;
-		uint32_t skillLevel = 0;
 		uint32_t mana = 0;
 		uint32_t manaPercent = 0;
 		uint32_t soul = 0;
@@ -129,7 +125,6 @@ class Weapon : public Event
 		bool enabled = true;
 		bool premium = false;
 		bool wieldUnproperly = false;
-		bool swing = false;
 
 	private:
 		static void decrementItemCount(Item* item);

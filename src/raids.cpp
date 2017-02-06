@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -228,9 +228,7 @@ bool Raid::loadFromXml(const std::string& filename)
 	}
 
 	//sort by delay time
-	std::sort(raidEvents.begin(), raidEvents.end(), [](const RaidEvent* lhs, const RaidEvent* rhs) {
-		return lhs->getDelay() < rhs->getDelay();
-	});
+	std::sort(raidEvents.begin(), raidEvents.end(), RaidEvent::compareEvents);
 
 	loaded = true;
 	return true;
@@ -316,24 +314,24 @@ bool AnnounceEvent::configureRaidEvent(const pugi::xml_node& eventNode)
 	if (typeAttribute) {
 		std::string tmpStrValue = asLowerCaseString(typeAttribute.as_string());
 		if (tmpStrValue == "warning") {
-			messageType = MESSAGE_ADMIN;
+			messageType = MESSAGE_STATUS_WARNING;
 		} else if (tmpStrValue == "event") {
-			messageType = MESSAGE_GAME;
+			messageType = MESSAGE_EVENT_ADVANCE;
 		} else if (tmpStrValue == "default") {
-			messageType = MESSAGE_STATUS;
+			messageType = MESSAGE_EVENT_DEFAULT;
 		} else if (tmpStrValue == "description") {
-			messageType = MESSAGE_LOOK;
+			messageType = MESSAGE_INFO_DESCR;
 		} else if (tmpStrValue == "smallstatus") {
-			messageType = MESSAGE_FAILURE;
+			messageType = MESSAGE_STATUS_SMALL;
 		} else if (tmpStrValue == "blueconsole") {
-			messageType = MESSAGE_PRIVATE_FROM;
+			messageType = MESSAGE_STATUS_CONSOLE_BLUE;
 		} else if (tmpStrValue == "redconsole") {
-			messageType = MESSAGE_GAMEMASTER_BROADCAST;
+			messageType = MESSAGE_STATUS_CONSOLE_RED;
 		} else {
 			std::cout << "[Notice] Raid: Unknown type tag missing for announce event. Using default: " << static_cast<uint32_t>(messageType) << std::endl;
 		}
 	} else {
-		messageType = MESSAGE_GAME;
+		messageType = MESSAGE_EVENT_ADVANCE;
 		std::cout << "[Notice] Raid: type tag missing for announce event. Using default: " << static_cast<uint32_t>(messageType) << std::endl;
 	}
 	return true;

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,6 +68,8 @@ bool Events::load()
 				info.creatureOnAreaCombat = event;
 			} else if (methodName == "onTargetCombat") {
 				info.creatureOnTargetCombat = event;
+			} else if (methodName == "onDrainHealth") {
+				info.creatureOnDrainHealth = event;
 			} else {
 				std::cout << "[Warning - Events::load] Unknown creature method: " << methodName << std::endl;
 			}
@@ -110,12 +112,6 @@ bool Events::load()
 				info.playerOnGainSkillTries = event;
 			} else {
 				std::cout << "[Warning - Events::load] Unknown player method: " << methodName << std::endl;
-			}
-		} else if (className == "Monster") {
-			if (methodName == "onSpawn") {
-				info.monsterOnSpawn = event;
-			} else {
-				std::cout << "[Warning - Events::load] Unknown monster method: " << methodName << std::endl;
 			}
 		} else {
 			std::cout << "[Warning - Events::load] Unknown class: " << className << std::endl;
@@ -233,6 +229,59 @@ ReturnValue Events::eventCreatureOnTargetCombat(Creature* creature, Creature* ta
 
 	scriptInterface.resetScriptEnv();
 	return returnValue;
+}
+
+void Events::eventCreatureOnDrainHealth(Creature* creature, Creature* attacker, CombatType_t& typePrimary, int32_t& damagePrimary, CombatType_t& typeSecondary, int32_t& damageSecondary, TextColor_t& colorPrimary, TextColor_t& colorSecondary)
+{
+	if (info.creatureOnDrainHealth == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventCreatureOnDrainHealth] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.creatureOnDrainHealth, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.creatureOnDrainHealth);
+
+	if (creature) {
+		LuaScriptInterface::pushUserdata<Creature>(L, creature);
+		LuaScriptInterface::setCreatureMetatable(L, -1, creature);
+	} else {
+		lua_pushnil(L);
+	}
+
+	if (attacker) {
+		LuaScriptInterface::pushUserdata<Creature>(L, attacker);
+		LuaScriptInterface::setCreatureMetatable(L, -1, attacker);
+	} else {
+		lua_pushnil(L);
+	}
+
+	lua_pushnumber(L, typePrimary);
+	lua_pushnumber(L, damagePrimary);
+	lua_pushnumber(L, typeSecondary);
+	lua_pushnumber(L, damageSecondary);
+	lua_pushnumber(L, colorPrimary);
+	lua_pushnumber(L, colorSecondary);
+
+	if (scriptInterface.protectedCall(L, 8, 6) != 0) {
+		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
+	} else {
+		typePrimary = LuaScriptInterface::getNumber<CombatType_t>(L, -6);
+		damagePrimary = LuaScriptInterface::getNumber<int32_t>(L, -5);
+		typeSecondary = LuaScriptInterface::getNumber<CombatType_t>(L, -4);
+		damageSecondary = LuaScriptInterface::getNumber<int32_t>(L, -3);
+		colorPrimary = LuaScriptInterface::getNumber<TextColor_t>(L, -2);
+		colorSecondary = LuaScriptInterface::getNumber<TextColor_t>(L, -1);
+		lua_pop(L, 6);
+	}
+
+	scriptInterface.resetScriptEnv();
 }
 
 // Party
@@ -728,33 +777,4 @@ void Events::eventPlayerOnGainSkillTries(Player* player, skills_t skill, uint64_
 	}
 
 	scriptInterface.resetScriptEnv();
-}
-
-// Monster
-bool Events::eventMonsterOnSpawn(Monster* monster, const Position& position, bool isStartup)
-{
-	// Monster:onSpawn(position, isStartup) or Monster.onSpawn(self, position, isStartup)
-	if (info.monsterOnSpawn == -1) {
-		return true;
-	}
-
-	if (!scriptInterface.reserveScriptEnv()) {
-		std::cout << "[Error - Events::eventMonsterOnSpawn] Call stack overflow" << std::endl;
-		return false;
-	}
-
-	ScriptEnvironment* env = scriptInterface.getScriptEnv();
-	env->setScriptId(info.monsterOnSpawn, &scriptInterface);
-
-	lua_State* L = scriptInterface.getLuaState();
-	scriptInterface.pushFunction(info.monsterOnSpawn);
-
-	LuaScriptInterface::pushUserdata<Monster>(L, monster);
-	LuaScriptInterface::setMetatable(L, -1, "Monster");
-
-	LuaScriptInterface::pushPosition(L, position);
-
-	LuaScriptInterface::pushBoolean(L, isStartup);
-
-	return scriptInterface.callFunction(3);
 }

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2014  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,17 +35,14 @@
 #include "connection.h"
 #include "scheduler.h"
 #include "ban.h"
-#include "spells.h"
 
 extern Game g_game;
 extern ConfigManager g_config;
 extern Chat* g_chat;
-extern Spells* g_spells;
 
-ProtocolSpectator::ProtocolSpectator(Connection_ptr connection) :
+ProtocolSpectator::ProtocolSpectator(Connection_ptr connection):
 	ProtocolGameBase(connection),
-	client(nullptr),
-	spectatorName("spectator")
+	client(nullptr)
 {
 
 }
@@ -132,7 +129,11 @@ void ProtocolSpectator::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 	password.erase(password.begin()); //Erase whitespace from the front of the password string
-	g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::login, std::static_pointer_cast<ProtocolSpectator>(shared_from_this()), characterName, password)));
+	std::size_t pos = characterName.find("[");
+	if (pos != std::string::npos) {
+		pos -= 1;
+	}
+	g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::login, std::static_pointer_cast<ProtocolSpectator>(shared_from_this()), characterName.substr(0, pos), password)));
 }
 
 void ProtocolSpectator::sendEmptyTileOnPlayerPos(const Tile* tile, const Position& playerPos)
@@ -154,9 +155,9 @@ void ProtocolSpectator::addDummyCreature(NetworkMessage& msg, const uint32_t& cr
 {
 	// add dummy creature
 	CreatureType_t creatureType = CREATURETYPE_NPC;
-	if (creatureID <= 0x10000000) {
+	if(creatureID <= 0x10000000) {
 		creatureType = CREATURETYPE_PLAYER;
-	} else if (creatureID <= 0x40000000) {
+	} else if(creatureID <= 0x40000000) {
 		creatureType = CREATURETYPE_MONSTER;
 	}
 	msg.addByte(0x6A);
@@ -231,23 +232,6 @@ void ProtocolSpectator::syncChatChannels()
 		}
 	}
 	sendChannel(CHANNEL_CAST, LIVE_CAST_CHAT_NAME, nullptr, nullptr);
-	std::ostringstream ss;
-	ss << "Spectators: ";
-	size_t scount = 0;
-	for (auto it : client->getLiveCastSpectators()) {
-		ss << static_cast<ProtocolSpectator_ptr>(it)->getSpectatorName();
-		scount++;
-		if (!(scount == client->getSpectatorCount())) {
-			ss << ", ";
-		}
-	}
-	if (scount > 0) {
-		ss << ".";
-	} else {
-		ss << "{Only you}";
-	}
-	sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str()), CHANNEL_CAST);
-	sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !name or !help."), CHANNEL_CAST);
 }
 
 void ProtocolSpectator::syncOpenContainers()
@@ -282,11 +266,6 @@ void ProtocolSpectator::login(const std::string& liveCastName, const std::string
 			return;
 		}
 
-		if (liveCasterProtocol->isIpBan(getIP())) {
-			disconnectSpectator("You have been banned from this cast.");
-			return;
-		}
-
 		player = _player;
 		player->incrementReferenceCounter();
 		eventConnect = 0;
@@ -299,26 +278,28 @@ void ProtocolSpectator::login(const std::string& liveCastName, const std::string
 		syncOpenContainers();
 
 		liveCasterProtocol->addSpectator(std::static_pointer_cast<ProtocolSpectator>(shared_from_this()));
+		std::stringstream ss;
+		ss << "Spectators (" << client->getSpectatorCount() << ")";
+		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastMessage, client, "", ss.str())));
 	} else {
 		disconnectSpectator("Live cast no longer exists. Please relogin to refresh the list.");
 	}
+	
 }
 
 void ProtocolSpectator::logout()
 {
-	acceptPackets = false;
-	if (client && player) {
-		player->sendChannelEvent(CHANNEL_CAST, spectatorName, CHANNELEVENT_LEAVE);
-		client->removeSpectator(std::static_pointer_cast<ProtocolSpectator>(shared_from_this()));
-		player->decrementReferenceCounter();
-		player = nullptr;
-	}
 	disconnect();
+	release();
 }
 
 void ProtocolSpectator::parsePacket(NetworkMessage& msg)
 {
 	if (!acceptPackets || g_game.getGameState() == GAME_STATE_SHUTDOWN || msg.getLength() <= 0) {
+		return;
+	}
+
+	if (getThis() == nullptr) {
 		return;
 	}
 
@@ -343,8 +324,15 @@ void ProtocolSpectator::parsePacket(NetworkMessage& msg)
 		case 0x1D: g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::sendPingBack, getThis()))); break;
 		case 0x1E: g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::sendPing, getThis()))); break;
 		//Reset viewed position/direction if the spectator tries to move in any way
-		case 0x64: case 0x65: case 0x66: case 0x67: case 0x68: case 0x6A: case 0x6B: case 0x6C: case 0x6D: case 0x6F: case 0x70: case 0x71:
-		case 0x72: g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::sendCancelWalk, getThis()))); break;
+		case 0x64: 
+		case 0x65:
+		case 0x66: 
+		case 0x67: 
+		case 0x68: 
+		case 0x6A: 
+		case 0x6B: 
+		case 0x6C: 
+		case 0x6D: g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::sendCancelWalk, getThis()))); break;
 		case 0x96: parseSpectatorSay(msg); break;
 		default:
 			break;
@@ -357,60 +345,87 @@ void ProtocolSpectator::parsePacket(NetworkMessage& msg)
 
 void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 {
-	if (!client) {
+	if (!client->isChatEnabled()) {
 		return;
 	}
 
-	MessageClasses type = (MessageClasses)msg.getByte();
-	uint16_t channelId = 0;
+ SpeakClasses type = (SpeakClasses)msg.getByte();
+ uint16_t channelId = 0;
 
-	if (type == MESSAGE_CHANNEL) {
-		channelId = msg.get<uint16_t>();
-	} else {
-		return;
+ if (type == TALKTYPE_CHANNEL_Y) {
+  channelId = msg.get<uint16_t>();
+ }
+ else {
+  return;
+ }
+
+ const std::string text = msg.getString();
+
+ if (text.length() > 255 || channelId != CHANNEL_CAST || !client) {
+  return;
+ }
+
+ if (text.substr(0, 5) == "/nick" && text.length() > 6 && name.empty()) {
+  std::string newName = text.substr(6);
+  int iSpaces = 0;
+ unsigned int strSize = strlen(newName.c_str());
+ for(unsigned int iLoop = 0; iLoop < strSize; iLoop++ ) {
+	if(newName [iLoop] == ' ' ) {
+		iSpaces++;
 	}
+ }
 
-	const std::string text = msg.getString();
+  if (newName.length() > 20) {
+  	sendChannelMessage("", "Your nick have more than 20 letters.", TALKTYPE_CHANNEL_O, CHANNEL_CAST);
+  	return;
+  }
 
-	if (text.length() > 255 || channelId != CHANNEL_CAST) {
-		return;
-	}
+  if (iSpaces > 1) {
+  	sendChannelMessage("", "Your nick have more than one whitespace.", TALKTYPE_CHANNEL_O, CHANNEL_CAST);
+  	return;
+  }
 
-	time_t muteTime = getSpectatorExaust();
-	if (muteTime > std::time(nullptr)) {
-		std::ostringstream ss;
-		ss << "You are still exausted for " << muteTime - std::time(nullptr) << " seconds.";
-		sendTextMessage(TextMessage(MESSAGE_FAILURE, ss.str()), CHANNEL_CAST);
-		return;
-	}
-	setSpectatorExaust(std::time(nullptr) + 5);
+  if (client->existSpecByName(newName)) {
+  	sendChannelMessage("", "This name already exists, please choose another name.", TALKTYPE_CHANNEL_O, CHANNEL_CAST);
+  	return;
+  }
 
-	if (client->isSpectatorMuted(spectatorId)) {
-		sendTextMessage(TextMessage(MESSAGE_FAILURE, "You have been muted."), CHANNEL_CAST);
-		return;
-	}
+  if (client) {
+   g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, "", (name.empty() ? "spectator" : name) + " changed nick to " + newName)));
+  }
+  name = newName;
+  return;
+ }
 
-	InstantSpell* instantSpell = g_spells->getInstantSpell(text);
-	if (instantSpell) {
-		return;
-	}
+ if (name.empty()) {
+ 	sendChannelMessage("", "You can not talk before choosing a nick with the /nick command.", TALKTYPE_CHANNEL_O, CHANNEL_CAST);
+ 	return;
+ }
+ 
+ if (OTSYS_TIME() < (lastTalkTime + 2000)) {
+ 	return;
+ }
 
-	if (parseCoomand(text)) {
-		return;
-	}
-
-	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, text, MESSAGE_CHANNEL)));
+ if (client) {
+ 	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, name, text)));
+ }
+ 
+ lastTalkTime = OTSYS_TIME();
 }
 
 void ProtocolSpectator::release()
 {
+	acceptPackets = false;
 	//dispatcher
 	if (client && player) {
-		player->sendChannelEvent(CHANNEL_CAST, spectatorName, CHANNELEVENT_LEAVE);
 		client->removeSpectator(std::static_pointer_cast<ProtocolSpectator>(shared_from_this()));
 		player->decrementReferenceCounter();
+		std::stringstream ss;
+		ss << "Spectators (" << client->getSpectatorCount() << ")";
+		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastMessage, client, "", ss.str())));
 		player = nullptr;
 	}
+
 	Protocol::release();
 	OutputMessagePool::getInstance().removeProtocolFromAutosend(shared_from_this());
 }
@@ -429,70 +444,4 @@ void ProtocolSpectator::onLiveCastStop()
 		player = nullptr;
 	}
 	disconnect();
-}
-
-bool ProtocolSpectator::parseCoomand(const std::string& text)
-{
-	if (text[0] == '!') {
-		StringVector t = explodeString(text.substr(1, text.length()), " ", 1);
-		if (t.size() > 0) {
-			toLowerCaseString(t[0]);
-			std::string command = t[0];
-			if (command == "spectators") {
-				std::ostringstream ss;
-				ss << "Spectators: ";
-				size_t scount = 0;
-				for (auto it : client->getLiveCastSpectators()) {
-					ss << static_cast<ProtocolSpectator_ptr>(it)->getSpectatorName();
-					scount++;
-					if (!(scount == client->getSpectatorCount())) {
-						ss << ", ";
-					}
-				}
-				ss << ".";
-
-				sendTextMessage(TextMessage(MESSAGE_GUILD, ss.str()), CHANNEL_CAST);
-			} else if (command == "name") {
-				if (t.size() == 2) {
-					std::string newName = t[1];
-
-					bool allowChangeName = true;
-					for (auto it : client->getLiveCastSpectators()) {
-						if (newName == (it)->getSpectatorName()) {
-							allowChangeName = false;
-						}
-					}
-
-					if (!allowChangeName) {
-						sendTextMessage(TextMessage(MESSAGE_GUILD, "Other spectator is using this name."), CHANNEL_CAST);
-						return true;
-					}
-
-					if (newName == player->getName()) {
-						sendTextMessage(TextMessage(MESSAGE_GUILD, "You not allow to use this name."), CHANNEL_CAST);
-						return true;
-					}
-
-					if (newName.empty()) {
-						sendTextMessage(TextMessage(MESSAGE_GUILD, "Please say !name {YOURNAME}."), CHANNEL_CAST);
-						return true;
-					}
-
-					if (newName.length() > 30) {
-						sendTextMessage(TextMessage(MESSAGE_GUILD, "Name invalid, please try again."), CHANNEL_CAST);
-						return true;
-					}
-
-					g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::broadcastSpectatorMessage, client, spectatorName, "my new name is " + newName, MESSAGE_GAMEMASTER_CHANNEL)));
-					spectatorName = newName;
-				}
-			} else if (command == "help") {
-				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !spectators, !name or !help."), CHANNEL_CAST);
-			}
-		}
-
-		return true;
-	}
-
-	return false;
 }

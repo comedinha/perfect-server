@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,6 +97,8 @@ enum AttrTypes_t {
 	ATTR_ARMOR = 31,
 	ATTR_HITCHANCE = 32,
 	ATTR_SHOOTRANGE = 33,
+	ATTR_SPECIAL = 34,
+	ATTR_IMBUINGSLOTS = 35,
 };
 
 enum Attr_ReadValue {
@@ -188,7 +190,7 @@ class ItemAttributes
 		uint32_t getCorpseOwner() const {
 			return getIntAttr(ITEM_ATTRIBUTE_CORPSEOWNER);
 		}
-
+		
 		void setDuration(int32_t time) {
 			setIntAttr(ITEM_ATTRIBUTE_DURATION, time);
 		}
@@ -207,7 +209,7 @@ class ItemAttributes
 		}
 
 	protected:
-		bool hasAttribute(itemAttrTypes type) const {
+		inline bool hasAttribute(itemAttrTypes type) const {
 			return (type & attributeBits) != 0;
 		}
 		void removeAttribute(itemAttrTypes type);
@@ -283,11 +285,11 @@ class ItemAttributes
 		Attribute& getAttr(itemAttrTypes type);
 
 	public:
-		static bool isIntAttrType(itemAttrTypes type) {
+		inline static bool isIntAttrType(itemAttrTypes type) {
 			return (type & 0x7FFE13) != 0;
 		}
-		static bool isStrAttrType(itemAttrTypes type) {
-			return (type & 0x1EC) != 0;
+		inline static bool isStrAttrType(itemAttrTypes type) {
+			return (type & 0x8001EC) != 0;
 		}
 
 		const std::forward_list<Attribute>& getList() const {
@@ -497,6 +499,7 @@ class Item : virtual public Thing
 		void setRewardCorpse() {
 			setCorpseOwner(static_cast<uint32_t>(std::numeric_limits<int32_t>::max()));
 		}
+
 		bool isRewardCorpse() {
 			return getCorpseOwner() == static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
 		}
@@ -601,6 +604,12 @@ class Item : virtual public Thing
 			}
 			return items[id].extraDefense;
 		}
+		int32_t getImbuingSlots() const {
+			if (hasAttribute(ITEM_ATTRIBUTE_IMBUINGSLOTS)) {
+				return getIntAttr(ITEM_ATTRIBUTE_IMBUINGSLOTS);
+			}
+			return items[id].imbuingSlots;
+		}
 		int32_t getSlotPosition() const {
 			return items[id].slotPosition;
 		}
@@ -646,10 +655,6 @@ class Item : virtual public Thing
 			const ItemType& it = items[id];
 			return it.rotatable && it.rotateTo;
 		}
-		bool isWrappable() const {
-			const ItemType& it = items[id];
-			return (it.wrappable && it.wrapTo) || it.unwrappable;
-		}
 		bool hasWalkStack() const {
 			return items[id].walkStack;
 		}
@@ -681,13 +686,7 @@ class Item : virtual public Thing
 			count = n;
 		}
 
-		static uint32_t countByType(const Item* i, int32_t subType) {
-			if (subType == -1 || subType == i->getSubType()) {
-				return i->getItemCount();
-			}
-
-			return 0;
-		}
+		static uint32_t countByType(const Item* i, int32_t subType);
 
 		void setDefaultSubtype();
 		uint16_t getSubType() const;
@@ -772,7 +771,16 @@ class Item : virtual public Thing
 		//Don't add variables here, use the ItemAttribute class.
 };
 
-using ItemList = std::list<Item*>;
-using ItemDeque = std::deque<Item*>;
+typedef std::list<Item*> ItemList;
+typedef std::deque<Item*> ItemDeque;
+
+inline uint32_t Item::countByType(const Item* i, int32_t subType)
+{
+	if (subType == -1 || subType == i->getSubType()) {
+		return i->getItemCount();
+	}
+
+	return 0;
+}
 
 #endif

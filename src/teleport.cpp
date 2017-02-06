@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,23 +75,12 @@ void Teleport::addThing(int32_t, Thing* thing)
 	Tile* destTile = g_game.map.getTile(destPos);
 	if (!destTile) {
 		return;
-	} else if (thing->getPosition() == destTile->getPosition()) {
-		return;
 	}
 
 	const MagicEffectClasses effect = Item::items[id].magicEffect;
 
 	if (Creature* creature = thing->getCreature()) {
-		const Player* player = creature->getPlayer();
 		Position origPos = creature->getPosition();
-		if (player && player->isPzLocked() && player->hasCondition(CONDITION_INFIGHT)) {
-			if (destTile->hasFlag(TILESTATE_NOPVPZONE) || destTile->hasFlag(TILESTATE_PROTECTIONZONE)) {
-				Position lastPos = creature->getLastPosition();
-				Tile* lastTile = g_game.map.getTile(lastPos);
-				g_game.map.moveCreature(*creature, *lastTile);
-				return;
-			}
-		}
 		g_game.internalCreatureTurn(creature, origPos.x > destPos.x ? DIRECTION_WEST : DIRECTION_EAST);
 		g_game.map.moveCreature(*creature, *destTile);
 		if (effect != CONST_ME_NONE) {
