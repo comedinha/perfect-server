@@ -67,6 +67,16 @@ void MonsterType::createLoot(Container* corpse)
 	bool canRerollLoot = false;
 	Player* owner = g_game.getPlayerByID(corpse->getCorpseOwner());
 	if (!owner || owner->getStaminaMinutes() > 840) {
+		/*for (int i = 0; i < 3; i++) {
+			if (owner->getPreyType(i) == 3 && name == owner->getPreyName(i)) {
+				uint32_t rand = uniform_random(0, 100);
+				if (rand <= owner->getPreyValue(i)) {
+					canRerollLoot = true;
+					break;
+				}
+			}
+		}*/
+		
 		for (auto it = info.lootItems.rbegin(), end = info.lootItems.rend(); it != end; ++it) {
 			auto itemList = createLootItem(*it, canRerollLoot);
 			if (itemList.empty()) {
@@ -95,8 +105,6 @@ void MonsterType::createLoot(Container* corpse)
 			} else {
 				ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
 			}
-
-			ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
 
 			if (owner->getParty()) {
 				owner->getParty()->broadcastPartyLoot(ss.str());
