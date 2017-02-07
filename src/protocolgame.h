@@ -143,6 +143,10 @@ class ProtocolGame final : public ProtocolGameBase
 			return !liveCastPassword.empty();
 		}
 
+		bool isChatEnabled() const {
+			return castChatEnabled;
+		}
+
 		static const LiveCastsMap& getLiveCasts() {
 			return liveCasts;
 		}
@@ -288,6 +292,9 @@ class ProtocolGame final : public ProtocolGameBase
 
 		void sendShop(Npc* npc, const ShopInfoList& itemList);
 		void sendCloseShop();
+		void updateCoinBalance();
+		void sendCoinBalance();
+		void sendResourceBalance(uint8_t type, uint64_t value);
 		void sendSaleItemList(const std::list<ShopInfo>& shop);
 		void sendMarketEnter(uint32_t depotId);
 		void sendMarketLeave();
@@ -378,6 +385,7 @@ class ProtocolGame final : public ProtocolGameBase
 		std::unordered_map<uint32_t, std::string> banMap;
 
 		void sendInventory();
+		bool castChatEnabled = true;
 };
 
 #endif

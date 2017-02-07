@@ -361,6 +361,10 @@ void ProtocolSpectator::parseSpectatorSay(NetworkMessage& msg)
 		return;
 	}
 
+	if (!client->isChatEnabled()) {
+		return;
+	}
+
 	MessageClasses type = (MessageClasses)msg.getByte();
 	uint16_t channelId = 0;
 

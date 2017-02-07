@@ -522,6 +522,7 @@ class LuaScriptInterface
 		static int luaGameGetMonsterCount(lua_State* L);
 		static int luaGameGetPlayerCount(lua_State* L);
 		static int luaGameGetNpcCount(lua_State* L);
+		static int luaGameGetPreyMonsters(lua_State* L);
 
 		static int luaGameGetTowns(lua_State* L);
 		static int luaGameGetHouses(lua_State* L);
@@ -904,6 +905,16 @@ class LuaScriptInterface
 		static int luaPlayerGetStamina(lua_State* L);
 		static int luaPlayerSetStamina(lua_State* L);
 
+		static int luaPlayerGetPreyStamina(lua_State* L);
+		static int luaPlayerGetPreyType(lua_State* L);
+		static int luaPlayerGetPreyValue(lua_State* L);
+		static int luaPlayerGetPreyName(lua_State* L);
+
+		static int luaPlayerSetPreyStamina(lua_State* L);
+		static int luaPlayerSetPreyType(lua_State* L);
+		static int luaPlayerSetPreyValue(lua_State* L);
+		static int luaPlayerSetPreyName(lua_State* L);
+
 		static int luaPlayerGetSoul(lua_State* L);
 		static int luaPlayerAddSoul(lua_State* L);
 		static int luaPlayerGetMaxSoul(lua_State* L);
@@ -1167,6 +1178,7 @@ class LuaScriptInterface
 		static int luaItemTypeGetAttack(lua_State* L);
 		static int luaItemTypeGetDefense(lua_State* L);
 		static int luaItemTypeGetExtraDefense(lua_State* L);
+		static int luaItemTypeGetImbuingSlots(lua_State* L);
 		static int luaItemTypeGetArmor(lua_State* L);
 		static int luaItemTypeGetWeaponType(lua_State* L);
 

@@ -864,6 +864,8 @@ ReturnValue Game::internalMoveCreature(Creature& creature, Tile& toTile, uint32_
 		}
 	}
 
+	Creature* myCreature = &creature;
+	myCreature->setLastPosition(myCreature->getPosition());
 	return RETURNVALUE_NOERROR;
 }
 
@@ -964,6 +966,9 @@ void Game::playerMoveItem(Player* player, const Position& fromPos,
 
 	const Tile* toCylinderTile = toCylinder->getTile();
 	const Position& mapToPos = toCylinderTile->getPosition();
+	if (toCylinderTile->getItemCount() > 100) {
+		return;
+	}
 
 	//hangable item specific code
 	if (item->isHangable() && toCylinderTile->hasFlag(TILESTATE_SUPPORTS_HANGABLE)) {
@@ -3900,7 +3905,7 @@ void Game::combatGetTypeInfo(CombatType_t combatType, Creature* target, TextColo
 	}
 }
 
-bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage)
+bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage, bool isEvent)
 {
 	const Position& targetPos = target->getPosition();
 	if (damage.primary.value > 0) {
@@ -3927,7 +3932,7 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 					creatureEvent->executeHealthChange(target, attacker, damage);
 				}
 				damage.origin = ORIGIN_NONE;
-				return combatChangeHealth(attacker, target, damage);
+				return combatChangeHealth(attacker, target, damage, true);
 			}
 		}
 
@@ -4043,13 +4048,17 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 			}
 		}
 
+		TextMessage message;
+		message.position = targetPos;
+
+		if (!isEvent) {
+			g_events->eventCreatureOnDrainHealth(target, attacker, damage.primary.type, damage.primary.value, damage.secondary.type, damage.secondary.value, message.primary.color, message.secondary.color);
+		}
+
 		int32_t healthChange = damage.primary.value + damage.secondary.value;
 		if (healthChange == 0) {
 			return true;
 		}
-
-		TextMessage message;
-		message.position = targetPos;
 
 		SpectatorHashSet spectators;
 		if (target->hasCondition(CONDITION_MANASHIELD) && damage.primary.type != COMBAT_UNDEFINEDDAMAGE) {
@@ -4145,7 +4154,7 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 					creatureEvent->executeHealthChange(target, attacker, damage);
 				}
 				damage.origin = ORIGIN_NONE;
-				return combatChangeHealth(attacker, target, damage);
+				return combatChangeHealth(attacker, target, damage, true);
 			}
 		}
 
@@ -5298,20 +5307,39 @@ void Game::playerCreateMarketOffer(uint32_t playerId, uint8_t type, uint16_t spr
 		}
 
 		std::forward_list<Item*> itemList = getMarketItemList(it.wareId, amount, depotLocker);
-		if (itemList.empty()) {
+		if (itemList.empty() && it.id != ITEM_TIBIACOIN) {
 			return;
 		}
 
+		Database* db = Database::getInstance();
 		if (it.stackable) {
-			uint16_t tmpAmount = amount;
-			for (Item* item : itemList) {
-				uint16_t removeCount = std::min<uint16_t>(tmpAmount, item->getItemCount());
-				tmpAmount -= removeCount;
-				internalRemoveItem(item, removeCount);
+			if (it.id != ITEM_TIBIACOIN) {
+				uint16_t tmpAmount = amount;
+				for (Item* item : itemList) {
+					uint16_t removeCount = std::min<uint16_t>(tmpAmount, item->getItemCount());
+					tmpAmount -= removeCount;
+					internalRemoveItem(item, removeCount);
 
-				if (tmpAmount == 0) {
-					break;
+					if (tmpAmount == 0) {
+						break;
+					}
 				}
+			} else {
+				uint32_t playerId = player->getGUID();
+				DBResult_ptr result = db.storeQuery("SELECT `coins` FROM `players` WHERE `id`=" + std::to_string(playerId));
+				if (!result) {
+					return;
+				}
+
+				if (amount % g_config.getNumber(ConfigManager::STORE_COIN_PACKET) != 0) {
+					return;
+				}
+
+				if (result->getNumber<uint32_t>("coins") < amount) {
+					return;
+				}
+
+				db.executeQuery("UPDATE `players` SET `coins`=`coins`-" + std::to_string(amount) + " WHERE `id`=" + std::to_string(playerId));
 			}
 		} else {
 			for (Item* item : itemList) {
@@ -5321,6 +5349,12 @@ void Game::playerCreateMarketOffer(uint32_t playerId, uint8_t type, uint16_t spr
 
 		player->bankBalance -= fee;
 	} else {
+		if (it.id == ITEM_TIBIACOIN) {
+			if (amount % g_config.getNumber(ConfigManager::STORE_COIN_PACKET) != 0) {
+				return;
+			}
+		}
+
 		uint64_t totalPrice = static_cast<uint64_t>(price) * amount;
 		totalPrice += fee;
 		if (totalPrice > player->bankBalance) {
@@ -5365,16 +5399,21 @@ void Game::playerCancelMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		}
 
 		if (it.stackable) {
-			uint16_t tmpAmount = offer.amount;
-			while (tmpAmount > 0) {
-				int32_t stackCount = std::min<int32_t>(100, tmpAmount);
-				Item* item = Item::CreateItem(it.id, stackCount);
-				if (internalAddItem(player->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
-					delete item;
-					break;
-				}
+			if (it.id != ITEM_TIBIACOIN) {
+				uint16_t tmpAmount = offer.amount;
+				while (tmpAmount > 0) {
+					int32_t stackCount = std::min<int32_t>(100, tmpAmount);
+					Item* item = Item::CreateItem(it.id, stackCount);
+					if (internalAddItem(player->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
+						delete item;
+						break;
+					}
 
-				tmpAmount -= stackCount;
+					tmpAmount -= stackCount;
+				}
+			} else {
+				Database* db = Database::getInstance();
+				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(offer.amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
 			int32_t subType;
@@ -5402,6 +5441,7 @@ void Game::playerCancelMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 
 void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16_t counter, uint16_t amount)
 {
+	bool isTibiaCoin = false;
 	if (amount == 0 || amount > 64000) {
 		return;
 	}
@@ -5438,7 +5478,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		}
 
 		std::forward_list<Item*> itemList = getMarketItemList(it.wareId, amount, depotLocker);
-		if (itemList.empty()) {
+		if (itemList.empty() && it.id != ITEM_TIBIACOIN) {
 			return;
 		}
 
@@ -5452,15 +5492,20 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		}
 
 		if (it.stackable) {
-			uint16_t tmpAmount = amount;
-			for (Item* item : itemList) {
-				uint16_t removeCount = std::min<uint16_t>(tmpAmount, item->getItemCount());
-				tmpAmount -= removeCount;
-				internalRemoveItem(item, removeCount);
+			if (it.id != ITEM_TIBIACOIN) {
+				uint16_t tmpAmount = amount;
+				for (Item* item : itemList) {
+					uint16_t removeCount = std::min<uint16_t>(tmpAmount, item->getItemCount());
+					tmpAmount -= removeCount;
+					internalRemoveItem(item, removeCount);
 
-				if (tmpAmount == 0) {
-					break;
+					if (tmpAmount == 0) {
+						break;
+					}
 				}
+			} else {
+				Database* db = Database::getInstance();
+				db.executeQuery("UPDATE `players` SET `coins`=`coins`-" + std::to_string(amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
 			for (Item* item : itemList) {
@@ -5471,16 +5516,22 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		player->bankBalance += totalPrice;
 
 		if (it.stackable) {
-			uint16_t tmpAmount = amount;
-			while (tmpAmount > 0) {
-				uint16_t stackCount = std::min<uint16_t>(100, tmpAmount);
-				Item* item = Item::CreateItem(it.id, stackCount);
-				if (internalAddItem(buyerPlayer->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
-					delete item;
-					break;
-				}
+			if (it.id != ITEM_TIBIACOIN) {
+				uint16_t tmpAmount = amount;
+				while (tmpAmount > 0) {
+					uint16_t stackCount = std::min<uint16_t>(100, tmpAmount);
+					Item* item = Item::CreateItem(it.id, stackCount);
+					if (internalAddItem(buyerPlayer->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
+						delete item;
+						break;
+					}
 
-				tmpAmount -= stackCount;
+					tmpAmount -= stackCount;
+				}
+			} else {
+				isTibiaCoin = true;
+				Database* db = Database::getInstance();
+				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(amount) + " WHERE `id`=" + std::to_string(buyerPlayer->getGUID()));
 			}
 		} else {
 			int32_t subType;
@@ -5503,7 +5554,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		if (buyerPlayer->isOffline()) {
 			delete buyerPlayer;
 		} else {
-			buyerPlayer->onReceiveMail();
+			buyerPlayer->onReceiveMail(isTibiaCoin);
 		}
 	} else {
 		if (totalPrice > player->bankBalance) {
@@ -5513,16 +5564,22 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 		player->bankBalance -= totalPrice;
 
 		if (it.stackable) {
-			uint16_t tmpAmount = amount;
-			while (tmpAmount > 0) {
-				uint16_t stackCount = std::min<uint16_t>(100, tmpAmount);
-				Item* item = Item::CreateItem(it.id, stackCount);
-				if (internalAddItem(player->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
-					delete item;
-					break;
-				}
+			if (it.id != ITEM_TIBIACOIN) {
+				uint16_t tmpAmount = amount;
+				while (tmpAmount > 0) {
+					uint16_t stackCount = std::min<uint16_t>(100, tmpAmount);
+					Item* item = Item::CreateItem(it.id, stackCount);
+					if (internalAddItem(player->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT) != RETURNVALUE_NOERROR) {
+						delete item;
+						break;
+					}
 
-				tmpAmount -= stackCount;
+					tmpAmount -= stackCount;
+				}
+			} else {
+				isTibiaCoin = true;
+				Database* db = Database::getInstance();
+				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
 			int32_t subType;
@@ -5549,7 +5606,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 			IOLoginData::increaseBankBalance(offer.playerId, totalPrice);
 		}
 
-		player->onReceiveMail();
+		player->onReceiveMail(isTibiaCoin);
 	}
 
 	const int32_t marketOfferDuration = g_config.getNumber(ConfigManager::MARKET_OFFER_DURATION);

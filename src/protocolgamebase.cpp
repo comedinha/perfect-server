@@ -263,6 +263,49 @@ void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
 	}
 }
 
+void ProtocolGameBase::sendBlessStatus()
+{
+	NetworkMessage msg;
+	int32_t blessCount = 0;
+	for (int i = 0; i < 6; i++) {
+		if (player->hasBlessing(i)) {
+			blessCount += 1;
+		}
+	}
+
+	msg.addByte(0x9C);
+	if (blessCount >= 5) {
+		msg.add<uint16_t>(0x01);
+	} else {
+		msg.add<uint16_t>(0x00);
+	}
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGameBase::sendPreyData()
+{
+	NetworkMessage msg;
+	 for (int i = 0; i < 3; i++) {
+		 msg.addByte(0xE8);
+		 msg.addByte(i);
+
+		 msg.addByte(0x00);
+		 msg.addByte(0x00);
+		 msg.add<uint16_t>(0);
+	 }
+
+	 msg.addByte(0xEC);
+	 msg.addByte(0xEE);
+	 msg.addByte(0x0A);
+	 msg.add<uint64_t>(0);
+	 msg.addByte(0xEE);
+	 msg.addByte(0x01);
+	 msg.add<uint64_t>(0);
+	 msg.addByte(0xE9);
+	 msg.add<uint32_t>(0);
+	 writeToOutputBuffer(msg);
+}
+
 void ProtocolGameBase::AddWorldLight(NetworkMessage& msg, const LightInfo& lightInfo)
 {
 	msg.addByte(0x82);
@@ -579,26 +622,17 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 	uint32_t containerSize = container->size();
 	msg.add<uint16_t>(containerSize);
 	msg.add<uint16_t>(firstIndex);
+	if (firstIndex < containerSize) {
+		uint8_t itemsToSend = std::min<uint32_t>(std::min<uint32_t>(container->capacity(), containerSize - firstIndex), std::numeric_limits<uint8_t>::max());
 
-	uint32_t maxItemsToSend;
-
-	if (container->hasPagination() && firstIndex > 0) {
-		maxItemsToSend = std::min<uint32_t>(container->capacity(), containerSize - firstIndex);
-	} else {
-		maxItemsToSend = container->capacity();
-	}
-
-	if (firstIndex >= containerSize) {
-		msg.addByte(0x00);
-	} else {
-		msg.addByte(std::min<uint32_t>(maxItemsToSend, containerSize));
-
-		uint32_t i = 0;
-		const ItemDeque& itemList = container->getItemList();
-		for (auto it = itemList.begin() + firstIndex, end = itemList.end(); i < maxItemsToSend && it != end; ++it, ++i) {
+		msg.addByte(itemsToSend);
+		for (auto it = container->getItemList().begin() + firstIndex, end = it + itemsToSend; it != end; ++it) {
 			msg.addItem(*it);
 		}
+	} else {
+		msg.addByte(0x00);
 	}
+
 	writeToOutputBuffer(msg);
 }
 
@@ -683,7 +717,11 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	msg.addDouble(Creature::speedC, 3);
 
 	// can report bugs?
-	msg.addByte(0x01);
+	if (g_config.getBoolean(ConfigManager::ONLY_TUTORS_REPORT)) {
+		msg.addByte((player->getAccountType() >= ACCOUNT_TYPE_TUTOR) ? 0x01 : 0x00);
+	} else {
+		msg.addByte(0x01);
+	}
 
 	msg.addByte(0x00); // can change pvp framing option
 	msg.addByte(0x00); // expert mode button enabled
@@ -715,6 +753,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 
 	sendStats();
 	sendSkills();
+	sendBlessStatus();
 
 	//gameworld light-settings
 	LightInfo lightInfo;
@@ -758,6 +797,9 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	sendPremiumTrigger();
 	sendInventoryClientIds();
 	sendSkullTime();
+	if (g_config.getBoolean(ConfigManager::PREY_SYSTEM) && player->getVocationId() > 0) {
+		sendPreyData();
+	}
 	player->sendIcons();
 }
 
@@ -821,7 +863,11 @@ void ProtocolGameBase::sendBasicData()
 	msg.addByte(player->isPremium() ? 0x01 : 0x00);
 	msg.add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr) + (player->premiumDays * 24 * 60 * 60)));
 	msg.addByte(player->getVocation()->getClientId());
-	msg.addByte(0x00);
+	if (g_config.getBoolean(ConfigManager::PREY_SYSTEM)) {
+		msg.addByte((player->getVocationId() > 0) ? 0x01 : 0x00);
+	} else {
+		msg.addByte(0x00);
+	}
 
 	std::list<uint16_t> spells;
 	spells = g_spells->getSpellsByVocation(player->getVocationId());

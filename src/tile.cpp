@@ -634,7 +634,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags
 		}
 	} else if (const Item* item = thing.getItem()) {
 		const TileItemVector* items = getItemList();
-		if (items && items->size() >= 0x3E8) {
+		if (items && items->size() >= 100) {
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
@@ -855,7 +855,7 @@ void Tile::addThing(int32_t, Thing* thing)
 		}
 
 		TileItemVector* items = getItemList();
-		if (items && items->size() >= 0xFFFF) {
+		if (items && items->size() >= 100) {
 			return /*RETURNVALUE_NOTPOSSIBLE*/;
 		}
 
@@ -1465,7 +1465,7 @@ void Tile::internalAddThing(uint32_t, Thing* thing)
 		}
 
 		TileItemVector* items = makeItemList();
-		if (items->size() >= 0xFFFF) {
+		if (items->size() >= 100) {
 			return /*RETURNVALUE_NOTPOSSIBLE*/;
 		}
 

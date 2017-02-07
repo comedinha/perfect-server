@@ -780,6 +780,12 @@ void Creature::changeMana(int32_t manaChange)
 
 void Creature::gainHealth(Creature* healer, int32_t healthGain)
 {
+	if (healer) {
+		if (healer->getPlayer() && this->getMonster()) {
+			return;
+		}
+	}
+
 	changeHealth(healthGain);
 	if (healer) {
 		healer->onTargetCreatureGainHealth(this, healthGain);

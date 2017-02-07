@@ -299,7 +299,7 @@ bool ProtocolGame::startLiveCast(const std::string& password /*= ""*/)
 	registerLiveCast();
 	//Send a "dummy" channel
 	sendChannel(CHANNEL_CAST, LIVE_CAST_CHAT_NAME, nullptr, nullptr);
-	g_scheduler.addEvent(createSchedulerTask(150, std::bind(&ProtocolGameBase::broadcastTextMessage, getThis(), TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick and !help."), CHANNEL_CAST, false)));
+	g_scheduler.addEvent(createSchedulerTask(150, std::bind(&ProtocolGameBase::broadcastTextMessage, getThis(), TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick, !togglechat {on/off} and !help."), CHANNEL_CAST, false)));
 	return true;
 }
 
@@ -1292,16 +1292,55 @@ void ProtocolGame::sendCloseShop()
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
+void ProtocolGame::updateCoinBalance() {
+	NetworkMessage msg;
+	msg.addByte(0xF2);
+	msg.addByte(0x00);
+
+	writeToOutputBuffer(msg);
+
+	g_dispatcher.addTask(createTask(std::bind([](ProtocolGame_ptr client) {client->sendCoinBalance();}, getThis())));
+}
+
+void ProtocolGame::sendCoinBalance()
+{
+	Database* db = Database::getInstance();
+
+	std::ostringstream query;
+	query << "SELECT `coins` FROM `players` WHERE `id`=" + std::to_string(player->getGUID());
+	DBResult_ptr result = db.storeQuery(query.str());
+	if (!result) {
+		return;
+	}
+
+	NetworkMessage msg;
+	msg.addByte(0xF2);
+	msg.addByte(0x01);
+
+	msg.addByte(0xDF);
+	msg.addByte(0x01);
+
+	msg.add<uint32_t>(result->getNumber<uint32_t>("coins"));
+	msg.add<uint32_t>(result->getNumber<uint32_t>("coins"));
+
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendResourceBalance(uint8_t type, uint64_t value)
 {
 	NetworkMessage msg;
 	msg.addByte(0xEE);
-	msg.addByte(0x00);
-	msg.add<uint64_t>(player->getBankBalance());
+	msg.addByte(type);
+	msg.add<uint64_t>(value);
 
-	msg.addByte(0xEE);
-	msg.addByte(0x01);
-	msg.add<uint64_t>(player->getMoney());
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
+{
+	NetworkMessage msg;
+	sendResourceBalance(0, player->getBankBalance());
+	sendResourceBalance(1, player->getMoney());
 
 	msg.addByte(0x7B);
 	msg.add<uint64_t>(player->getMoney() + player->getBankBalance());
@@ -1384,18 +1423,9 @@ void ProtocolGame::sendSaleItemList(const std::list<ShopInfo>& shop)
 void ProtocolGame::sendMarketEnter(uint32_t depotId)
 {
 	NetworkMessage msg;
-	/*
-	msg.addByte(0xDF);
-	msg.addByte(0x01);
+	sendResourceBalance(0, player->getBankBalance());
+	updateCoinBalance();
 
-	msg.add<uint32_t>(player->getCoinsBalance());
-	msg.add<uint32_t>(player->getCoinsBalance());
-	*/
-
-	msg.addByte(0xEE);
-	msg.addByte(0x00);
-	msg.add<uint64_t>(player->getBankBalance());
-	
 	msg.addByte(0xF6);
 
 	msg.add<uint64_t>(player->getBankBalance());
@@ -1567,6 +1597,7 @@ void ProtocolGame::sendMarketCancelOffer(const MarketOfferEx& offer)
 	}
 
 	writeToOutputBuffer(msg);
+	updateCoinBalance();
 }
 
 void ProtocolGame::sendMarketBrowseOwnHistory(const HistoryMarketOfferList& buyOffers, const HistoryMarketOfferList& sellOffers)
@@ -2435,14 +2466,11 @@ void ProtocolGame::checkCommand(const std::string& text)
 	if (text[0] == '!') {
 		StringVector t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
-			toLowerCaseString(t[0]);
-
-			std::string command = t[0];
+			std::string command = toLowerCaseString(t[0]);
 
 			if ((command == "mute") || (command == "unmute")) {
 				if (t.size() == 2) {
-					toLowerCaseString(t[1]);
-					std::string toMute = t[1];
+					std::string toMute = toLowerCaseString(t[1]);
 
 					if (toMute == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2474,8 +2502,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 			} else if (command == "ban" || command == "unban") {
 				if (t.size() == 2) {
 
-					std::string toBan = t[1];
-					toLowerCaseString(toBan);
+					std::string toBan = toLowerCaseString(t[1]);
 
 					if (toBan == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2494,7 +2521,6 @@ void ProtocolGame::checkCommand(const std::string& text)
 							std::string name = spectator->getSpectatorName();
 
 							sendTextMessage(TextMessage(MESSAGE_GUILD, name + " has been banned."), CHANNEL_CAST);
-							toLowerCaseString(name);
 
 							banMap.insert(std::make_pair(spectator->getIP(), name));
 
@@ -2557,8 +2583,7 @@ void ProtocolGame::checkCommand(const std::string& text)
 				return;
 			} else if (command == "kick") {
 				if (t.size() == 2) {
-					toLowerCaseString(t[1]);
-					std::string toKick = t[1];
+					std::string toKick = toLowerCaseString(t[1]);
 
 					if (toKick == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2577,8 +2602,19 @@ void ProtocolGame::checkCommand(const std::string& text)
 					sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
 				}
 				return;
+			} else if (command == "togglechat") {
+				std::string enable = toLowerCaseString(t[1]);
+				if (enable == "on") {
+					castChatEnabled = true;
+					sendTextMessage(TextMessage(MESSAGE_GUILD, "O Chat foi ativado!"), CHANNEL_CAST, false);
+				} else {
+					castChatEnabled = false;
+					sendTextMessage(TextMessage(MESSAGE_GUILD, "O Chat foi desativado!"), CHANNEL_CAST, false);
+				}
+				updateLiveCastInfo();
+				return;
 			} else if (command == "help") {
-				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick and !help."), CHANNEL_CAST, false);
+				sendTextMessage(TextMessage(MESSAGE_GUILD, "Avalible commands: !mute, !unmute, !ban, !unban, !spectators, !password, !kick, !togglechat {on/off} and !help."), CHANNEL_CAST, false);
 				return;
 			}
 		}

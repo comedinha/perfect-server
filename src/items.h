@@ -55,6 +55,7 @@ enum ItemTypes_t {
 	ITEM_TYPE_KEY,
 	ITEM_TYPE_RUNE,
 	ITEM_TYPE_REWARDCHEST,
+	ITEM_TYPE_CARPET,
 	ITEM_TYPE_LAST,
 };
 
@@ -139,6 +140,9 @@ class ItemType
 		bool isRewardChest() const {
 			return (type == ITEM_TYPE_REWARDCHEST);
 		}
+		bool isCarpet() const {
+			return (type == ITEM_TYPE_CARPET);
+		}
 		bool isMailbox() const {
 			return (type == ITEM_TYPE_MAILBOX);
 		}
@@ -208,6 +212,7 @@ class ItemType
 		int32_t attack = 0;
 		int32_t defense = 0;
 		int32_t extraDefense = 0;
+		int32_t imbuingSlots = 0;
 		int32_t armor = 0;
 		int32_t rotateTo = 0;
 		int32_t runeMagLevel = 0;

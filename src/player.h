@@ -200,6 +200,22 @@ class Player final : public Creature, public Cylinder
 			return expBoostTime;
 		}
 
+		uint16_t getPreyStamina(uint16_t index) const {
+			return preyStaminaMinutes[index];
+		}
+
+		uint16_t getPreyType(uint16_t index) const {
+			return preyBonusType[index];
+		}
+
+		uint16_t getPreyValue(uint16_t index) const {
+			return preyBonusValue[index];
+		}
+
+		std::string getPreyName(uint16_t index) const {
+			return preyBonusName[index];
+		}
+
 		bool addOfflineTrainingTries(skills_t skill, uint64_t tries);
 
 		void addOfflineTrainingTime(int32_t addTime) {
@@ -527,7 +543,7 @@ class Player final : public Creature, public Cylinder
 		DepotChest* getDepotBox();
 		DepotChest* getDepotChest(uint32_t depotId, bool autoCreate);
 		DepotLocker* getDepotLocker(uint32_t depotId);
-		void onReceiveMail() const;
+		void onReceiveMail(bool isTibiaCoin) const;
 		bool isNearDepotBox() const;
 
 		bool canSee(const Position& pos) const final;
@@ -968,6 +984,16 @@ class Player final : public Creature, public Cylinder
 				client->sendSkills();
 			}
 		}
+		void sendBlessStatus() const {
+			if (client) {
+				client->sendBlessStatus();
+			}
+		}
+		void sendSkullTime() const {
+			if (client) {
+				client->sendSkullTime();
+			}
+		}
 		void sendTextMessage(MessageClasses mclass, const std::string& message, uint16_t channelId = 0, bool broadcast = true) const {
 			if (client) {
 				client->sendTextMessage(TextMessage(mclass, message), channelId, broadcast);
@@ -1178,11 +1204,11 @@ class Player final : public Creature, public Cylinder
 		bool startLiveCast(const std::string& password) {
 			return client && client->startLiveCast(password);
 		}
-		
+
 		bool stopLiveCast() {
 			return client && client->stopLiveCast();
 		}
-		
+
 		bool isLiveCaster() const {
 			return client && client->isLiveCaster();
 		}
@@ -1345,6 +1371,11 @@ class Player final : public Creature, public Cylinder
 
 		uint16_t lastStatsTrainingTime = 0;
 		uint16_t staminaMinutes = 2520;
+		std::vector<uint16_t> preyStaminaMinutes = {7200, 7200, 7200};
+		std::vector<uint16_t> preyBonusType = {0, 0, 0};
+		std::vector<uint16_t> preyBonusValue = {0, 0, 0};
+		std::vector<std::string> preyBonusName = {"", "", ""};
+
 		uint16_t maxWriteLen = 0;
 		int16_t lastDepotId = -1;
 		int16_t worldId = 0;

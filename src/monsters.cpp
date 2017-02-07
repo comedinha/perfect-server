@@ -64,10 +64,11 @@ void MonsterType::createLoot(Container* corpse)
 		return;
 	}
 
+	bool canRerollLoot = false;
 	Player* owner = g_game.getPlayerByID(corpse->getCorpseOwner());
 	if (!owner || owner->getStaminaMinutes() > 840) {
 		for (auto it = info.lootItems.rbegin(), end = info.lootItems.rend(); it != end; ++it) {
-			auto itemList = createLootItem(*it);
+			auto itemList = createLootItem(*it, canRerollLoot);
 			if (itemList.empty()) {
 				continue;
 			}
@@ -89,6 +90,12 @@ void MonsterType::createLoot(Container* corpse)
 
 		if (owner) {
 			std::ostringstream ss;
+			if (canRerollLoot) {
+				ss << "Loot of " << nameDescription << " [PREY]: " << corpse->getContentDescription();
+			} else {
+				ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
+			}
+
 			ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
 
 			if (owner->getParty()) {
@@ -111,7 +118,7 @@ void MonsterType::createLoot(Container* corpse)
 	corpse->startDecaying();
 }
 
-std::vector<Item*> MonsterType::createLootItem(const LootBlock& lootBlock)
+std::vector<Item*> MonsterType::createLootItem(const LootBlock& lootBlock, bool canRerollLoot)
 {
 	int32_t itemCount = 0;
 
@@ -1283,6 +1290,18 @@ void Monsters::loadLootContainer(const pugi::xml_node& node, LootBlock& lBlock)
 			lBlock.childLoot.emplace_back(std::move(lootBlock));
 		}
 	}
+}
+
+std::vector<std::string> Monsters::getPreyMonsters()
+{
+	std::vector<std::string> monsterList;
+	for (const auto& m : monsters) {
+		if (m.second.info.experience > 0 && m.second.info.isRewardBoss == false && m.second.info.staticAttackChance > 0) {
+			monsterList.push_back(m.first);
+		}
+	}
+
+	return monsterList;
 }
 
 MonsterType* Monsters::getMonsterType(const std::string& name)

@@ -811,10 +811,14 @@ bool Player::canWalkthroughEx(const Creature* creature) const
 	return true;
 }
 
-void Player::onReceiveMail() const
+void Player::onReceiveMail(bool isTibiaCoin) const
 {
 	if (isNearDepotBox()) {
-		sendTextMessage(MESSAGE_GAME, "New mail has arrived.");
+		if (isTibiaCoin) {
+			sendTextMessage(MESSAGE_GAME, "Tibia Coins purchased with success!");
+		} else {
+			sendTextMessage(MESSAGE_GAME, "New mail has arrived.");
+		}
 	}
 }
 

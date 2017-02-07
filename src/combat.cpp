@@ -198,14 +198,14 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 
 		//nopvp-zone
 		if (isPlayerCombat(target)) {
-			if (!(player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
+			if (!(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
 				if (player->getZone() == ZONE_NOPVP) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			}
 
 			Player* targetplayer = target->getPlayer();
-			if (!targetplayer || !(targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
+			if (!targetplayer || !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
 				if (target->getZone() == ZONE_NOPVP) {
 					return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
 				}
@@ -284,9 +284,11 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 		return true;
 	}
 
-	if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
-		if (!(attacker->getLevel() >= 11 && target->getLevel() >= 11)) {
-			return true;
+	if (g_config.getBoolean(ConfigManager::ROOKGARD_WAR)) {
+		if (attacker->getVocationId() == VOCATION_NONE && target->getVocationId() == VOCATION_NONE) {
+			if (!(attacker->getLevel() >= 11 && target->getLevel() >= 11)) {
+				return true;
+			}
 		}
 	}
 
@@ -316,9 +318,9 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 
 				//nopvp-zone
 				const Tile* targetPlayerTile = targetPlayer->getTile();
-				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE) && !(targetPlayer->getVocationId() == VOCATION_NONE && targetPlayer->getLevel() >= 11)) {
+				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE) && !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && targetPlayer->getVocationId() == VOCATION_NONE && targetPlayer->getLevel() >= 11)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
-				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !(attackerPlayer->getVocationId() == VOCATION_NONE && attackerPlayer->getLevel() >= 11) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
+				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && attackerPlayer->getVocationId() == VOCATION_NONE && attackerPlayer->getLevel() >= 11) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			}

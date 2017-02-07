@@ -180,7 +180,7 @@ class MonsterType
 
 		void createLoot(Container* corpse);
 		bool createLootContainer(Container* parent, const LootBlock& lootblock);
-		std::vector<Item*> createLootItem(const LootBlock& lootBlock);
+		std::vector<Item*> createLootItem(const LootBlock& lootBlock, bool canRerollLoot = false);
 };
 
 class Monsters
@@ -197,6 +197,7 @@ class Monsters
 		}
 		bool reload();
 
+		std::vector<std::string> getPreyMonsters();
 		MonsterType* getMonsterType(const std::string& name);
 
 		static uint32_t getLootRandom();

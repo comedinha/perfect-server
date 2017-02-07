@@ -96,6 +96,7 @@ class ProtocolGameBase : public Protocol {
 		void sendAddCreature(const Creature* creature, const Position& pos, int32_t stackpos, bool isLogin);
 		void sendMagicEffect(const Position& pos, uint8_t type);
 		void sendStats();
+		void sendBlessStatus();
 		void sendSkullTime();
 		void sendPremiumTrigger();
 		void sendBasicData();
@@ -105,6 +106,7 @@ class ProtocolGameBase : public Protocol {
 		void sendInventoryItem(slots_t slot, const Item* item);
 		void sendInventoryClientIds();
 
+		void sendPreyData();
 		void sendSkills();
 
 		void sendCreatureLight(const Creature* creature);

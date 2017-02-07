@@ -387,6 +387,8 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 				it.type = ITEM_TYPE_DEPOT;
 			} else if (tmpStrValue == "rewardchest") {
 				it.type = ITEM_TYPE_REWARDCHEST;
+			} else if (tmpStrValue == "carpet") {
+				it.type = ITEM_TYPE_CARPET;
 			} else if (tmpStrValue == "mailbox") {
 				it.type = ITEM_TYPE_MAILBOX;
 			} else if (tmpStrValue == "trashholder") {
@@ -416,6 +418,8 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			it.defense = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "extradef") {
 			it.extraDefense = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "imbuingslots") {
+			it.imbuingSlots = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "attack") {
 			it.attack = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "rotateto") {

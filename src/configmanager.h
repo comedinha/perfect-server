@@ -48,6 +48,9 @@ class ConfigManager
 			EXP_BOOSTER,
 			LOWLEVEL_BONUS,
 			SKULL_PLAYER_SUMMON,
+			ROOKGARD_WAR,
+			ONLY_TUTORS_REPORT,
+			PREY_SYSTEM,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};

@@ -68,6 +68,8 @@ bool Events::load()
 				info.creatureOnAreaCombat = event;
 			} else if (methodName == "onTargetCombat") {
 				info.creatureOnTargetCombat = event;
+			} else if (methodName == "onDrainHealth") {
+				info.creatureOnDrainHealth = event;
 			} else {
 				std::cout << "[Warning - Events::load] Unknown creature method: " << methodName << std::endl;
 			}
@@ -233,6 +235,59 @@ ReturnValue Events::eventCreatureOnTargetCombat(Creature* creature, Creature* ta
 
 	scriptInterface.resetScriptEnv();
 	return returnValue;
+}
+
+void Events::eventCreatureOnDrainHealth(Creature* creature, Creature* attacker, CombatType_t& typePrimary, int32_t& damagePrimary, CombatType_t& typeSecondary, int32_t& damageSecondary, TextColor_t& colorPrimary, TextColor_t& colorSecondary)
+{
+	if (info.creatureOnDrainHealth == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventCreatureOnDrainHealth] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.creatureOnDrainHealth, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.creatureOnDrainHealth);
+
+	if (creature) {
+		LuaScriptInterface::pushUserdata<Creature>(L, creature);
+		LuaScriptInterface::setCreatureMetatable(L, -1, creature);
+	} else {
+		lua_pushnil(L);
+	}
+
+	if (attacker) {
+		LuaScriptInterface::pushUserdata<Creature>(L, attacker);
+		LuaScriptInterface::setCreatureMetatable(L, -1, attacker);
+	} else {
+		lua_pushnil(L);
+	}
+
+	lua_pushnumber(L, typePrimary);
+	lua_pushnumber(L, damagePrimary);
+	lua_pushnumber(L, typeSecondary);
+	lua_pushnumber(L, damageSecondary);
+	lua_pushnumber(L, colorPrimary);
+	lua_pushnumber(L, colorSecondary);
+
+	if (scriptInterface.protectedCall(L, 8, 6) != 0) {
+		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
+	} else {
+		typePrimary = LuaScriptInterface::getNumber<CombatType_t>(L, -6);
+		damagePrimary = LuaScriptInterface::getNumber<int32_t>(L, -5);
+		typeSecondary = LuaScriptInterface::getNumber<CombatType_t>(L, -4);
+		damageSecondary = LuaScriptInterface::getNumber<int32_t>(L, -3);
+		colorPrimary = LuaScriptInterface::getNumber<TextColor_t>(L, -2);
+		colorSecondary = LuaScriptInterface::getNumber<TextColor_t>(L, -1);
+		lua_pop(L, 6);
+	}
+
+	scriptInterface.resetScriptEnv();
 }
 
 // Party

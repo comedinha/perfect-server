@@ -146,6 +146,9 @@ bool ConfigManager::load()
 	boolean[EXP_BOOSTER] = getGlobalBoolean(L, "expBoosterEnabled", false);
 	boolean[LOWLEVEL_BONUS] = getGlobalBoolean(L, "lowLevelBonusEnabled", false);
 	boolean[SKULL_PLAYER_SUMMON] = getGlobalBoolean(L, "skullPlayerSummon", false);
+	boolean[ROOKGARD_WAR] = getGlobalBoolean(L, "rookgardWar", true);
+	boolean[ONLY_TUTORS_REPORT] = getGlobalBoolean(L, "onlyTutorsReport", false);
+	boolean[PREY_SYSTEM] = getGlobalBoolean(L, "preySystem", false);
 
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");
