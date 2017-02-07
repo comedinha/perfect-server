@@ -179,6 +179,8 @@ void ProtocolSpectator::addDummyCreature(NetworkMessage& msg, const uint32_t& cr
 	msg.addByte(creatureType); // creature type
 	msg.addByte(SPEECHBUBBLE_NONE); // speechbubble
 	msg.addByte(0xFF); // MARK_UNMARKED
+	if (version >= 1110)
+		msg.addByte(0); // inviteview
 	msg.add<uint16_t>(0x00); // helpers
 	msg.addByte(0); // walkThrough
 }
