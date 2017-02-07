@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,21 +64,9 @@ void MonsterType::createLoot(Container* corpse)
 		return;
 	}
 
+	bool canRerollLoot = false;
 	Player* owner = g_game.getPlayerByID(corpse->getCorpseOwner());
-
 	if (!owner || owner->getStaminaMinutes() > 840) {
-		/*bool canRerollLoot = false;
-
-		for (int i = 0; i < 3; i++) {
-			if (owner->getPreyType(i) == 3 && name == owner->getPreyName(i)) {
-				uint32_t rand = uniform_random(0, 100);
-				if (rand <= owner->getPreyValue(i)) {
-					canRerollLoot = true;
-					break;
-				}
-			}
-		}*/
-		bool canRerollLoot = false;
 		for (auto it = info.lootItems.rbegin(), end = info.lootItems.rend(); it != end; ++it) {
 			auto itemList = createLootItem(*it, canRerollLoot);
 			if (itemList.empty()) {
@@ -105,9 +93,10 @@ void MonsterType::createLoot(Container* corpse)
 			if (canRerollLoot) {
 				ss << "Loot of " << nameDescription << " [PREY]: " << corpse->getContentDescription();
 			} else {
-
 				ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
 			}
+
+			ss << "Loot of " << nameDescription << ": " << corpse->getContentDescription();
 
 			if (owner->getParty()) {
 				owner->getParty()->broadcastPartyLoot(ss.str());
@@ -140,10 +129,6 @@ std::vector<Item*> MonsterType::createLootItem(const LootBlock& lootBlock, bool 
 		} else {
 			itemCount = 1;
 		}
-	/*} else {
-		if (canRerollLoot) {
-			createLootItem(lootBlock, false);
-		}*/
 	}
 
 	std::vector<Item*> itemList;
@@ -166,6 +151,38 @@ std::vector<Item*> MonsterType::createLootItem(const LootBlock& lootBlock, bool 
 
 		if (!lootBlock.text.empty()) {
 			tmpItem->setText(lootBlock.text);
+		}
+
+		if (!lootBlock.name.empty()) {
+			tmpItem->setStrAttr(ITEM_ATTRIBUTE_NAME, lootBlock.name);
+		}
+
+		if (!lootBlock.article.empty()) {
+			tmpItem->setStrAttr(ITEM_ATTRIBUTE_ARTICLE, lootBlock.article);
+		}
+
+		if (lootBlock.attack != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_ATTACK, lootBlock.attack);
+		}
+
+		if (lootBlock.defense != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_DEFENSE, lootBlock.defense);
+		}
+
+		if (lootBlock.extraDefense != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_EXTRADEFENSE, lootBlock.extraDefense);
+		}
+
+		if (lootBlock.armor != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_ARMOR, lootBlock.armor);
+		}
+
+		if (lootBlock.shootRange != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_SHOOTRANGE, lootBlock.shootRange);
+		}
+
+		if (lootBlock.hitChance != -1) {
+			tmpItem->setIntAttr(ITEM_ATTRIBUTE_HITCHANCE, lootBlock.hitChance);
 		}
 
 		itemList.push_back(tmpItem);
@@ -768,6 +785,8 @@ bool Monsters::loadMonster(const std::string& file, const std::string& monsterNa
 				mType->info.isAttackable = attr.as_bool();
 			} else if (strcasecmp(attrName, "hostile") == 0) {
 				mType->info.isHostile = attr.as_bool();
+			} else if (strcasecmp(attrName, "passive") == 0) {
+				mType->info.isPassive = attr.as_bool();
 			} else if (strcasecmp(attrName, "illusionable") == 0) {
 				mType->info.isIllusionable = attr.as_bool();
 			} else if (strcasecmp(attrName, "convinceable") == 0) {
@@ -1012,6 +1031,26 @@ bool Monsters::loadMonster(const std::string& file, const std::string& monsterNa
 		}
 	}
 
+	if ((node = monsterNode.child("magicfield"))) {
+		for (auto immunityNode : node.children()) {
+			if ((attr = immunityNode.attribute("energy"))) {
+				if (attr.as_bool()) {
+					mType->info.passMagicField |= COMBAT_ENERGYDAMAGE;
+				}
+			} else if ((attr = immunityNode.attribute("fire"))) {
+				if (attr.as_bool()) {
+					mType->info.passMagicField |= COMBAT_FIREDAMAGE;
+				}
+			} else if ((attr = immunityNode.attribute("poison")) || (attr = immunityNode.attribute("earth"))) {
+				if (attr.as_bool()) {
+					mType->info.passMagicField |= COMBAT_EARTHDAMAGE;
+				}
+			} else {
+				std::cout << "[Warning - Monsters::loadMonster] Unknown magic field. " << file << std::endl;
+			}
+		}
+	}
+
 	if ((node = monsterNode.child("voices"))) {
 		if ((attr = node.attribute("speed")) || (attr = node.attribute("interval"))) {
 			mType->info.yellSpeedTicks = pugi::cast<uint32_t>(attr.value());
@@ -1204,6 +1243,42 @@ bool Monsters::loadLootItem(const pugi::xml_node& node, LootBlock& lootBlock)
 	if ((attr = node.attribute("text"))) {
 		lootBlock.text = attr.as_string();
 	}
+
+	if ((attr = node.attribute("name"))) {
+		lootBlock.name = attr.as_string();
+	}
+
+	if ((attr = node.attribute("article"))) {
+		lootBlock.article = attr.as_string();
+	}
+
+	if ((attr = node.attribute("attack"))) {
+		lootBlock.attack = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("defense"))) {
+		lootBlock.defense = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("extradefense"))) {
+		lootBlock.extraDefense = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("armor"))) {
+		lootBlock.armor = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("shootrange"))) {
+		lootBlock.shootRange = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("hitchance"))) {
+		lootBlock.hitChance = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("unique"))) {
+		lootBlock.unique = attr.as_bool();
+	}
 	return true;
 }
 
@@ -1217,14 +1292,11 @@ void Monsters::loadLootContainer(const pugi::xml_node& node, LootBlock& lBlock)
 	}
 }
 
-// Prey Monsters
 std::vector<std::string> Monsters::getPreyMonsters()
 {
 	std::vector<std::string> monsterList;
 	for (const auto& m : monsters) {
-		if (m.second.info.experience > 0 &&
-			m.second.info.isRewardBoss == false &&
-			m.second.info.staticAttackChance > 0) {
+		if (m.second.info.experience > 0 && m.second.info.isRewardBoss == false && m.second.info.staticAttackChance > 0) {
 			monsterList.push_back(m.first);
 		}
 	}

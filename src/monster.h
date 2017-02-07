@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ class Creature;
 class Game;
 class Spawn;
 
-typedef std::unordered_set<Creature*> CreatureHashSet;
-typedef std::list<Creature*> CreatureList;
+using CreatureHashSet = std::unordered_set<Creature*>;
+using CreatureList = std::list<Creature*>;
 
 enum TargetSearchType_t {
 	TARGETSEARCH_DEFAULT,
@@ -113,6 +113,9 @@ class Monster final : public Creature
 		bool isHostile() const {
 			return mType->info.isHostile;
 		}
+		bool isPassive() const {
+			return mType->info.isPassive;
+		}
 		bool canSee(const Position& pos) const final;
 		bool canSeeInvisibility() const final {
 			return isImmune(CONDITION_INVISIBLE);
@@ -124,12 +127,12 @@ class Monster final : public Creature
 			this->spawn = spawn;
 		}
 
-		void onAttackedCreatureDisappear(bool isLogout) final;
+		virtual void onAttackedCreatureDisappear(bool isLogout) final;
 
 		void onCreatureAppear(Creature* creature, bool isLogin) final;
 		void onRemoveCreature(Creature* creature, bool isLogout) final;
 		void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos, const Tile* oldTile, const Position& oldPos, bool teleport) final;
-		void onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text) final;
+		void onCreatureSay(Creature* creature, MessageClasses type, const std::string& text) final;
 
 		void drainHealth(Creature* attacker, int32_t damage) final;
 		void changeHealth(int32_t healthChange, bool sendHealthChange = true) final;
@@ -159,9 +162,6 @@ class Monster final : public Creature
 		const CreatureHashSet& getFriendList() const {
 			return friendList;
 		}
-
-		void updateHadRecentBattleVar();
-		bool hadRecentBattle() const { return hadRecentBattleVar; }
 
 		bool isTarget(const Creature* creature) const;
 		bool isFleeing() const {
@@ -204,8 +204,6 @@ class Monster final : public Creature
 		bool isIdle = true;
 		bool extraMeleeAttack = false;
 		bool isMasterInRange = false;
-		bool hadRecentBattleVar;
-		int64_t timeOfLastHit;
 
 		void onCreatureEnter(Creature* creature);
 		void onCreatureLeave(Creature* creature);
@@ -244,10 +242,10 @@ class Monster final : public Creature
 		bool isInSpawnRange(const Position& pos) const;
 		bool canWalkTo(Position pos, Direction direction) const;
 
-		static bool pushItem(Item* item);
-		static void pushItems(Tile* tile);
-		static bool pushCreature(Creature* creature);
-		static void pushCreatures(Tile* tile);
+		bool pushItem(Item* item);
+		void pushItems(Tile* tile);
+		bool pushCreature(Creature* creature);
+		void pushCreatures(Tile* tile);
 
 		void onThinkTarget(uint32_t interval);
 		void onThinkYell(uint32_t interval);
@@ -268,6 +266,9 @@ class Monster final : public Creature
 		}
 		uint32_t getConditionImmunities() const final {
 			return mType->info.conditionImmunities;
+		}
+		uint32_t getPassMagicField() const final {
+			return mType->info.passMagicField;
 		}
 		void getPathSearchParams(const Creature* creature, FindPathParams& fpp) const final;
 		bool useCacheMap() const final {

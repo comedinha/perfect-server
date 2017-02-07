@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ enum clientVersion_t {
 	CLIENT_VERSION_1031 = 54,
 	CLIENT_VERSION_1035 = 55,
 	CLIENT_VERSION_1076 = 56,
-	CLIENT_VERSION_1098 = 57,
+	CLIENT_VERSION_1100 = 57,
 };
 
 enum rootattrib_ {
@@ -176,6 +176,8 @@ enum itemflags_t {
 	FLAG_ANIMATION = 1 << 24,
 	FLAG_FULLTILE = 1 << 25, // unused
 	FLAG_FORCEUSE = 1 << 26,
+	FLAG_WRAPPABLE = 1 << 27,
+	FLAG_UNWRAPPABLE = 1 << 28,
 };
 
 //1-byte aligned structs

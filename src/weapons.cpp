@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -165,6 +165,10 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 		mana = pugi::cast<uint32_t>(attr.value());
 	}
 
+	if ((attr = node.attribute("skill"))) {
+		skillLevel = pugi::cast<uint32_t>(attr.value());
+	}
+
 	if ((attr = node.attribute("manapercent"))) {
 		manaPercent = pugi::cast<uint32_t>(attr.value());
 	}
@@ -194,6 +198,10 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 
 	if ((attr = node.attribute("unproperly"))) {
 		wieldUnproperly = attr.as_bool();
+	}
+
+	if ((attr = node.attribute("swing"))) {
+		swing = attr.as_bool();
 	}
 
 	std::list<std::string> vocStringList;
@@ -240,6 +248,10 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 		wieldInfo |= WIELDINFO_MAGLV;
 	}
 
+	if (getReqSkillLv() > 0) {
+		wieldInfo |= WIELDINFO_SKILL;
+	}
+
 	if (!vocationString.empty()) {
 		wieldInfo |= WIELDINFO_VOCREQ;
 	}
@@ -254,6 +266,7 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 		it.vocationString = vocationString;
 		it.minReqLevel = getReqLevel();
 		it.minReqMagicLevel = getReqMagLv();
+		it.minReqSkillLevel = getReqSkillLv();
 	}
 
 	configureWeapon(Item::items[id]);
@@ -311,6 +324,10 @@ int32_t Weapon::playerWeaponCheck(Player* player, Creature* target, uint8_t shoo
 		}
 
 		if (player->getMagicLevel() < getReqMagLv()) {
+			damageModifier = (isWieldedUnproperly() ? damageModifier / 2 : 0);
+		}
+
+		if (player->getSkillLevel(player->getWeaponType()) < getReqSkillLv()) {
 			damageModifier = (isWieldedUnproperly() ? damageModifier / 2 : 0);
 		}
 		return damageModifier;
@@ -589,6 +606,7 @@ WeaponDistance::WeaponDistance(LuaScriptInterface* interface) :
 {
 	params.blockedByArmor = true;
 	params.combatType = COMBAT_PHYSICALDAMAGE;
+	swing = params.blockedByShield = false;
 }
 
 void WeaponDistance::configureWeapon(const ItemType& it)

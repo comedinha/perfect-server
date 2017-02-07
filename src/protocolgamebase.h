@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2015  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,20 @@ class Tile;
 class Connection;
 class Quest;
 
+struct TextMessage
+{
+	MessageClasses type = MESSAGE_LOGIN;
+	std::string text;
+	Position position;
+	struct {
+		int32_t value = 0;
+		TextColor_t color;
+	} primary, secondary;
+
+	TextMessage() = default;
+	TextMessage(MessageClasses type, std::string text) : type(type), text(std::move(text)) {}
+};
+
 /** \brief Contains methods and member variables common to both the game and spectator protocols
  */
 class ProtocolGameBase : public Protocol {
@@ -43,16 +57,14 @@ class ProtocolGameBase : public Protocol {
 		enum {protocol_identifier = 0}; // Not required as we send first
 		enum {use_checksum = true};
 
+		void broadcastTextMessage(const TextMessage& message, uint16_t channelId = 0, bool broadcast = true) {
+			if (player) {
+				sendTextMessage(message, channelId, broadcast);
+			}
+		}
+
 	protected:
-		explicit ProtocolGameBase(Connection_ptr connection):
-			Protocol(connection),
-			player(nullptr),
-			eventConnect(0),
-			version(CLIENT_VERSION_MIN),
-			challengeTimestamp(0),
-			challengeRandom(0),
-			debugAssertSent(false),
-			acceptPackets(false) {}
+		explicit ProtocolGameBase(Connection_ptr connection) : Protocol(connection) {}
 
 		virtual void writeToOutputBuffer(const NetworkMessage& msg, bool broadcast = true) = 0;
 		void onConnect() final;
@@ -76,32 +88,25 @@ class ProtocolGameBase : public Protocol {
 
 		static void RemoveTileThing(NetworkMessage& msg, const Position& pos, uint32_t stackpos);
 
-		void sendSpellCooldown(uint8_t spellId, uint32_t time);
-		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
-		
+		void sendTextMessage(const TextMessage& message, uint16_t channelId = 0, bool broadcast = true);
+		void sendChannelMessage(const std::string& author, const std::string& text, MessageClasses type, uint16_t channel, const Creature* creature = nullptr, const Position* pos = nullptr, bool broadcast = true);
 		void sendUpdateTile(const Tile* tile, const Position& pos);
 		void sendContainer(uint8_t cid, const Container* container, bool hasParent, uint16_t firstIndex);
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel);
-		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
-		void sendClosePrivate(uint16_t channelId);
-		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
-		void sendChannelsDialog();
 		void sendChannel(uint16_t channelId, const std::string& channelName, const UsersMap* channelUsers, const InvitedMap* invitedUsers);
-		void sendOpenPrivateChannel(const std::string& receiver);
-		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId);
-		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text);
 		void sendAddCreature(const Creature* creature, const Position& pos, int32_t stackpos, bool isLogin);
 		void sendMagicEffect(const Position& pos, uint8_t type);
 		void sendStats();
 		void sendBlessStatus();
+		void sendSkullTime();
+		void sendPremiumTrigger();
 		void sendBasicData();
 		void sendPendingStateEntered();
 		void sendEnterWorld();
 		//inventory
 		void sendInventoryItem(slots_t slot, const Item* item);
+		void sendInventoryClientIds();
 
 		void sendPreyData();
-		void sendSkullTime();
 		void sendSkills();
 
 		void sendCreatureLight(const Creature* creature);
@@ -118,15 +123,16 @@ class ProtocolGameBase : public Protocol {
 		bool canSee(const Creature*) const;
 		bool canSee(const Position& pos) const;
 
-		Player* player;
-		uint32_t eventConnect;
-		uint16_t version;
+		Player* player = nullptr;
 
-		uint32_t challengeTimestamp;
-		uint8_t challengeRandom;
+		uint32_t eventConnect = 0;
+		uint32_t challengeTimestamp = 0;
+		uint16_t version = CLIENT_VERSION_MIN;
 
-		bool debugAssertSent;
-		bool acceptPackets;
+		uint8_t challengeRandom = 0;
+
+		bool debugAssertSent = false;
+		bool acceptPackets = false;
 
 		std::unordered_set<uint32_t> knownCreatureSet;
 };

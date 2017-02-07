@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ class Combat;
 class Condition;
 class Npc;
 class Monster;
+class InstantSpell;
 
 enum {
 	EVENT_ID_LOADING = 1,
@@ -147,9 +148,9 @@ class ScriptEnvironment
 		void removeItemByUID(uint32_t uid);
 
 	private:
-		typedef std::vector<const LuaVariant*> VariantVector;
-		typedef std::map<uint32_t, int32_t> StorageMap;
-		typedef std::map<uint32_t, DBResult_ptr> DBResultMap;
+		using VariantVector = std::vector<const LuaVariant*>;
+		using StorageMap = std::map<uint32_t, int32_t>;
+		using DBResultMap = std::map<uint32_t, DBResult_ptr>;
 
 		LuaScriptInterface* interface;
 
@@ -270,13 +271,13 @@ class LuaScriptInterface
 
 		// Get
 		template<typename T>
-		inline static typename std::enable_if<std::is_enum<T>::value, T>::type
+		static typename std::enable_if<std::is_enum<T>::value, T>::type
 			getNumber(lua_State* L, int32_t arg)
 		{
 			return static_cast<T>(static_cast<int64_t>(lua_tonumber(L, arg)));
 		}
 		template<typename T>
-		inline static typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value, T>::type
+		static typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value, T>::type
 			getNumber(lua_State* L, int32_t arg)
 		{
 			return static_cast<T>(lua_tonumber(L, arg));
@@ -300,16 +301,16 @@ class LuaScriptInterface
 			return *userdata;
 		}
 		template<class T>
-		inline static T** getRawUserdata(lua_State* L, int32_t arg)
+		static T** getRawUserdata(lua_State* L, int32_t arg)
 		{
 			return static_cast<T**>(lua_touserdata(L, arg));
 		}
 
-		inline static bool getBoolean(lua_State* L, int32_t arg)
+		static bool getBoolean(lua_State* L, int32_t arg)
 		{
 			return lua_toboolean(L, arg) != 0;
 		}
-		inline static bool getBoolean(lua_State* L, int32_t arg, bool defaultValue)
+		static bool getBoolean(lua_State* L, int32_t arg, bool defaultValue)
 		{
 			const auto parameters = lua_gettop(L);
 			if (parameters == 0 || arg > parameters) {
@@ -340,44 +341,45 @@ class LuaScriptInterface
 		static LuaDataType getUserdataType(lua_State* L, int32_t arg);
 
 		// Is
-		inline static bool isNumber(lua_State* L, int32_t arg)
+		static bool isNumber(lua_State* L, int32_t arg)
 		{
 			return lua_type(L, arg) == LUA_TNUMBER;
 		}
-		inline static bool isString(lua_State* L, int32_t arg)
+		static bool isString(lua_State* L, int32_t arg)
 		{
 			return lua_isstring(L, arg) != 0;
 		}
-		inline static bool isBoolean(lua_State* L, int32_t arg)
+		static bool isBoolean(lua_State* L, int32_t arg)
 		{
 			return lua_isboolean(L, arg);
 		}
-		inline static bool isTable(lua_State* L, int32_t arg)
+		static bool isTable(lua_State* L, int32_t arg)
 		{
 			return lua_istable(L, arg);
 		}
-		inline static bool isFunction(lua_State* L, int32_t arg)
+		static bool isFunction(lua_State* L, int32_t arg)
 		{
 			return lua_isfunction(L, arg);
 		}
-		inline static bool isUserdata(lua_State* L, int32_t arg)
+		static bool isUserdata(lua_State* L, int32_t arg)
 		{
 			return lua_isuserdata(L, arg) != 0;
 		}
 
 		// Push
 		static void pushBoolean(lua_State* L, bool value);
+		static void pushInstantSpell(lua_State* L, const InstantSpell& spell);
 		static void pushPosition(lua_State* L, const Position& position, int32_t stackpos = 0);
 		static void pushOutfit(lua_State* L, const Outfit_t& outfit);
 
 		//
-		inline static void setField(lua_State* L, const char* index, lua_Number value)
+		static void setField(lua_State* L, const char* index, lua_Number value)
 		{
 			lua_pushnumber(L, value);
 			lua_setfield(L, -2, index);
 		}
 
-		inline static void setField(lua_State* L, const char* index, const std::string& value)
+		static void setField(lua_State* L, const char* index, const std::string& value)
 		{
 			pushString(L, value);
 			lua_setfield(L, -2, index);
@@ -414,10 +416,6 @@ class LuaScriptInterface
 		static bool getArea(lua_State* L, std::list<uint32_t>& list, uint32_t& rows);
 
 		//lua functions
-		static int luaDoCreateItem(lua_State* L);
-		static int luaDoCreateItemEx(lua_State* L);
-		static int luaDoMoveCreature(lua_State* L);
-
 		static int luaDoPlayerAddItem(lua_State* L);
 		static int luaDoTileAddItemEx(lua_State* L);
 		static int luaDoSetCreatureLight(lua_State* L);
@@ -429,14 +427,9 @@ class LuaScriptInterface
 		static int luaGetPlayerFlagValue(lua_State* L);
 		static int luaGetCreatureCondition(lua_State* L);
 
-		static int luaGetPlayerInstantSpellInfo(lua_State* L);
-		static int luaGetPlayerInstantSpellCount(lua_State* L);
-
 		static int luaGetWorldTime(lua_State* L);
 		static int luaGetWorldLight(lua_State* L);
 		static int luaGetWorldUpTime(lua_State* L);
-
-		static int luaGetPreyMonsters(lua_State* L);
 
 		//type validation
 		static int luaIsDepot(lua_State* L);
@@ -464,16 +457,12 @@ class LuaScriptInterface
 
 		static int luaDoChallengeCreature(lua_State* L);
 
-		static int luaSetCreatureOutfit(lua_State* L);
-		static int luaSetMonsterOutfit(lua_State* L);
-		static int luaSetItemOutfit(lua_State* L);
-
 		static int luaDebugPrint(lua_State* L);
-		static int luaIsInArray(lua_State* L);
 		static int luaAddEvent(lua_State* L);
 		static int luaStopEvent(lua_State* L);
 
 		static int luaSaveServer(lua_State* L);
+		static int luaSaveHouses(lua_State* L);
 		static int luaCleanMap(lua_State* L);
 
 		static int luaIsInWar(lua_State* L);
@@ -533,6 +522,7 @@ class LuaScriptInterface
 		static int luaGameGetMonsterCount(lua_State* L);
 		static int luaGameGetPlayerCount(lua_State* L);
 		static int luaGameGetNpcCount(lua_State* L);
+		static int luaGameGetPreyMonsters(lua_State* L);
 
 		static int luaGameGetTowns(lua_State* L);
 		static int luaGameGetHouses(lua_State* L);
@@ -553,7 +543,14 @@ class LuaScriptInterface
 
 		static int luaGameStartRaid(lua_State* L);
 
+		static int luaGameGetClientVersion(lua_State* L);
+
 		static int luaGameGetItemByClientId(lua_State* L);
+
+		static int luaGameReload(lua_State* L);
+
+		static int luaGameHasEffect(lua_State* L);
+		static int luaGameHasDistanceEffect(lua_State* L);
 
 		// Variant
 		static int luaVariantCreate(lua_State* L);
@@ -746,6 +743,7 @@ class LuaScriptInterface
 		static int luaCreatureIsCreature(lua_State* L);
 		static int luaCreatureIsInGhostMode(lua_State* L);
 		static int luaCreatureIsHealthHidden(lua_State* L);
+		static int luaCreatureIsImmune(lua_State* L);
 
 		static int luaCreatureCanSee(lua_State* L);
 		static int luaCreatureCanSeeCreature(lua_State* L);
@@ -784,6 +782,9 @@ class LuaScriptInterface
 		static int luaCreatureSetMaxHealth(lua_State* L);
 		static int luaCreatureSetHiddenHealth(lua_State* L);
 
+		static int luaCreatureIsMoveLocked(lua_State* L);
+		static int luaCreatureSetMoveLocked(lua_State* L);
+
 		static int luaCreatureGetMana(lua_State* L);
 		static int luaCreatureAddMana(lua_State* L);
 		static int luaCreatureGetMaxMana(lua_State* L);
@@ -809,6 +810,7 @@ class LuaScriptInterface
 		static int luaCreatureGetDescription(lua_State* L);
 
 		static int luaCreatureGetPathTo(lua_State* L);
+		static int luaCreatureMove(lua_State* L);
 
 		// Player
 		static int luaPlayerCreate(lua_State* L);
@@ -820,9 +822,12 @@ class LuaScriptInterface
 		static int luaPlayerGetAccountId(lua_State* L);
 		static int luaPlayerGetLastLoginSaved(lua_State* L);
 		static int luaPlayerGetLastLogout(lua_State* L);
+		static int luaPlayerGetWorldId(lua_State* L);
 
 		static int luaPlayerGetAccountType(lua_State* L);
 		static int luaPlayerSetAccountType(lua_State* L);
+
+		static int luaPlayerHasFlag(lua_State* L);
 
 		static int luaPlayerGetCapacity(lua_State* L);
 		static int luaPlayerSetCapacity(lua_State* L);
@@ -843,8 +848,6 @@ class LuaScriptInterface
 		static int luaPlayerGetExperience(lua_State* L);
 		static int luaPlayerAddExperience(lua_State* L);
 		static int luaPlayerRemoveExperience(lua_State* L);
-		static int luaPlayerGetExpBoost(lua_State* L);
-		static int luaPlayerSetExpBoost(lua_State* L);
 		static int luaPlayerGetLevel(lua_State* L);
 
 		static int luaPlayerGetMagicLevel(lua_State* L);
@@ -861,6 +864,10 @@ class LuaScriptInterface
 		static int luaPlayerGetSkillPercent(lua_State* L);
 		static int luaPlayerGetSkillTries(lua_State* L);
 		static int luaPlayerAddSkillTries(lua_State* L);
+
+		static int luaPlayerAddExpBoostTime(lua_State* L);
+		static int luaPlayerGetExpBoostTime(lua_State* L);
+		static int luaPlayerRemoveExpBoostTime(lua_State* L);
 
 		static int luaPlayerAddOfflineTrainingTime(lua_State* L);
 		static int luaPlayerGetOfflineTrainingTime(lua_State* L);
@@ -902,7 +909,7 @@ class LuaScriptInterface
 		static int luaPlayerGetPreyType(lua_State* L);
 		static int luaPlayerGetPreyValue(lua_State* L);
 		static int luaPlayerGetPreyName(lua_State* L);
-		
+
 		static int luaPlayerSetPreyStamina(lua_State* L);
 		static int luaPlayerSetPreyType(lua_State* L);
 		static int luaPlayerSetPreyValue(lua_State* L);
@@ -914,6 +921,9 @@ class LuaScriptInterface
 
 		static int luaPlayerGetBankBalance(lua_State* L);
 		static int luaPlayerSetBankBalance(lua_State* L);
+		
+		static int luaPlayerGetCoinsBalance(lua_State* L);
+		static int luaPlayerSetCoinsBalance(lua_State* L);
 
 		static int luaPlayerGetStorageValue(lua_State* L);
 		static int luaPlayerSetStorageValue(lua_State* L);
@@ -972,7 +982,10 @@ class LuaScriptInterface
 		static int luaPlayerIsPzLocked(lua_State* L);
 
 		static int luaPlayerGetClient(lua_State* L);
+
 		static int luaPlayerGetHouse(lua_State* L);
+		static int luaPlayerSendHouseWindow(lua_State* L);
+		static int luaPlayerSetEditHouse(lua_State* L);
 
 		static int luaPlayerSetGhostMode(lua_State* L);
 
@@ -980,11 +993,29 @@ class LuaScriptInterface
 		static int luaPlayerGetContainerById(lua_State* L);
 		static int luaPlayerGetContainerIndex(lua_State* L);
 
+		static int luaPlayerGetInstantSpells(lua_State* L);
+		static int luaPlayerCanCast(lua_State* L);
+
+		static int luaPlayerHasChaseMode(lua_State* L);
+		static int luaPlayerHasSecureMode(lua_State* L);
+
+		static int luaPlayerGetChaseMode(lua_State* L);
+		static int luaPlayerGetSecureMode(lua_State* L);
+		static int luaPlayerGetFightMode(lua_State* L);
+
+		static int32_t luaPlayerStartRecord(lua_State* L);
+		static int32_t luaPlayerStopRecord(lua_State* L);
+		static int32_t luaPlayerIsRecording(lua_State* L);
+
 		static int32_t luaPlayerStartLiveCast(lua_State* L);
- 		static int32_t luaPlayerStopLiveCast(lua_State* L);
- 		static int32_t luaPlayerIsLiveCaster(lua_State* L);
+		static int32_t luaPlayerStopLiveCast(lua_State* L);
+		static int32_t luaPlayerIsLiveCaster(lua_State* L);
 		static int32_t luaPlayerGetSpectators(lua_State* L);
-		
+
+		static int luaPlayerSetChaseMode(lua_State* L);
+		static int luaPlayerSetFightMode(lua_State* L);
+		static int luaPlayerSetSecureMode(lua_State* L);
+
 		// Monster
 		static int luaMonsterCreate(lua_State* L);
 
@@ -1091,6 +1122,7 @@ class LuaScriptInterface
 
 		static int luaHouseGetId(lua_State* L);
 		static int luaHouseGetName(lua_State* L);
+		static int luaHouseSave(lua_State* L);
 		static int luaHouseGetTown(lua_State* L);
 		static int luaHouseGetExitPosition(lua_State* L);
 		static int luaHouseGetRent(lua_State* L);
@@ -1103,12 +1135,16 @@ class LuaScriptInterface
 
 		static int luaHouseGetDoors(lua_State* L);
 		static int luaHouseGetDoorCount(lua_State* L);
+		static int luaHouseGetDoorIdByPosition(lua_State* L);
 
 		static int luaHouseGetTiles(lua_State* L);
 		static int luaHouseGetTileCount(lua_State* L);
 
+		static int luaHouseCanEditAccessList(lua_State* L);
 		static int luaHouseGetAccessList(lua_State* L);
 		static int luaHouseSetAccessList(lua_State* L);
+
+		static int luaHouseKickPlayer(lua_State* L);
 
 		// ItemType
 		static int luaItemTypeCreate(lua_State* L);
@@ -1154,6 +1190,10 @@ class LuaScriptInterface
 		static int luaItemTypeGetDestroyId(lua_State* L);
 		static int luaItemTypeGetDecayId(lua_State* L);
 		static int luaItemTypeGetRequiredLevel(lua_State* L);
+		static int luaItemTypeGetSpeed(lua_State* L);
+		static int luaItemTypeGetBaseSpeed(lua_State* L);
+		static int luaItemTypeGetDecayTime(lua_State* L);
+		static int luaItemTypeGetShowDuration(lua_State* L);
 
 		static int luaItemTypeHasSubType(lua_State* L);
 
@@ -1199,6 +1239,7 @@ class LuaScriptInterface
 		static int luaMonsterTypeIsSummonable(lua_State* L);
 		static int luaMonsterTypeIsIllusionable(lua_State* L);
 		static int luaMonsterTypeIsHostile(lua_State* L);
+		static int luaMonsterTypeIsPassive(lua_State* L);
 		static int luaMonsterTypeIsPushable(lua_State* L);
 		static int luaMonsterTypeIsHealthShown(lua_State* L);
 		static int luaMonsterTypeIsRewardBoss(lua_State* L);
@@ -1266,6 +1307,15 @@ class LuaScriptInterface
 		static int luaPartyIsSharedExperienceEnabled(lua_State* L);
 		static int luaPartyShareExperience(lua_State* L);
 		static int luaPartySetSharedExperience(lua_State* L);
+
+		// Spells
+		static int luaSpellCreate(lua_State* L);
+
+		static int luaSpellGetManaCost(lua_State* L);
+		static int luaSpellGetSoulCost(lua_State* L);
+
+		static int luaSpellIsPremium(lua_State* L);
+		static int luaSpellIsLearnable(lua_State* L);
 
 		//
 		lua_State* luaState = nullptr;

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2014  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,13 @@
 #ifndef FS_PROTOCOLSPECTATOR_H_67DF1C70909A3D52458F250DF5CE2492
 #define FS_PROTOCOLSPECTATOR_H_67DF1C70909A3D52458F250DF5CE2492
 
+#include "protocolgame.h"
 #include "protocolgamebase.h"
 
 class ProtocolGame;
 class ProtocolSpectator;
-typedef std::shared_ptr<ProtocolGame> ProtocolGame_ptr;
-typedef std::shared_ptr<ProtocolSpectator> ProtocolSpectator_ptr;
+using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
+using ProtocolSpectator_ptr = std::shared_ptr<ProtocolSpectator>;
 
 class ProtocolSpectator final : public ProtocolGameBase
 {
@@ -35,20 +36,44 @@ class ProtocolSpectator final : public ProtocolGameBase
 		}
 
 		ProtocolSpectator(Connection_ptr connection);
-		void onLiveCastStop();
-		const std::string& getName() {
-			return name;
+
+		void setSpectatorExaust(time_t time) {
+			exaustTime = time;
 		}
+
+		time_t getSpectatorExaust() {
+			return exaustTime;
+		}
+
+		void setSpectatorName(std::string newName) {
+			spectatorName = newName;
+		}
+
+		const std::string getSpectatorName() {
+			return spectatorName;
+		}
+
+		void setSpectatorId(uint32_t id) {
+			spectatorId = id;
+		}
+
+		const uint32_t getSpectatorId() {
+			return spectatorId;
+		}
+
+		void onLiveCastStop();
+		void login(const std::string& liveCastName, const std::string& password); // Para funcionar o cast no flash
 	private:
-			
-		int64_t lastTalkTime;
 		ProtocolSpectator_ptr getThis() {
 			return std::static_pointer_cast<ProtocolSpectator>(shared_from_this());
 		}
 		ProtocolGame_ptr client;
 		OperatingSystem_t operatingSystem;
 
-		void login(const std::string& liveCastName, const std::string& password);
+		std::string spectatorName;
+		uint32_t spectatorId;
+		time_t exaustTime = 0;
+
 		void logout();
 
 		void disconnectSpectator(const std::string& message) const;
@@ -66,7 +91,7 @@ class ProtocolSpectator final : public ProtocolGameBase
 
 		void parseSpectatorSay(NetworkMessage& msg);
 		void addDummyCreature(NetworkMessage& msg, const uint32_t& creatureID, const Position& playerPos);
-		std::string name;
+		bool parseCoomand(const std::string& text);
 };
 
 #endif

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "configmanager.h"
 #include "game.h"
 #include "outputmessage.h"
+#include "iologindata.h"
 
 extern ConfigManager g_config;
 extern Game g_game;
@@ -144,7 +145,7 @@ void ProtocolStatus::sendStatusString()
 	map.append_attribute("height") = std::to_string(mapHeight).c_str();
 
 	pugi::xml_node motd = tsqp.append_child("motd");
-	motd.text() = g_config.getString(ConfigManager::MOTD).c_str();
+	motd.text() = IOLoginData::getMotd().c_str();
 
 	std::ostringstream ss;
 	doc.save(ss, "", pugi::format_raw);
@@ -174,7 +175,7 @@ void ProtocolStatus::sendInfo(uint16_t requestedInfo, const std::string& charact
 
 	if (requestedInfo & REQUEST_MISC_SERVER_INFO) {
 		output->addByte(0x12);
-		output->addString(g_config.getString(ConfigManager::MOTD));
+		output->addString(IOLoginData::getMotd());
 		output->addString(g_config.getString(ConfigManager::LOCATION));
 		output->addString(g_config.getString(ConfigManager::URL));
 		output->add<uint64_t>((OTSYS_TIME() - ProtocolStatus::start) / 1000);

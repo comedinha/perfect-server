@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,9 +53,6 @@ Monster::Monster(MonsterType* mtype) :
 	baseSpeed = mType->info.baseSpeed;
 	internalLight = mType->info.light;
 	hiddenHealth = mType->info.hiddenHealth;
-
-	timeOfLastHit = 0;
-	hadRecentBattleVar = false;
 
 	// register creature events
 	for (const std::string& scriptName : mType->info.scripts) {
@@ -257,7 +254,7 @@ void Monster::onCreatureMove(Creature* creature, const Tile* newTile, const Posi
 	}
 }
 
-void Monster::onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text)
+void Monster::onCreatureSay(Creature* creature, MessageClasses type, const std::string& text)
 {
 	Creature::onCreatureSay(creature, type, text);
 
@@ -352,10 +349,10 @@ void Monster::updateTargetList()
 		}
 	}
 
-	SpectatorVec list;
-	g_game.map.getSpectators(list, position, true);
-	list.erase(this);
-	for (Creature* spectator : list) {
+	SpectatorHashSet spectators;
+	g_game.map.getSpectators(spectators, position, true);
+	spectators.erase(this);
+	for (Creature* spectator : spectators) {
 		if (canSee(spectator->getPosition())) {
 			onCreatureFound(spectator);
 		}
@@ -613,6 +610,10 @@ bool Monster::selectTarget(Creature* creature)
 		return false;
 	}
 
+	if (isPassive() && !hasBeenAttacked(creature->getID())) {
+		return false;
+	}
+
 	auto it = std::find(targetList.begin(), targetList.end(), creature);
 	if (it == targetList.end()) {
 		//Target not found in our target list.
@@ -678,8 +679,6 @@ void Monster::onEndCondition(ConditionType_t type)
 
 void Monster::onThink(uint32_t interval)
 {
-	updateHadRecentBattleVar();
-
 	Creature::onThink(interval);
 
 	if (mType->info.thinkEvent != -1) {
@@ -938,9 +937,7 @@ void Monster::onThinkDefense(uint32_t interval)
 			Monster* summon = Monster::createMonster(summonBlock.name);
 			if (summon) {
 				const Position& summonPos = getPosition();
-
 				addSummon(summon);
-
 				if (!g_game.placeCreature(summon, summonPos, false, summonBlock.force)) {
 					removeSummon(summon);
 				} else {
@@ -971,9 +968,9 @@ void Monster::onThinkYell(uint32_t interval)
 			const voiceBlock_t& vb = mType->info.voiceVector[index];
 
 			if (vb.yellText) {
-				g_game.internalCreatureSay(this, TALKTYPE_MONSTER_YELL, vb.text, false);
+				g_game.internalCreatureSay(this, MESSAGE_BARK_LOUD, vb.text, false);
 			} else {
-				g_game.internalCreatureSay(this, TALKTYPE_MONSTER_SAY, vb.text, false);
+				g_game.internalCreatureSay(this, MESSAGE_BARK_LOW, vb.text, false);
 			}
 		}
 	}
@@ -1902,22 +1899,7 @@ void Monster::changeHealth(int32_t healthChange, bool sendHealthChange/* = true*
 {
 	//In case a player with ignore flag set attacks the monster
 	setIdle(false);
-
-	if(healthChange < 0){
-		timeOfLastHit = OTSYS_TIME();
-		updateHadRecentBattleVar();
-	}
-
 	Creature::changeHealth(healthChange, sendHealthChange);
-}
-
-void Monster::updateHadRecentBattleVar()
-{
-	bool newRecentBattleVar = ((timeOfLastHit > 0) && OTSYS_TIME() < timeOfLastHit + 30000);
-	if(newRecentBattleVar != hadRecentBattleVar){
-		hadRecentBattleVar = newRecentBattleVar;
-		updateMapCache();
-	}
 }
 
 bool Monster::challengeCreature(Creature* creature)
@@ -1956,9 +1938,6 @@ bool Monster::convinceCreature(Creature* creature)
 
 	creature->addSummon(this);
 
-	setFollowCreature(nullptr);
-	setAttackedCreature(nullptr);
-
 	//destroy summons
 	for (Creature* summon : summons) {
 		summon->changeHealth(-summon->getHealth());
@@ -1972,10 +1951,10 @@ bool Monster::convinceCreature(Creature* creature)
 	updateIdleStatus();
 
 	//Notify surrounding about the change
-	SpectatorVec list;
-	g_game.map.getSpectators(list, getPosition(), true);
-	g_game.map.getSpectators(list, creature->getPosition(), true);
-	for (Creature* spectator : list) {
+	SpectatorHashSet spectators;
+	g_game.map.getSpectators(spectators, getPosition(), true);
+	g_game.map.getSpectators(spectators, creature->getPosition(), true);
+	for (Creature* spectator : spectators) {
 		spectator->onCreatureConvinced(creature, this);
 	}
 

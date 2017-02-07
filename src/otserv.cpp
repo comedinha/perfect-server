@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,10 +28,11 @@
 #include "configmanager.h"
 #include "scriptmanager.h"
 #include "rsa.h"
+#include "protocolspectator.h"
+#include "protocolrecord.h"
 #include "protocolold.h"
 #include "protocollogin.h"
 #include "protocolstatus.h"
-#include "protocolspectator.h"
 #include "databasemanager.h"
 #include "scheduler.h"
 #include "databasetasks.h"
@@ -105,8 +106,8 @@ void mainLoader(int, char*[], ServiceManager* services)
 #ifdef _WIN32
 	SetConsoleTitle(STATUS_SERVER_NAME);
 #endif
-	std::cout << STATUS_SERVER_NAME << " - Version " << STATUS_SERVER_VERSION << std::endl;
-	std::cout << "Compiled with " << BOOST_COMPILER << std::endl;
+	std::cout << "The " << STATUS_SERVER_NAME << " Version: (" << STATUS_SERVER_VERSION << "." << MINOR_VERSION << " . " << REVISION_VERSION << ") - Codename: ( " << SOFTWARE_CODENAME << " )" << std::endl;
+	std::cout << "Compiled with: " << BOOST_COMPILER << std::endl;
 	std::cout << "Compiled on " << __DATE__ << ' ' << __TIME__ << " for platform ";
 
 #if defined(__amd64__) || defined(_M_X64)
@@ -120,8 +121,8 @@ void mainLoader(int, char*[], ServiceManager* services)
 #endif
 	std::cout << std::endl;
 
-	std::cout << "A server developed by " << STATUS_SERVER_DEVELOPERS << std::endl;
-	std::cout << "Visit our forum for updates, support, and resources: http://otland.net/." << std::endl;
+	std::cout << "A server developed by " << STATUS_SERVER_DEVELOPERS << "." << std::endl;
+	std::cout << "Visit our forum for updates, support, and resources: " << GIT_REPO <<"." << std::endl;
 	std::cout << std::endl;
 
 	// read global config
@@ -147,8 +148,7 @@ void mainLoader(int, char*[], ServiceManager* services)
 
 	std::cout << ">> Establishing database connection..." << std::flush;
 
-	Database* db = Database::getInstance();
-	if (!db->connect()) {
+	if (!Database::getInstance().connect()) {
 		startupErrorMessage("Failed to connect to database.");
 		return;
 	}
@@ -190,7 +190,7 @@ void mainLoader(int, char*[], ServiceManager* services)
 	}
 
 	std::cout << ">> Loading script systems" << std::endl;
-	if (!ScriptingManager::getInstance()->loadScriptSystems()) {
+	if (!ScriptingManager::getInstance().loadScriptSystems()) {
 		startupErrorMessage("Failed to load script systems");
 		return;
 	}
@@ -202,8 +202,7 @@ void mainLoader(int, char*[], ServiceManager* services)
 	}
 
 	std::cout << ">> Loading outfits" << std::endl;
-	Outfits* outfits = Outfits::getInstance();
-	if (!outfits->loadFromXml()) {
+	if (!Outfits::getInstance().loadFromXml()) {
 		startupErrorMessage("Unable to load outfits!");
 		return;
 	}
@@ -238,9 +237,12 @@ void mainLoader(int, char*[], ServiceManager* services)
 	// Game client protocols
 	services->add<ProtocolGame>(g_config.getNumber(ConfigManager::GAME_PORT));
 	if (g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
- 		ProtocolGame::clearLiveCastInfo();
- 		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
- 	}
+		ProtocolGame::clearLiveCastInfo();
+		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
+	}
+	if (g_config.getBoolean(ConfigManager::ENABLE_RECORD)) {
+		services->add<ProtocolRecord>(g_config.getNumber(ConfigManager::RECORD_PORT));
+	}
 	services->add<ProtocolLogin>(g_config.getNumber(ConfigManager::LOGIN_PORT));
 
 	// OT protocols
@@ -265,9 +267,10 @@ void mainLoader(int, char*[], ServiceManager* services)
 	}
 
 	g_game.map.houses.payHouses(rentPeriod);
+	g_game.saveGameStateHouses();
 
 	IOMarket::checkExpiredOffers();
-	IOMarket::getInstance()->updateStatistics();
+	IOMarket::getInstance().updateStatistics();
 
 	std::cout << ">> Loaded all modules, server starting up..." << std::endl;
 

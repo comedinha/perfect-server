@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 class Party;
 class Player;
 
-typedef std::map<uint32_t, Player*> UsersMap;
-typedef std::map<uint32_t, const Player*> InvitedMap;
+using UsersMap = std::map<uint32_t, Player*>;
+using InvitedMap = std::map<uint32_t, const Player*>;
 
 class ChatChannel
 {
@@ -42,8 +42,8 @@ class ChatChannel
 		bool addUser(Player& player);
 		bool removeUser(const Player& player);
 
-		bool talk(const Player& fromPlayer, SpeakClasses type, const std::string& text);
-		void sendToAll(const std::string& message, SpeakClasses type) const;
+		bool talk(const Player& fromPlayer, MessageClasses type, const std::string& text);
+		void sendToAll(const std::string& message, MessageClasses type) const;
 
 		const std::string& getName() const {
 			return name;
@@ -67,7 +67,7 @@ class ChatChannel
 		bool executeOnJoinEvent(const Player& player);
 		bool executeCanJoinEvent(const Player& player);
 		bool executeOnLeaveEvent(const Player& player);
-		bool executeOnSpeakEvent(const Player& player, SpeakClasses& type, const std::string& message);
+		bool executeOnSpeakEvent(const Player& player, MessageClasses& type, const std::string& message);
 
 	protected:
 		UsersMap users;
@@ -115,7 +115,7 @@ class PrivateChatChannel final : public ChatChannel
 		uint32_t owner = 0;
 };
 
-typedef std::list<ChatChannel*> ChannelList;
+using ChannelList = std::list<ChatChannel*>;
 
 class Chat
 {
@@ -135,7 +135,7 @@ class Chat
 		bool removeUserFromChannel(const Player& player, uint16_t channelId);
 		void removeUserFromAllChannels(const Player& player);
 
-		bool talkToChannel(const Player& player, SpeakClasses type, const std::string& text, uint16_t channelId);
+		bool talkToChannel(const Player& player, MessageClasses type, const std::string& text, uint16_t channelId);
 
 		ChannelList getChannelList(const Player& player);
 

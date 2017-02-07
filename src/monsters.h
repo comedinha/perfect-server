@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,14 @@ struct LootBlock {
 	int32_t subType;
 	int32_t actionId;
 	std::string text;
+	std::string name;
+	std::string article;
+	int32_t attack;
+	int32_t defense;
+	int32_t extraDefense;
+	int32_t armor;
+	int32_t shootRange;
+	int32_t hitChance;
 	bool unique;
 
 	std::vector<LootBlock> childLoot;
@@ -45,6 +53,13 @@ struct LootBlock {
 
 		subType = -1;
 		actionId = -1;
+		attack = -1;
+		defense = -1;
+		extraDefense = -1;
+		armor = -1;
+		shootRange = -1;
+		hitChance = -1;
+		unique = false;
 	}
 };
 
@@ -121,6 +136,7 @@ class MonsterType
 		uint32_t changeTargetSpeed = 0;
 		uint32_t conditionImmunities = 0;
 		uint32_t damageImmunities = 0;
+		uint32_t passMagicField = 0;
 		uint32_t baseSpeed = 200;
 
 		int32_t creatureAppearEvent = -1;
@@ -132,7 +148,7 @@ class MonsterType
 		int32_t runAwayHealth = 0;
 		int32_t health = 100;
 		int32_t healthMax = 100;
-		int32_t changeTargetChance =0;
+		int32_t changeTargetChance = 0;
 		int32_t defense = 0;
 		int32_t armor = 0;
 
@@ -140,13 +156,14 @@ class MonsterType
 		bool canPushCreatures = false;
 		bool pushable = true;
 		bool isSummonable = false;
+		bool isRewardBoss = false;
 		bool isIllusionable = false;
 		bool isConvinceable = false;
 		bool isAttackable = true;
 		bool isHostile = true;
-		bool isBlockable = false;
+		bool isPassive = false;
 		bool hiddenHealth = false;
-		bool isRewardBoss = false;
+		bool isBlockable = false;
 	};
 
 	public:
@@ -180,9 +197,9 @@ class Monsters
 		}
 		bool reload();
 
-		MonsterType* getMonsterType(const std::string& name);
 		std::vector<std::string> getPreyMonsters();
-		
+		MonsterType* getMonsterType(const std::string& name);
+
 		static uint32_t getLootRandom();
 
 	private:

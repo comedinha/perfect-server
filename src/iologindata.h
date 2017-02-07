@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "player.h"
 #include "database.h"
 
-typedef std::list<std::pair<int32_t, Item*>> ItemBlockList;
+using ItemBlockList = std::list<std::pair<int32_t, Item*>>;
 
 class IOLoginData
 {
@@ -33,25 +33,34 @@ class IOLoginData
 		static bool saveAccount(const Account& acc);
 
 		static bool loginserverAuthentication(const std::string& name, const std::string& password, Account& account);
+		static bool loadCasts(Casts& casts);
+		static std::string getMotd();
+		static bool loadWorlds(World& world);
+		static uint32_t getWorldId(uint32_t playerId);
+		static bool loadRecords(Records& records);
 		static std::string generateFlashSessionKey(const std::string& token);
 		static uint32_t gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName);
 
 		static AccountType_t getAccountType(uint32_t accountId);
 		static void setAccountType(uint32_t accountId, AccountType_t accountType);
 		static void updateOnlineStatus(uint32_t guid, bool login);
+		static bool getPlayersByAccount(uint32_t accountId);
+		static bool getPlayers(Playerson& playerson);
+		static uint32_t getPlayerAccountId(uint32_t playerId);
 		static bool preloadPlayer(Player* player, const std::string& name);
 
 		static bool loadPlayerById(Player* player, uint32_t id);
-		static bool loadPlayerPreyById(Player* player, uint32_t id);
 		static bool loadPlayerByName(Player* player, const std::string& name);
 		static bool loadPlayer(Player* player, DBResult_ptr result);
 		static bool savePlayer(Player* player);
+		static bool loadPlayerPreyById(Player* player, uint32_t id);
 		static bool savePlayerPreyById(Player* player, uint32_t id);
 		static uint32_t getGuidByName(const std::string& name);
 		static bool getGuidByNameEx(uint32_t& guid, bool& specialVip, std::string& name);
 		static std::string getNameByGuid(uint32_t guid);
 		static bool formatPlayerName(std::string& name);
 		static void increaseBankBalance(uint32_t guid, uint64_t bankBalance);
+		static void increaseCoinsBalance(uint32_t guid, uint64_t coinsBalance);
 		static bool hasBiddedOnHouse(uint32_t guid);
 
 		static std::forward_list<VIPEntry> getVIPEntries(uint32_t accountId);
@@ -63,7 +72,7 @@ class IOLoginData
 		static void removePremiumDays(uint32_t accountId, int32_t removeDays);
 
 	protected:
-		typedef std::map<uint32_t, std::pair<Item*, uint32_t>> ItemMap;
+		using ItemMap = std::map<uint32_t, std::pair<Item*, uint32_t>>;
 
 		static void loadItems(ItemMap& itemMap, DBResult_ptr result);
 		static bool saveItems(const Player* player, const ItemBlockList& itemList, DBInsert& query_insert, PropWriteStream& stream);
