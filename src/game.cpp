@@ -5311,7 +5311,7 @@ void Game::playerCreateMarketOffer(uint32_t playerId, uint8_t type, uint16_t spr
 			return;
 		}
 
-		Database* db = Database::getInstance();
+		Database& db = Database::getInstance();
 		if (it.stackable) {
 			if (it.id != ITEM_TIBIACOIN) {
 				uint16_t tmpAmount = amount;
@@ -5412,7 +5412,7 @@ void Game::playerCancelMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 					tmpAmount -= stackCount;
 				}
 			} else {
-				Database* db = Database::getInstance();
+				Database& db = Database::getInstance();
 				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(offer.amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
@@ -5504,7 +5504,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 					}
 				}
 			} else {
-				Database* db = Database::getInstance();
+				Database& db = Database::getInstance();
 				db.executeQuery("UPDATE `players` SET `coins`=`coins`-" + std::to_string(amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
@@ -5530,7 +5530,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 				}
 			} else {
 				isTibiaCoin = true;
-				Database* db = Database::getInstance();
+				Database& db = Database::getInstance();
 				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(amount) + " WHERE `id`=" + std::to_string(buyerPlayer->getGUID()));
 			}
 		} else {
@@ -5578,7 +5578,7 @@ void Game::playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16
 				}
 			} else {
 				isTibiaCoin = true;
-				Database* db = Database::getInstance();
+				Database& db = Database::getInstance();
 				db.executeQuery("UPDATE `players` SET `coins`=`coins`+" + std::to_string(amount) + " WHERE `id`=" + std::to_string(player->getGUID()));
 			}
 		} else {
