@@ -1304,7 +1304,7 @@ void ProtocolGame::updateCoinBalance() {
 
 void ProtocolGame::sendCoinBalance()
 {
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 
 	std::ostringstream query;
 	query << "SELECT `coins` FROM `players` WHERE `id`=" + std::to_string(player->getGUID());
