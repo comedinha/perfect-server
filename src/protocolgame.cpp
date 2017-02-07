@@ -2466,7 +2466,8 @@ void ProtocolGame::checkCommand(const std::string& text)
 	if (text[0] == '!') {
 		StringVector t = explodeString(text.substr(1, text.length()), " ", 1);
 		if (t.size() > 0) {
-			std::string command = toLowerCaseString(t[0]);
+			toLowerCaseString(t[0]);
+			std::string command = t[0];
 
 			if ((command == "mute") || (command == "unmute")) {
 				if (t.size() == 2) {
