@@ -29,8 +29,8 @@ static constexpr auto STATUS_SERVER_DEVELOPERS = "Mattyx14, Brewsterl, Malucooo,
 static constexpr auto GIT_REPO = "https://github.com/comedinha/perfect-server";
 
 static constexpr auto CLIENT_VERSION_MIN = 1100;
-static constexpr auto CLIENT_VERSION_MAX = 1101;
-static constexpr auto CLIENT_VERSION_STR = "10.00 and 11.00";
+static constexpr auto CLIENT_VERSION_MAX = 1110;
+static constexpr auto CLIENT_VERSION_STR = "10.00, 11.00 and 11.10";
 
 static constexpr auto AUTHENTICATOR_DIGITS = 6U;
 static constexpr auto AUTHENTICATOR_PERIOD = 30U;
