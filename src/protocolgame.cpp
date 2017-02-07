@@ -2470,7 +2470,8 @@ void ProtocolGame::checkCommand(const std::string& text)
 
 			if ((command == "mute") || (command == "unmute")) {
 				if (t.size() == 2) {
-					std::string toMute = toLowerCaseString(t[1]);
+					toLowerCaseString(t[1]);
+					std::string toMute = t[1];
 
 					if (toMute == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2501,8 +2502,8 @@ void ProtocolGame::checkCommand(const std::string& text)
 				return;
 			} else if (command == "ban" || command == "unban") {
 				if (t.size() == 2) {
-
-					std::string toBan = toLowerCaseString(t[1]);
+					toLowerCaseString(t[1]);
+					std::string toBan = t[1];
 
 					if (toBan == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2583,7 +2584,8 @@ void ProtocolGame::checkCommand(const std::string& text)
 				return;
 			} else if (command == "kick") {
 				if (t.size() == 2) {
-					std::string toKick = toLowerCaseString(t[1]);
+					toLowerCaseString(t[1]);
+					std::string toKick = t[1];
 
 					if (toKick == "") {
 						sendTextMessage(TextMessage(MESSAGE_FAILURE, "Not enough parameters."), CHANNEL_CAST, false);
@@ -2603,7 +2605,8 @@ void ProtocolGame::checkCommand(const std::string& text)
 				}
 				return;
 			} else if (command == "togglechat") {
-				std::string enable = toLowerCaseString(t[1]);
+				toLowerCaseString(t[1]);
+				std::string enable = t[1];
 				if (enable == "on") {
 					castChatEnabled = true;
 					sendTextMessage(TextMessage(MESSAGE_GUILD, "O Chat foi ativado!"), CHANNEL_CAST, false);
