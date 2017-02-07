@@ -123,17 +123,10 @@ void Connection::accept()
 		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
 
 		if (!receivedLastChar && receivedName && connectionState == CONNECTION_STATE_CONNECTING_STAGE2) {
-			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME) + "\n";
-
-			if (serverNameTime < serverName.length() + 1) {
-				std::cout << "[Network error - Connection::accept] " << convertIPToString(getIP()) << " Try new connection" << std::endl;
-				close(FORCE_CLOSE);
-				return;
-			} else {
-				std::cout << "[Network error - Connection::accept] " << convertIPToString(getIP()) << " Possible crash bug tried" << std::endl;
-				close(FORCE_CLOSE);
-				return;
-			}
+			// Read size of the first packet
+			boost::asio::async_read(socket,
+								boost::asio::buffer(msg.getBuffer(), 1),
+								std::bind(&Connection::parseHeader, shared_from_this(), std::placeholders::_1));
 		} else {
 			// Read size of the first packet
 			boost::asio::async_read(socket,
@@ -171,17 +164,28 @@ void Connection::parseHeader(const boost::system::error_code& error)
 		if (!receivedName && msgBuffer[1] == 0x00) {
 			receivedLastChar = true;
 		} else {
-			++serverNameTime;
 			if (!receivedName) {
 				receivedName = true;
-			}
+				serverNameTime = 1;
 
-			if (msgBuffer[0] == 0x0A) {
-				receivedLastChar = true;
+				accept();
+				return;
 			}
+			++serverNameTime;
 
-			accept();
-			return;
+			std::string serverName = g_config.getString(ConfigManager::SERVER_NAME) + "\n";
+			if (msgBuffer[0] == serverName[serverNameTime]) {
+				if (msgBuffer[0] == 0x0A) {
+					receivedLastChar = true;
+				}
+
+				accept();
+				return;
+			} else {
+				std::cout << "[Network error - Connection::parseHeader] Invalid Client Login" std::endl;
+				close(FORCE_CLOSE);
+				return;
+			}
 		}
 	}
 
