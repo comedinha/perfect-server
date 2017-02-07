@@ -76,6 +76,7 @@ void MonsterType::createLoot(Container* corpse)
 				}
 			}
 		}*/
+		
 		bool canRerollLoot = false;
 		for (auto it = info.lootItems.rbegin(), end = info.lootItems.rend(); it != end; ++it) {
 			auto itemList = createLootItem(*it, canRerollLoot);
