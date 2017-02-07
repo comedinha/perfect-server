@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -198,12 +198,17 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 
 		//nopvp-zone
 		if (isPlayerCombat(target)) {
-			if (player->getZone() == ZONE_NOPVP) {
-				return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
+			if (!(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && player->getVocationId() == VOCATION_NONE && player->getLevel() >= 11)) {
+				if (player->getZone() == ZONE_NOPVP) {
+					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
+				}
 			}
 
-			if (target->getZone() == ZONE_NOPVP) {
-				return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
+			Player* targetplayer = target->getPlayer();
+			if (!targetplayer || !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && targetplayer->getVocationId() == VOCATION_NONE && targetplayer->getLevel() >= 11)) {
+				if (target->getZone() == ZONE_NOPVP) {
+					return RETURNVALUE_YOUMAYNOTATTACKAPERSONINPROTECTIONZONE;
+				}
 			}
 		}
 	}
@@ -229,7 +234,7 @@ ReturnValue Combat::canTargetCreature(Player* player, Creature* target)
 	return Combat::canDoCombat(player, target);
 }
 
-ReturnValue Combat::canDoCombat(Creature* caster, Tile* tile, bool aggressive, uint16_t runeId)
+ReturnValue Combat::canDoCombat(Creature* caster, Tile* tile, bool aggressive)
 {
 	if (tile->hasProperty(CONST_PROP_BLOCKPROJECTILE)) {
 		return RETURNVALUE_NOTENOUGHROOM;
@@ -279,9 +284,13 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 		return true;
 	}
 
-	/*if (attacker->getVocationId() == VOCATION_NONE || target->getVocationId() == VOCATION_NONE) {
-		return true;
-	}*/
+	if (g_config.getBoolean(ConfigManager::ROOKGARD_WAR)) {
+		if (attacker->getVocationId() == VOCATION_NONE && target->getVocationId() == VOCATION_NONE) {
+			if (!(attacker->getLevel() >= 11 && target->getLevel() >= 11)) {
+				return true;
+			}
+		}
+	}
 
 	if (attacker->getSkull() == SKULL_BLACK && attacker->getSkullClient(target) == SKULL_NONE) {
 		return true;
@@ -309,9 +318,9 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 
 				//nopvp-zone
 				const Tile* targetPlayerTile = targetPlayer->getTile();
-				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE)) {
+				if (targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE) && !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && targetPlayer->getVocationId() == VOCATION_NONE && targetPlayer->getLevel() >= 11)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
-				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
+				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !(g_config.getBoolean(ConfigManager::ROOKGARD_WAR) && attackerPlayer->getVocationId() == VOCATION_NONE && attackerPlayer->getLevel() >= 11) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			}
@@ -546,7 +555,7 @@ void Combat::CombatNullFunc(Creature* caster, Creature* target, const CombatPara
 	CombatDispelFunc(caster, target, params, nullptr);
 }
 
-void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile* tile, const CombatParams& params)
+void Combat::combatTileEffects(const SpectatorHashSet& spectators, Creature* caster, Tile* tile, const CombatParams& params)
 {
 	if (params.itemId != 0) {
 		uint16_t itemId = params.itemId;
@@ -583,8 +592,8 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 				break;
 		}
 
+		Player* casterPlayer = nullptr;
 		if (caster) {
-			Player* casterPlayer;
 			if (caster->isSummon()) {
 				casterPlayer = caster->getMaster()->getPlayer();
 			} else {
@@ -592,18 +601,28 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 			}
 
 			if (casterPlayer) {
-				if (g_game.getWorldType() == WORLD_TYPE_NO_PVP || tile->hasFlag(TILESTATE_NOPVPZONE)) {
-					if (itemId == ITEM_FIREFIELD_PVP_FULL) {
-						itemId = ITEM_FIREFIELD_NOPVP;
-					} else if (itemId == ITEM_POISONFIELD_PVP) {
-						itemId = ITEM_POISONFIELD_NOPVP;
-					} else if (itemId == ITEM_ENERGYFIELD_PVP) {
-						itemId = ITEM_ENERGYFIELD_NOPVP;
+				if (!tile->hasFlag(TILESTATE_PVPZONE)) {
+					if (g_game.getWorldType() == WORLD_TYPE_NO_PVP || tile->hasFlag(TILESTATE_NOPVPZONE)) {
+						if (itemId == ITEM_FIREFIELD_PVP_FULL) {
+							itemId = ITEM_FIREFIELD_NOPVP_FULL;
+						} else if (itemId == ITEM_POISONFIELD_PVP) {
+							itemId = ITEM_POISONFIELD_NOPVP;
+						} else if (itemId == ITEM_ENERGYFIELD_PVP) {
+							itemId = ITEM_ENERGYFIELD_NOPVP;
+						} else if (itemId == ITEM_MAGICWALL) {
+							itemId = ITEM_MAGICWALL_NOPVP;
+						} else if (itemId == ITEM_WILDGROWTH) {
+							itemId = ITEM_WILDGROWTH_NOPVP;
+						}
+					} else if (itemId == ITEM_FIREFIELD_PVP_FULL || itemId == ITEM_POISONFIELD_PVP || itemId == ITEM_ENERGYFIELD_PVP) {
+						casterPlayer->addInFightTicks();
 					}
-				} else if (itemId == ITEM_FIREFIELD_PVP_FULL || itemId == ITEM_POISONFIELD_PVP || itemId == ITEM_ENERGYFIELD_PVP) {
-					casterPlayer->addInFightTicks();
 				}
 			}
+		}
+
+		if (caster && !casterPlayer && caster->isSummon()) {
+			casterPlayer = caster->getMaster()->getPlayer();
 		}
 
 		Item* item = Item::CreateItem(itemId);
@@ -624,7 +643,7 @@ void Combat::combatTileEffects(const SpectatorVec& list, Creature* caster, Tile*
 	}
 
 	if (params.impactEffect != CONST_ME_NONE) {
-		Game::addMagicEffect(list, tile->getPosition(), params.impactEffect);
+		Game::addMagicEffect(spectators, tile->getPosition(), params.impactEffect);
 	}
 }
 
@@ -668,7 +687,7 @@ void Combat::addDistanceEffect(Creature* caster, const Position& fromPos, const 
 	}
 }
 
-void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat* area, const CombatParams& params, COMBATFUNC func, CombatDamage* data)
+void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat* area, const CombatParams& params, CombatFunction func, CombatDamage* data)
 {
 	std::forward_list<Tile*> tileList;
 
@@ -678,7 +697,7 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 		getCombatArea(pos, pos, area, tileList);
 	}
 
-	SpectatorVec list;
+	SpectatorHashSet spectators;
 	uint32_t maxX = 0;
 	uint32_t maxY = 0;
 
@@ -699,7 +718,7 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 
 	const int32_t rangeX = maxX + Map::maxViewportX;
 	const int32_t rangeY = maxY + Map::maxViewportY;
-	g_game.map.getSpectators(list, pos, true, true, rangeX, rangeX, rangeY, rangeY);
+	g_game.map.getSpectators(spectators, pos, true, true, rangeX, rangeX, rangeY, rangeY);
 
 	for (Tile* tile : tileList) {
 		if (canDoCombat(caster, tile, params.aggressive) != RETURNVALUE_NOERROR) {
@@ -731,7 +750,7 @@ void Combat::CombatFunc(Creature* caster, const Position& pos, const AreaCombat*
 				}
 			}
 		}
-		combatTileEffects(list, caster, tile, params);
+		combatTileEffects(spectators, caster, tile, params);
 	}
 	postCombatEffects(caster, pos, params);
 }
@@ -865,11 +884,11 @@ void Combat::doCombatDispel(Creature* caster, Creature* target, const CombatPara
 void Combat::doCombatDefault(Creature* caster, Creature* target, const CombatParams& params)
 {
 	if (!params.aggressive || (caster != target && Combat::canDoCombat(caster, target) == RETURNVALUE_NOERROR)) {
-		SpectatorVec list;
-		g_game.map.getSpectators(list, target->getPosition(), true, true);
+		SpectatorHashSet spectators;
+		g_game.map.getSpectators(spectators, target->getPosition(), true, true);
 
 		CombatNullFunc(caster, target, params, nullptr);
-		combatTileEffects(list, caster, target->getTile(), params);
+		combatTileEffects(spectators, caster, target->getTile(), params);
 
 		if (params.targetCallback) {
 			params.targetCallback->onTargetCombat(caster, target);
@@ -1362,9 +1381,9 @@ void MagicField::onStepInField(Creature* creature)
 		uint32_t ownerId = getOwner();
 		if (ownerId) {
 			bool harmfulField = true;
+			Creature* owner = g_game.getCreatureByID(ownerId);
 
-			if (g_game.getWorldType() == WORLD_TYPE_NO_PVP || getTile()->hasFlag(TILESTATE_NOPVPZONE)) {
-				Creature* owner = g_game.getCreatureByID(ownerId);
+			if ((g_game.getWorldType() == WORLD_TYPE_NO_PVP && !getTile()->hasFlag(TILESTATE_PVPZONE)) || getTile()->hasFlag(TILESTATE_NOPVPZONE)) {
 				if (owner) {
 					if (owner->getPlayer() || (owner->isSummon() && owner->getMaster()->getPlayer())) {
 						harmfulField = false;
@@ -1374,9 +1393,22 @@ void MagicField::onStepInField(Creature* creature)
 
 			Player* targetPlayer = creature->getPlayer();
 			if (targetPlayer) {
-				Player* attackerPlayer = g_game.getPlayerByID(ownerId);
+				Player* attackerPlayer = nullptr;
+				bool isSummonField = false;
+				if (owner) {
+					attackerPlayer = owner->getPlayer();
+					if (!attackerPlayer) {
+						if (Monster* monster = g_game.getMonsterByID(ownerId)) {
+							if (monster->isSummon() && monster->getMaster()->getPlayer()) {
+								isSummonField = true;
+								attackerPlayer = monster->getMaster()->getPlayer();
+							}
+						}
+					}
+				}
+
 				if (attackerPlayer) {
-					if (Combat::isProtected(attackerPlayer, targetPlayer)) {
+					if (!isSummonField && Combat::isProtected(attackerPlayer, targetPlayer)) {
 						harmfulField = false;
 					}
 				}

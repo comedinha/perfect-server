@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,6 +154,10 @@ void Creature::onThink(uint32_t interval)
 	}
 
 	if (isUpdatingPath) {
+		if (getMonster() && isAttacked() && !isAttackedCheck) {
+			updateMapCache();
+			isAttackedCheck = true;
+		}
 		isUpdatingPath = false;
 		goToFollowCreature();
 	}
@@ -231,7 +235,7 @@ void Creature::onWalk(Direction& dir)
 			if (r < DIRECTION_DIAGONAL_MASK) {
 				dir = static_cast<Direction>(r);
 			}
-			g_game.internalCreatureSay(this, TALKTYPE_MONSTER_SAY, "Hicks!", false);
+			g_game.internalCreatureSay(this, MESSAGE_BARK_LOW, "Hicks!", false);
 		}
 	}
 }
@@ -426,12 +430,12 @@ void Creature::onCreatureDisappear(const Creature* creature, bool isLogout)
 {
 	if (attackedCreature == creature) {
 		setAttackedCreature(nullptr);
-		onAttackedCreatureDisappear(isLogout);
+		onAttackedCreatureDisappear(isLogout, creature);
 	}
 
 	if (followCreature == creature) {
 		setFollowCreature(nullptr);
-		onFollowCreatureDisappear(isLogout);
+		onFollowCreatureDisappear(isLogout, creature);
 	}
 }
 
@@ -638,8 +642,10 @@ void Creature::onDeath()
 
 			if (attacker != this) {
 				uint64_t gainExp = getGainedExperience(attacker);
-				if (Player* player = attacker->getPlayer()) {
-					Party* party = player->getParty();
+				if (Player* attackerPlayer = attacker->getPlayer()) {
+					attackerPlayer->removeAttacked(getPlayer());
+
+					Party* party = attackerPlayer->getParty();
 					if (party && party->getLeader() && party->isSharedExperienceActive() && party->isSharedExperienceEnabled()) {
 						attacker = party->getLeader();
 					}
@@ -774,9 +780,11 @@ void Creature::changeMana(int32_t manaChange)
 
 void Creature::gainHealth(Creature* healer, int32_t healthGain)
 {
-	if (healer) // Check to avoid crash
-		if (healer->getPlayer() && this->getMonster()) // check if healer is a player and target is a monster.
-			return; // deny heal
+	if (healer) {
+		if (healer->getPlayer() && this->getMonster()) {
+			return;
+		}
+	}
 
 	changeHealth(healthGain);
 	if (healer) {
@@ -1084,6 +1092,14 @@ void Creature::onAttackedCreatureDrainHealth(Creature* target, int32_t points)
 	target->addDamagePoints(this, points);
 }
 
+void Creature::onAttackedCreatureKilled(Creature* target)
+{
+	if (target != this) {
+		uint64_t gainExp = target->getGainedExperience(this);
+		onGainExperience(gainExp, target);
+	}
+}
+
 bool Creature::onKilledCreature(Creature* target, bool)
 {
 	if (master) {
@@ -1107,18 +1123,18 @@ void Creature::onGainExperience(uint64_t gainExp, Creature* target)
 	gainExp /= 2;
 	master->onGainExperience(gainExp, target);
 
-	SpectatorVec list;
-	g_game.map.getSpectators(list, position, false, true);
-	if (list.empty()) {
+	SpectatorHashSet spectators;
+	g_game.map.getSpectators(spectators, position, false, true);
+	if (spectators.empty()) {
 		return;
 	}
 
-	TextMessage message(MESSAGE_EXPERIENCE_OTHERS, ucfirst(getNameDescription()) + " gained " + std::to_string(gainExp) + (gainExp != 1 ? " experience points." : " experience point."));
+	TextMessage message(MESSAGE_EXP_OTHERS, ucfirst(getNameDescription()) + " gained " + std::to_string(gainExp) + (gainExp != 1 ? " experience points." : " experience point."));
 	message.position = position;
 	message.primary.color = TEXTCOLOR_WHITE_EXP;
 	message.primary.value = gainExp;
 
-	for (Creature* spectator : list) {
+	for (Creature* spectator : spectators) {
 		spectator->getPlayer()->sendTextMessage(message);
 	}
 }
@@ -1350,6 +1366,19 @@ bool Creature::isImmune(ConditionType_t type) const
 bool Creature::isSuppress(ConditionType_t type) const
 {
 	return hasBitSet(static_cast<uint32_t>(type), getConditionSuppressions());
+}
+
+bool Creature::passMagicField(CombatType_t type) const
+{
+	return hasBitSet(static_cast<uint32_t>(type), getPassMagicField());
+}
+
+bool Creature::isAttacked() const
+{
+	if (lastHitCreatureId != 0) {
+		return true;
+	}
+	return false;
 }
 
 int64_t Creature::getStepDuration(Direction dir) const

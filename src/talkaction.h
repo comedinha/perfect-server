@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ class TalkActions : public BaseEvents
 		TalkActions(const TalkActions&) = delete;
 		TalkActions& operator=(const TalkActions&) = delete;
 
-		TalkActionResult_t playerSaySpell(Player* player, SpeakClasses type, const std::string& words) const;
+		TalkActionResult_t playerSaySpell(Player* player, MessageClasses type, const std::string& words) const;
 
 	protected:
 		LuaScriptInterface& getScriptInterface() final;
@@ -72,7 +72,7 @@ class TalkAction : public Event
 		}
 
 		//scripting
-		bool executeSay(Player* player, const std::string& param, SpeakClasses type) const;
+		bool executeSay(Player* player, const std::string& param, MessageClasses type) const;
 		//
 
 	protected:

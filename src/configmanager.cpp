@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,11 @@
 
 #include "otpch.h"
 
+#include <lua.hpp>
+
 #include "configmanager.h"
 #include "game.h"
+#include "iologindata.h"
 
 #if LUA_VERSION_NUM >= 502
 #undef lua_strlen
@@ -28,6 +31,54 @@
 #endif
 
 extern Game g_game;
+
+namespace {
+
+std::string getGlobalString(lua_State* L, const char* identifier, const char* defaultValue)
+{
+	lua_getglobal(L, identifier);
+	if (!lua_isstring(L, -1)) {
+		return defaultValue;
+	}
+
+	size_t len = lua_strlen(L, -1);
+	std::string ret(lua_tostring(L, -1), len);
+	lua_pop(L, 1);
+	return ret;
+}
+
+int32_t getGlobalNumber(lua_State* L, const char* identifier, const int32_t defaultValue = 0)
+{
+	lua_getglobal(L, identifier);
+	if (!lua_isnumber(L, -1)) {
+		return defaultValue;
+	}
+
+	int32_t val = lua_tonumber(L, -1);
+	lua_pop(L, 1);
+	return val;
+}
+
+bool getGlobalBoolean(lua_State* L, const char* identifier, const bool defaultValue)
+{
+	lua_getglobal(L, identifier);
+	if (!lua_isboolean(L, -1)) {
+		if (!lua_isstring(L, -1)) {
+			return defaultValue;
+		}
+
+		size_t len = lua_strlen(L, -1);
+		std::string ret(lua_tostring(L, -1), len);
+		lua_pop(L, 1);
+		return booleanString(ret);
+	}
+
+	int val = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return val != 0;
+}
+
+}
 
 bool ConfigManager::load()
 {
@@ -57,14 +108,17 @@ bool ConfigManager::load()
 		string[MYSQL_USER] = getGlobalString(L, "mysqlUser", "forgottenserver");
 		string[MYSQL_PASS] = getGlobalString(L, "mysqlPass", "");
 		string[MYSQL_DB] = getGlobalString(L, "mysqlDatabase", "forgottenserver");
+		string[MYSQL_WORLD_DB] = getGlobalString(L, "mysqlWorldDatabase", "forgottenserver");
 		string[MYSQL_SOCK] = getGlobalString(L, "mysqlSock", "");
 
+		integer[WORLD_ID] = getGlobalNumber(L, "worldID", 1);
 		integer[SQL_PORT] = getGlobalNumber(L, "mysqlPort", 3306);
 		integer[GAME_PORT] = getGlobalNumber(L, "gameProtocolPort", 7172);
 		integer[LOGIN_PORT] = getGlobalNumber(L, "loginProtocolPort", 7171);
 		integer[STATUS_PORT] = getGlobalNumber(L, "statusProtocolPort", 7171);
 
 		integer[MARKET_OFFER_DURATION] = getGlobalNumber(L, "marketOfferDuration", 30 * 24 * 60 * 60);
+
 		integer[FREE_DEPOT_LIMIT] = getGlobalNumber(L, "freeDepotLimit", 2000);
 		integer[PREMIUM_DEPOT_LIMIT] = getGlobalNumber(L, "premiumDepotLimit", 10000);
 		integer[DEPOT_BOXES] = getGlobalNumber(L, "depotBoxes", 17);
@@ -84,15 +138,24 @@ bool ConfigManager::load()
 	boolean[WARN_UNSAFE_SCRIPTS] = getGlobalBoolean(L, "warnUnsafeScripts", true);
 	boolean[CONVERT_UNSAFE_SCRIPTS] = getGlobalBoolean(L, "convertUnsafeScripts", true);
 	boolean[CLASSIC_EQUIPMENT_SLOTS] = getGlobalBoolean(L, "classicEquipmentSlots", false);
-	boolean[ENABLE_LIVE_CASTING] = getGlobalBoolean(L, "enableLiveCasting", false);
-	
+	boolean[ALLOW_WALKTHROUGH] = getGlobalBoolean(L, "allowWalkthrough", true);
+	boolean[ENABLE_LIVE_CASTING] = getGlobalBoolean(L, "enableLiveCasting", true);
+	boolean[ALLOW_BLOCK_SPAWN] = getGlobalBoolean(L, "allowBlockSpawn", true);
+	boolean[IS_PREVIEWER] = getGlobalBoolean(L, "isPreviewer", false);
+	boolean[ENABLE_RECORD] = getGlobalBoolean(L, "enableRecord", true);
+	boolean[EXP_BOOSTER] = getGlobalBoolean(L, "expBoosterEnabled", false);
+	boolean[LOWLEVEL_BONUS] = getGlobalBoolean(L, "lowLevelBonusEnabled", false);
+	boolean[SKULL_PLAYER_SUMMON] = getGlobalBoolean(L, "skullPlayerSummon", false);
+	boolean[ROOKGARD_WAR] = getGlobalBoolean(L, "rookgardWar", true);
+	boolean[ONLY_TUTORS_REPORT] = getGlobalBoolean(L, "onlyTutorsReport", false);
+	boolean[PREY_SYSTEM] = getGlobalBoolean(L, "preySystem", false);
+
 	string[DEFAULT_PRIORITY] = getGlobalString(L, "defaultPriority", "high");
 	string[SERVER_NAME] = getGlobalString(L, "serverName", "");
 	string[OWNER_NAME] = getGlobalString(L, "ownerName", "");
 	string[OWNER_EMAIL] = getGlobalString(L, "ownerEmail", "");
 	string[URL] = getGlobalString(L, "url", "");
 	string[LOCATION] = getGlobalString(L, "location", "");
-	string[MOTD] = getGlobalString(L, "motd", "");
 	string[WORLD_TYPE] = getGlobalString(L, "worldType", "pvp");
 	string[STORE_IMAGES_URL] = getGlobalString(L, "coinImagesURL", "");
 
@@ -105,6 +168,7 @@ bool ConfigManager::load()
 	integer[RATE_LOOT] = getGlobalNumber(L, "rateLoot", 2);
 	integer[RATE_MAGIC] = getGlobalNumber(L, "rateMagic", 3);
 	integer[RATE_SPAWN] = getGlobalNumber(L, "rateSpawn", 1);
+	integer[RATE_SPAWNTIME] = getGlobalNumber(L, "rateSpawnTime", 1);
 	integer[HOUSE_PRICE] = getGlobalNumber(L, "housePriceEachSQM", 1000);
 	integer[KILLS_TO_RED] = getGlobalNumber(L, "killsToRedSkull", 3);
 	integer[KILLS_TO_BLACK] = getGlobalNumber(L, "killsToBlackSkull", 6);
@@ -122,8 +186,10 @@ bool ConfigManager::load()
 	integer[CHECK_EXPIRED_MARKET_OFFERS_EACH_MINUTES] = getGlobalNumber(L, "checkExpiredMarketOffersEachMinutes", 60);
 	integer[MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER] = getGlobalNumber(L, "maxMarketOffersAtATimePerPlayer", 100);
 	integer[MAX_PACKETS_PER_SECOND] = getGlobalNumber(L, "maxPacketsPerSecond", 25);
-	integer[LIVE_CAST_PORT] = getGlobalNumber(L, "liveCastPort", 7173);
 	integer[STORE_COIN_PACKET] = getGlobalNumber(L, "coinPacketSize", 25);
+	integer[LIVE_CAST_PORT] = getGlobalNumber(L, "liveCastPort", 8172);
+	integer[RECORD_PORT] = getGlobalNumber(L, "RecordPort", 9172);
+	integer[EXP_BOOSTER_EXTRA] = getGlobalNumber(L, "expBoosterMultipler", 50);
 
 	loaded = true;
 	lua_close(L);
@@ -133,17 +199,19 @@ bool ConfigManager::load()
 bool ConfigManager::reload()
 {
 	bool result = load();
-	if (transformToSHA1(getString(ConfigManager::MOTD)) != g_game.getMotdHash()) {
+	if (transformToSHA1(IOLoginData::getMotd()) != g_game.getMotdHash()) {
 		g_game.incrementMotdNum();
 	}
 	return result;
 }
 
+static std::string dummy;
+
 const std::string& ConfigManager::getString(string_config_t what) const
 {
 	if (what >= LAST_STRING_CONFIG) {
 		std::cout << "[Warning - ConfigManager::getString] Accessing invalid index: " << what << std::endl;
-		return string[DUMMY_STR];
+		return dummy;
 	}
 	return string[what];
 }
@@ -164,48 +232,4 @@ bool ConfigManager::getBoolean(boolean_config_t what) const
 		return false;
 	}
 	return boolean[what];
-}
-
-std::string ConfigManager::getGlobalString(lua_State* L, const char* identifier, const char* defaultValue)
-{
-	lua_getglobal(L, identifier);
-	if (!lua_isstring(L, -1)) {
-		return defaultValue;
-	}
-
-	size_t len = lua_strlen(L, -1);
-	std::string ret(lua_tostring(L, -1), len);
-	lua_pop(L, 1);
-	return ret;
-}
-
-int32_t ConfigManager::getGlobalNumber(lua_State* L, const char* identifier, const int32_t defaultValue)
-{
-	lua_getglobal(L, identifier);
-	if (!lua_isnumber(L, -1)) {
-		return defaultValue;
-	}
-
-	int32_t val = lua_tonumber(L, -1);
-	lua_pop(L, 1);
-	return val;
-}
-
-bool ConfigManager::getGlobalBoolean(lua_State* L, const char* identifier, const bool defaultValue)
-{
-	lua_getglobal(L, identifier);
-	if (!lua_isboolean(L, -1)) {
-		if (!lua_isstring(L, -1)) {
-			return defaultValue;
-		}
-
-		size_t len = lua_strlen(L, -1);
-		std::string ret(lua_tostring(L, -1), len);
-		lua_pop(L, 1);
-		return booleanString(ret);
-	}
-
-	int val = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-	return val != 0;
 }

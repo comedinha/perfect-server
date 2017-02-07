@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2017  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,21 +97,19 @@ bool Npc::load()
 
 void Npc::reset()
 {
-	isIdle = true;
 	loaded = false;
 	walkTicks = 1500;
 	floorChange = false;
 	attackable = false;
 	ignoreHeight = true;
 	focusCreature = 0;
-	speechBubble = SPEECHBUBBLE_NONE;
+	speechBubble = SPEECHBUBBLE_NORMAL;
 
 	delete npcEventHandler;
 	npcEventHandler = nullptr;
 
 	parameters.clear();
 	shopPlayerSet.clear();
-	spectators.clear();
 }
 
 void Npc::reload()
@@ -259,7 +257,7 @@ void Npc::onCreatureAppear(Creature* creature, bool isLogin)
 		}
 
 		spectators.insert(player);
- 		updateIdleStatus();
+		updateIdleStatus();
 	}
 }
 
@@ -278,7 +276,7 @@ void Npc::onRemoveCreature(Creature* creature, bool isLogout)
 		}
 
 		spectators.erase(player);
- 		updateIdleStatus();
+		updateIdleStatus();
 	}
 }
 
@@ -293,21 +291,21 @@ void Npc::onCreatureMove(Creature* creature, const Tile* newTile, const Position
 		}
 
 		if (creature != this) {
- 			Player* player = creature->getPlayer();
- 
- 			// if player is now in range, add to spectators list, otherwise erase
- 			if (player->canSee(position)) {
- 				spectators.insert(player);
- 			} else {
- 				spectators.erase(player);
- 			}
- 
- 			updateIdleStatus();
- 		}
+			Player* player = creature->getPlayer();
+
+			// if player is now in range, add to spectators list, otherwise erase
+			if (player->canSee(position)) {
+				spectators.insert(player);
+			} else {
+				spectators.erase(player);
+			}
+
+			updateIdleStatus();
+		}
 	}
 }
 
-void Npc::onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text)
+void Npc::onCreatureSay(Creature* creature, MessageClasses type, const std::string& text)
 {
 	if (creature->getID() == id) {
 		return;
@@ -344,14 +342,14 @@ void Npc::onThink(uint32_t interval)
 
 void Npc::doSay(const std::string& text)
 {
-	g_game.internalCreatureSay(this, TALKTYPE_SAY, text, false);
+	g_game.internalCreatureSay(this, MESSAGE_SAY, text, false);
 }
 
 void Npc::doSayToPlayer(Player* player, const std::string& text)
 {
 	if (player) {
-		player->sendCreatureSay(this, TALKTYPE_PRIVATE_NP, text);
-		player->onCreatureSay(this, TALKTYPE_PRIVATE_NP, text);
+		player->sendChannelMessage("", text, MESSAGE_NPC_FROM_START_BLOCK, 0, this);
+		player->onCreatureSay(this, MESSAGE_NPC_FROM_START_BLOCK, text);
 	}
 }
 
@@ -412,12 +410,8 @@ void Npc::setIdle(bool idle)
 
 	isIdle = idle;
 
-	if (!isIdle) {
-		g_game.addCreatureCheck(this);
-	} else {
+	if (isIdle) {
 		onIdleStatus();
-		Game::removeCreatureCheck(this);
-		closeAllShopWindows();
 	}
 }
 
@@ -1180,7 +1174,7 @@ void NpcEventsHandler::onCreatureMove(Creature* creature, const Position& oldPos
 	scriptInterface->callFunction(3);
 }
 
-void NpcEventsHandler::onCreatureSay(Creature* creature, SpeakClasses type, const std::string& text)
+void NpcEventsHandler::onCreatureSay(Creature* creature, MessageClasses type, const std::string& text)
 {
 	if (creatureSayEvent == -1) {
 		return;
