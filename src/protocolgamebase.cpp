@@ -174,7 +174,7 @@ void ProtocolGameBase::AddCreature(NetworkMessage& msg, const Creature* creature
 	msg.addByte(creature->getSpeechBubble());
 	msg.addByte(0xFF); // MARK_UNMARKED
 	if (version >= 1110)
-		msg.addByte(0x01);
+		msg.addByte(0x00);
 
 	if (otherPlayer) {
 		msg.add<uint16_t>(otherPlayer->getHelpers());
