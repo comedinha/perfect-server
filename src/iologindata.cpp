@@ -802,7 +802,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 
 bool IOLoginData::loadPlayerPreyById(Player* player, uint32_t id)
 {
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 
 	std::ostringstream query;
 	query << "SELECT `player_id`, `bonus_type1`, `bonus_value1`, `bonus_name1`, `bonus_type2`, `bonus_value2`, `bonus_name2`, `bonus_type3`, `bonus_value3`, `bonus_name3` FROM `player_preytimes` WHERE `player_id` = " << id;
@@ -828,7 +828,7 @@ bool IOLoginData::loadPlayerPreyById(Player* player, uint32_t id)
 
 bool IOLoginData::savePlayerPreyById(Player* player, uint32_t id)
 {
-	Database* db = Database::getInstance();
+	Database& db = Database::getInstance();
 	std::ostringstream querycheck;
 	std::ostringstream query;
 	querycheck << "SELECT `bonus_type1` FROM `player_preytimes` WHERE `player_id` = " << id;
