@@ -131,7 +131,9 @@ void ProtocolSpectator::onRecvFirstMessage(NetworkMessage& msg)
 		disconnectSpectator(ss.str());
 		return;
 	}
-	password.erase(password.begin()); //Erase whitespace from the front of the password string
+	if (password.length() > 0) {
+		password.erase(password.begin()); //Erase whitespace from the front of the password string
+	}
 	g_dispatcher.addTask(createTask(std::bind(&ProtocolSpectator::login, std::static_pointer_cast<ProtocolSpectator>(shared_from_this()), characterName, password)));
 }
 
